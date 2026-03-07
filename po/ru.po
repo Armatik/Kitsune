@@ -1,0 +1,97 @@
+# Russian translations for kitsune package.
+# Copyright (C) 2026 Armatik
+# This file is distributed under the same license as the kitsune package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: kitsune 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-07 17:22+0300\n"
+"PO-Revision-Date: 2026-03-07 17:30+0300\n"
+"Last-Translator: Armatik <armatik@altlinux.org>\n"
+"Language-Team: Russian\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
+"%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/kitsune/window.py:59 src/kitsune/ui/catalog_view.py:19
+msgid "Catalog"
+msgstr "Каталог"
+
+#: src/kitsune/window.py:60 src/kitsune/ui/search_view.py:19
+msgid "Search"
+msgstr "Поиск"
+
+#: src/kitsune/ui/catalog_view.py:93
+msgid "Failed to load catalog"
+msgstr "Не удалось загрузить каталог"
+
+#: src/kitsune/ui/search_view.py:35
+msgid "Search anime..."
+msgstr "Поиск аниме..."
+
+#: src/kitsune/ui/search_view.py:48
+msgid "Search for Anime"
+msgstr "Поиск аниме"
+
+#: src/kitsune/ui/search_view.py:49
+msgid "Enter a title name to find it"
+msgstr "Введите название для поиска"
+
+#: src/kitsune/ui/search_view.py:79
+msgid "No Results"
+msgstr "Нет результатов"
+
+#: src/kitsune/ui/search_view.py:80
+msgid "Try a different search query"
+msgstr "Попробуйте другой запрос"
+
+#: src/kitsune/ui/release_view.py:144
+msgid "Episodes"
+msgstr "Серии"
+
+#: src/kitsune/ui/release_view.py:186
+msgid "Episode {}"
+msgstr "Серия {}"
+
+#: src/kitsune/ui/release_view.py:192
+msgid "min"
+msgstr "мин"
+
+#: src/kitsune/ui/player_view.py:143 src/kitsune/ui/player_view.py:189
+msgid "Skip Intro"
+msgstr "Пропустить опенинг"
+
+#: src/kitsune/ui/player_view.py:193
+msgid "Skip Outro"
+msgstr "Пропустить эндинг"
+
+#: src/kitsune/ui/player_view.py:224
+msgid "Playback error: {}"
+msgstr "Ошибка воспроизведения: {}"
+
+#: data/net.armatik.Kitsune.desktop.in:3
+#: data/net.armatik.Kitsune.metainfo.xml.in:6
+msgid "Kitsune"
+msgstr "Kitsune"
+
+#: data/net.armatik.Kitsune.desktop.in:4
+#: data/net.armatik.Kitsune.metainfo.xml.in:7
+msgid "Watch anime from AniLibria"
+msgstr "Смотрите аниме от AniLibria"
+
+#: data/net.armatik.Kitsune.desktop.in:10
+msgid "anime;video;anilibria;"
+msgstr "аниме;видео;анилибрия;"
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:9
+msgid ""
+"Kitsune is a GNOME client for watching anime translated by the AniLibria "
+"team. Browse the catalog, search for titles, and watch episodes with the "
+"built-in player."
+msgstr ""
+"Kitsune — клиент GNOME для просмотра аниме в переводе команды AniLibria. "
+"Просматривайте каталог, ищите тайтлы и смотрите серии во встроенном плеере."

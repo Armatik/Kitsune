@@ -1,0 +1,95 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the kitsune package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: kitsune\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-03-07 17:22+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/kitsune/window.py:59 src/kitsune/ui/catalog_view.py:19
+msgid "Catalog"
+msgstr ""
+
+#: src/kitsune/window.py:60 src/kitsune/ui/search_view.py:19
+msgid "Search"
+msgstr ""
+
+#: src/kitsune/ui/catalog_view.py:93
+msgid "Failed to load catalog"
+msgstr ""
+
+#: src/kitsune/ui/search_view.py:35
+msgid "Search anime..."
+msgstr ""
+
+#: src/kitsune/ui/search_view.py:48
+msgid "Search for Anime"
+msgstr ""
+
+#: src/kitsune/ui/search_view.py:49
+msgid "Enter a title name to find it"
+msgstr ""
+
+#: src/kitsune/ui/search_view.py:79
+msgid "No Results"
+msgstr ""
+
+#: src/kitsune/ui/search_view.py:80
+msgid "Try a different search query"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:144
+msgid "Episodes"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:186
+msgid "Episode {}"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:192
+msgid "min"
+msgstr ""
+
+#: src/kitsune/ui/player_view.py:143 src/kitsune/ui/player_view.py:189
+msgid "Skip Intro"
+msgstr ""
+
+#: src/kitsune/ui/player_view.py:193
+msgid "Skip Outro"
+msgstr ""
+
+#: src/kitsune/ui/player_view.py:224
+msgid "Playback error: {}"
+msgstr ""
+
+#: data/net.armatik.Kitsune.desktop.in:3
+#: data/net.armatik.Kitsune.metainfo.xml.in:6
+msgid "Kitsune"
+msgstr ""
+
+#: data/net.armatik.Kitsune.desktop.in:4
+#: data/net.armatik.Kitsune.metainfo.xml.in:7
+msgid "Watch anime from AniLibria"
+msgstr ""
+
+#: data/net.armatik.Kitsune.desktop.in:10
+msgid "anime;video;anilibria;"
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:9
+msgid ""
+"Kitsune is a GNOME client for watching anime translated by the AniLibria "
+"team. Browse the catalog, search for titles, and watch episodes with the "
+"built-in player."
+msgstr ""

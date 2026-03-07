@@ -1,4 +1,8 @@
 src/kitsune/application.py
 src/kitsune/window.py
+src/kitsune/ui/catalog_view.py
+src/kitsune/ui/search_view.py
+src/kitsune/ui/release_view.py
+src/kitsune/ui/player_view.py
 data/net.armatik.Kitsune.desktop.in
 data/net.armatik.Kitsune.metainfo.xml.in
