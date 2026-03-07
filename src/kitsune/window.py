@@ -11,6 +11,7 @@ from kitsune.api import AniLibriaClient
 from kitsune.ui.catalog_view import CatalogView
 from kitsune.ui.search_view import SearchView
 from kitsune.ui.release_view import ReleaseView
+from kitsune.ui.player_view import PlayerView
 
 
 class KitsuneWindow(Adw.ApplicationWindow):
@@ -99,4 +100,5 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._content_nav.push(view)
 
     def _play_episode(self, release, episode):
-        pass  # Will be implemented with player view
+        view = PlayerView(release=release, episode=episode)
+        self._content_nav.push(view)
