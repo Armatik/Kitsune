@@ -18,7 +18,7 @@ class PaginationMeta:
         pagination = data.get('pagination', data)
         return cls(
             current_page=pagination.get('current_page', 1),
-            last_page=pagination.get('last_page', 1),
+            last_page=pagination.get('total_pages', pagination.get('last_page', 1)),
             total=pagination.get('total', 0),
         )
 

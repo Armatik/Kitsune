@@ -6,13 +6,11 @@ import gi
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
-gi.require_version('Soup', '3.0')
 
-from gi.repository import Adw, Gdk, Gio, GLib, Gtk, Soup
+from gi.repository import Adw, Gtk
 
 from kitsune.models import Release
-
-_image_session = Soup.Session()
+from kitsune.ui.image_cache import load_image
 
 
 class ReleaseCard(Gtk.FlowBoxChild):
@@ -35,14 +33,24 @@ class ReleaseCard(Gtk.FlowBoxChild):
         )
         box.set_size_request(180, -1)
 
-        # Poster
+        # Poster container (overlay for spinner)
+        self._overlay = Gtk.Overlay()
+        self._overlay.set_size_request(180, 250)
+
         self._picture = Gtk.Picture()
         self._picture.set_size_request(180, 250)
         self._picture.set_content_fit(Gtk.ContentFit.COVER)
         self._picture.add_css_class('card')
+        self._overlay.set_child(self._picture)
+
+        # Spinner shown while loading
+        self._spinner = Adw.Spinner()
+        self._spinner.set_halign(Gtk.Align.CENTER)
+        self._spinner.set_valign(Gtk.Align.CENTER)
+        self._overlay.add_overlay(self._spinner)
 
         frame = Adw.Clamp(maximum_size=180)
-        frame.set_child(self._picture)
+        frame.set_child(self._overlay)
         box.append(frame)
 
         # Title
@@ -74,16 +82,9 @@ class ReleaseCard(Gtk.FlowBoxChild):
         self.set_child(box)
 
     def _load_poster(self, url: str):
-        msg = Soup.Message.new('GET', url)
-        _image_session.send_and_read_async(
-            msg, GLib.PRIORITY_DEFAULT, None,
-            self._on_poster_loaded, None,
-        )
+        load_image(url, self._on_poster_loaded)
 
-    def _on_poster_loaded(self, session, result, _data):
-        try:
-            gbytes = session.send_and_read_finish(result)
-            texture = Gdk.Texture.new_from_bytes(gbytes)
+    def _on_poster_loaded(self, texture, error):
+        self._spinner.set_visible(False)
+        if texture:
             self._picture.set_paintable(texture)
-        except Exception:
-            pass  # Keep placeholder on error

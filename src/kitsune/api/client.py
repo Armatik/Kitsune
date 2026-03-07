@@ -48,6 +48,7 @@ class AniLibriaClient:
             callback(None, str(e))
 
     def get_catalog(self, page: int = 1, limit: int = 20,
+                    filters: dict | None = None,
                     callback=None, cancellable=None):
         def on_data(data, error):
             if error:
@@ -55,7 +56,19 @@ class AniLibriaClient:
                 return
             callback(CatalogResponse.from_dict(data), None)
 
-        self._fetch(f'/anime/catalog/releases?page={page}&limit={limit}', on_data, cancellable)
+        params = f'page={page}&limit={limit}'
+        if filters:
+            from urllib.parse import quote
+            for key, value in filters.items():
+                if isinstance(value, dict):
+                    for sub_key, sub_val in value.items():
+                        params += f'&f%5B{quote(key)}%5D%5B{quote(sub_key)}%5D={quote(str(sub_val))}'
+                elif isinstance(value, list):
+                    for item in value:
+                        params += f'&f%5B{quote(key)}%5D%5B%5D={quote(str(item))}'
+                elif value is not None:
+                    params += f'&f%5B{quote(key)}%5D={quote(str(value))}'
+        self._fetch(f'/anime/catalog/releases?{params}', on_data, cancellable)
 
     def search_releases(self, query: str, callback=None, cancellable=None):
         from urllib.parse import quote
@@ -87,3 +100,31 @@ class AniLibriaClient:
             callback(genres, None)
 
         self._fetch('/anime/genres', on_data, cancellable)
+
+    def get_year_range(self, callback=None, cancellable=None):
+        """Fetch min and max years from catalog. callback((min_year, max_year), error)."""
+        result = {}
+
+        def on_oldest(data, error):
+            if error or not data:
+                callback(None, error)
+                return
+            releases = data.get('data', [])
+            result['min'] = releases[0]['year'] if releases else 2000
+            self._fetch(
+                '/anime/catalog/releases?page=1&limit=1&f%5Bsorting%5D=YEAR_DESC',
+                on_newest, cancellable,
+            )
+
+        def on_newest(data, error):
+            if error or not data:
+                callback(None, error)
+                return
+            releases = data.get('data', [])
+            result['max'] = releases[0]['year'] if releases else 2026
+            callback((result['min'], result['max']), None)
+
+        self._fetch(
+            '/anime/catalog/releases?page=1&limit=1&f%5Bsorting%5D=YEAR_ASC',
+            on_oldest, cancellable,
+        )
