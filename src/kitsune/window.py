@@ -66,9 +66,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
         # Content
         self._content_nav = Adw.NavigationView()
+        content_page = Adw.NavigationPage(title='Kitsune', tag='content')
+        content_page.set_child(self._content_nav)
 
         self._split_view.set_sidebar(sidebar_page)
-        self._split_view.set_content(self._content_nav)
+        self._split_view.set_content(content_page)
 
         self._sidebar_list.select_row(self._sidebar_list.get_row_at_index(0))
 
