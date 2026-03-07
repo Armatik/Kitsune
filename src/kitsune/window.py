@@ -30,6 +30,7 @@ def _ensure_nav_css():
         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
     )
 from kitsune.ui.catalog_view import CatalogView
+from kitsune.ui.franchises_view import FranchisesView
 from kitsune.ui.genres_view import GenresView
 from kitsune.ui.release_view import ReleaseView
 from kitsune.ui.player_view import PlayerView
@@ -86,8 +87,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
         self._genres_view = GenresView(client=self._client)
         self._genres_view.set_on_release_activated(self._show_release_detail)
-        self._genres_view.set_on_navigation_changed(self._on_genres_navigation_changed)
+        self._genres_view.set_on_navigation_changed(self._on_sub_navigation_changed)
         self._stack.add_named(self._genres_view, 'genres')
+
+        self._franchises_view = FranchisesView(client=self._client)
+        self._franchises_view.set_on_release_activated(self._show_release_detail)
+        self._franchises_view.set_on_navigation_changed(self._on_sub_navigation_changed)
+        self._stack.add_named(self._franchises_view, 'franchises')
 
         self._multi.set_child('content', self._stack)
 
@@ -153,6 +159,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
             title=_('Genres'), icon_name='genres-symbolic',
         )
         sidebar_list.append(genres_row)
+        franchises_row = Adw.ActionRow(
+            title=_('Franchises'), icon_name='franchises-symbolic',
+        )
+        sidebar_list.append(franchises_row)
         sidebar_list.select_row(sidebar_list.get_row_at_index(0))
         sidebar_list.connect('row-selected', self._on_sidebar_row_selected)
         sidebar_toolbar.set_content(sidebar_list)
@@ -258,6 +268,18 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._narrow_genres_tab.connect('clicked', lambda _b: self._switch_tab('genres'))
         nav_box.append(self._narrow_genres_tab)
 
+        self._narrow_franchises_tab = Gtk.Button(css_classes=['flat', 'nav-tab'])
+        franchises_tab_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=2,
+            halign=Gtk.Align.CENTER,
+        )
+        franchises_tab_box.append(Gtk.Image(icon_name='franchises-symbolic'))
+        franchises_tab_box.append(Gtk.Label(label=_('Franchises'), css_classes=['caption']))
+        self._narrow_franchises_tab.set_child(franchises_tab_box)
+        self._narrow_franchises_tab.connect('clicked', lambda _b: self._switch_tab('franchises'))
+        nav_box.append(self._narrow_franchises_tab)
+
         bottom_bar.set_center_widget(nav_box)
         toolbar.add_bottom_bar(bottom_bar)
 
@@ -268,14 +290,19 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _on_narrow_apply(self, _bp):
         self._catalog_view.set_narrow(True)
         self._genres_view.set_narrow(True)
+        self._franchises_view.set_narrow(True)
 
     def _on_narrow_unapply(self, _bp):
         self._catalog_view.set_narrow(False)
         self._genres_view.set_narrow(False)
+        self._franchises_view.set_narrow(False)
 
     def _switch_tab(self, name: str):
-        if name == 'genres' and self._genres_view.in_releases:
+        # Reset sub-navigation when switching tabs
+        if self._genres_view.in_releases:
             self._genres_view.go_back()
+        if self._franchises_view.in_releases:
+            self._franchises_view.go_back()
         self._stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)
@@ -284,6 +311,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         tabs = {
             'catalog': self._narrow_catalog_tab,
             'genres': self._narrow_genres_tab,
+            'franchises': self._narrow_franchises_tab,
         }
         for name, btn in tabs.items():
             if name == active:
@@ -293,13 +321,20 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _update_content_header(self):
         tab = self._stack.get_visible_child_name()
+        show_back = False
+        titles = {
+            'catalog': _('Catalog'),
+            'genres': _('Genres'),
+            'franchises': _('Franchises'),
+        }
+        title = titles.get(tab, '')
+
         if tab == 'genres' and self._genres_view.in_releases:
             title = self._genres_view.current_genre_name
             show_back = True
-        else:
-            titles = {'catalog': _('Catalog'), 'genres': _('Genres')}
-            title = titles.get(tab, '')
-            show_back = False
+        elif tab == 'franchises' and self._franchises_view.in_releases:
+            title = self._franchises_view.current_franchise_name
+            show_back = True
 
         show_filter = (tab == 'catalog')
 
@@ -316,15 +351,19 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if not row:
             return
         index = row.get_index()
-        tabs = ['catalog', 'genres']
+        tabs = ['catalog', 'genres', 'franchises']
         if 0 <= index < len(tabs):
             self._switch_tab(tabs[index])
 
-    def _on_genres_navigation_changed(self):
+    def _on_sub_navigation_changed(self):
         self._update_content_header()
 
     def _on_back_clicked(self, _button):
-        self._genres_view.go_back()
+        tab = self._stack.get_visible_child_name()
+        if tab == 'genres':
+            self._genres_view.go_back()
+        elif tab == 'franchises':
+            self._franchises_view.go_back()
         self._update_content_header()
 
     def _on_filter_clicked(self, _button):

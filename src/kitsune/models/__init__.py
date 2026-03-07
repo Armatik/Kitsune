@@ -8,9 +8,11 @@ from kitsune.models.release import (
     SkipTimecode,
 )
 from kitsune.models.catalog import CatalogResponse, PaginationMeta
+from kitsune.models.franchise import Franchise
 
 __all__ = [
     'Episode',
+    'Franchise',
     'Genre',
     'Release',
     'ReleaseName',

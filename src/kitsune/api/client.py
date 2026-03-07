@@ -10,7 +10,7 @@ gi.require_version('Soup', '3.0')
 
 from gi.repository import GLib, Gio, Soup
 
-from kitsune.models import CatalogResponse, Genre, Release
+from kitsune.models import CatalogResponse, Franchise, Genre, Release
 
 
 BASE_URL = 'https://anilibria.top/api/v1'
@@ -100,6 +100,27 @@ class AniLibriaClient:
             callback(genres, None)
 
         self._fetch('/anime/genres', on_data, cancellable)
+
+    def get_franchises(self, callback=None, cancellable=None):
+        def on_data(data, error):
+            if error:
+                callback(None, error)
+                return
+            franchises = [Franchise.from_dict(f) for f in data]
+            callback(franchises, None)
+
+        self._fetch('/anime/franchises', on_data, cancellable)
+
+    def get_franchise(self, franchise_id: str, callback=None, cancellable=None):
+        from urllib.parse import quote
+
+        def on_data(data, error):
+            if error:
+                callback(None, error)
+                return
+            callback(Franchise.from_dict(data), None)
+
+        self._fetch(f'/anime/franchises/{quote(franchise_id)}', on_data, cancellable)
 
     def get_year_range(self, callback=None, cancellable=None):
         """Fetch min and max years from catalog. callback((min_year, max_year), error)."""
