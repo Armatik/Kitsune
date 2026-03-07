@@ -10,75 +10,35 @@ gi.require_version('Adw', '1')
 from gi.repository import Gtk
 
 from kitsune.api import AniLibriaClient
-from kitsune.ui.filter_dialog import FilterDialog
+from kitsune.models import Genre
 from kitsune.ui.widgets.content_grid import ContentGrid
 from kitsune.ui.widgets.release_card import ReleaseCard
 
 
-class CatalogView(Gtk.Box):
+class GenreReleasesView(Gtk.Box):
 
-    def __init__(self, client: AniLibriaClient, **kwargs):
+    def __init__(self, genre: Genre, client: AniLibriaClient, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        self._genre = genre
         self._client = client
         self._page = 0
         self._last_page = 1
         self._loading = False
         self._reached_end = False
         self._on_release_activated = None
-        self._filters: dict = {}
-        self._genres_data: list = []
-        self._year_range: tuple[int, int] | None = None
 
         self._grid = ContentGrid()
         self._grid.set_on_scroll_near_end(self._on_scroll_near_end)
         self._grid.set_on_child_activated(self._on_child_activated)
         self.append(self._grid)
 
-        self._load_genres()
-        self._load_year_range()
         self._load_next_page()
-
-    @property
-    def flowbox(self):
-        return self._grid.flowbox
 
     def set_narrow(self, narrow: bool):
         self._grid.set_narrow(narrow)
 
     def set_on_release_activated(self, callback):
         self._on_release_activated = callback
-
-    def open_filter_dialog(self):
-        dialog = FilterDialog(genres=self._genres_data, year_range=self._year_range)
-        dialog.set_filters(self._filters)
-        dialog.set_on_apply(self._on_filters_applied)
-        dialog.present(self.get_root())
-
-    def _load_genres(self):
-        self._client.get_genres(callback=self._on_genres_loaded)
-
-    def _on_genres_loaded(self, genres, error):
-        if genres:
-            self._genres_data = [{'id': g.id, 'name': g.name} for g in genres]
-
-    def _load_year_range(self):
-        self._client.get_year_range(callback=self._on_year_range_loaded)
-
-    def _on_year_range_loaded(self, year_range, error):
-        if year_range:
-            self._year_range = year_range
-
-    def _on_filters_applied(self, filters: dict):
-        self._filters = filters
-        self._reset_catalog()
-        self._load_next_page()
-
-    def _reset_catalog(self):
-        self._page = 0
-        self._last_page = 1
-        self._loading = False
-        self._reached_end = False
-        self._grid.clear()
 
     def _on_scroll_near_end(self):
         if not self._loading and not self._reached_end:
@@ -93,21 +53,18 @@ class CatalogView(Gtk.Box):
         self._grid.set_spinner_visible(True)
         self._client.get_catalog(
             page=self._page, limit=20,
-            filters=self._filters or None,
+            filters={'genres': [self._genre.id]},
             callback=self._on_catalog_loaded,
         )
 
     def _on_catalog_loaded(self, catalog_response, error):
         self._loading = False
         self._grid.set_spinner_visible(False)
-
-        if error:
+        if error or not catalog_response:
             return
-
         self._last_page = catalog_response.meta.last_page
         for release in catalog_response.releases:
             self._grid.append_child(ReleaseCard(release))
-
         if self._page >= self._last_page:
             self._show_end()
 

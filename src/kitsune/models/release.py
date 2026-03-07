@@ -17,14 +17,33 @@ class SkipTimecode:
         return cls(start=data.get('start', 0), stop=data.get('stop', 0))
 
 
+def _genre_image_url(data: dict | None) -> str | None:
+    if not data:
+        return None
+    optimized = data.get('optimized')
+    if optimized and optimized.get('preview'):
+        return 'https://anilibria.top' + optimized['preview']
+    preview = data.get('preview')
+    if preview:
+        return 'https://anilibria.top' + preview
+    return None
+
+
 @dataclass
 class Genre:
     id: int
     name: str
+    image: str | None = None
+    total_releases: int = 0
 
     @classmethod
     def from_dict(cls, data: dict) -> Genre:
-        return cls(id=data['id'], name=data['name'])
+        return cls(
+            id=data['id'],
+            name=data['name'],
+            image=_genre_image_url(data.get('image')),
+            total_releases=data.get('total_releases', 0),
+        )
 
 
 @dataclass
