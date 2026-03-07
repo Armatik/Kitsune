@@ -1,0 +1,6 @@
+_build/
+__pycache__/
+*.pyc
+*.egg-info/
+.eggs/
+data/gschemas.compiled

@@ -1,0 +1,4 @@
+src/kitsune/application.py
+src/kitsune/window.py
+data/net.armatik.Kitsune.desktop.in
+data/net.armatik.Kitsune.metainfo.xml.in
