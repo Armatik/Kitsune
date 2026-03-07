@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Kitsune
+Comment=Watch anime from AniLibria
+Exec=kitsune
+Icon=net.armatik.Kitsune
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;GTK;
+Keywords=anime;video;anilibria;

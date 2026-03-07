@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="kitsune">
+  <schema id="net.armatik.Kitsune" path="/net/armatik/Kitsune/">
+    <key name="preferred-quality" type="s">
+      <default>'1080'</default>
+      <summary>Preferred video quality</summary>
+      <description>Preferred HLS stream quality: 1080, 720, or 480</description>
+    </key>
+    <key name="window-width" type="i">
+      <default>900</default>
+      <summary>Window width</summary>
+    </key>
+    <key name="window-height" type="i">
+      <default>600</default>
+      <summary>Window height</summary>
+    </key>
+  </schema>
+</schemalist>
