@@ -7,9 +7,16 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gio, Gtk
 
 from kitsune.ui.image_cache import get_cache_size, clear_cache
+
+_STYLE_DESCRIPTIONS = {
+    'classic': _('Standard layout without background effects'),
+    'accent': _('Gradient background from poster accent colors'),
+    'image': _('Blurred poster image as background'),
+    'hybrid': _('Combines accent colors with a blurred image'),
+}
 
 
 def _format_size(size_bytes: int) -> str:
@@ -22,52 +29,60 @@ def _format_size(size_bytes: int) -> str:
     return f'{size_bytes / (1024 * 1024 * 1024):.1f} GB'
 
 
+@Gtk.Template(resource_path='/net/armatik/Kitsune/preferences_window.ui')
 class PreferencesWindow(Adw.PreferencesDialog):
+    __gtype_name__ = 'KitsunePreferencesWindow'
+
+    cache_size_row = Gtk.Template.Child()
+    style_toggle = Gtk.Template.Child()
+    style_description = Gtk.Template.Child()
+    accent_group = Gtk.Template.Child()
+    color_points_row = Gtk.Template.Child()
+    fade_duration_row = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._build_cache_page()
+        self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
 
-    def _build_cache_page(self):
-        page = Adw.PreferencesPage(
-            title=_('Cache'),
-            icon_name='drive-harddisk-symbolic',
-        )
+        current = self._settings.get_string('release-page-style')
+        self.style_toggle.set_active_name(current)
+        self._update_style_description(current)
+        self._update_accent_group_visibility(current)
 
-        group = Adw.PreferencesGroup(
-            title=_('Image Cache'),
-            description=_('Cached poster images for offline access'),
-        )
+        self.color_points_row.set_value(self._settings.get_int('accent-color-points'))
+        self.fade_duration_row.set_value(self._settings.get_int('accent-fade-duration'))
 
-        # Cache size row
-        self._cache_size_row = Adw.ActionRow(
-            title=_('Cache Size'),
-        )
+        self.color_points_row.connect('notify::value', self._on_color_points_changed)
+        self.fade_duration_row.connect('notify::value', self._on_fade_duration_changed)
+
         self._update_cache_size()
-        group.add(self._cache_size_row)
 
-        # Clear cache button row
-        clear_row = Adw.ActionRow(
-            title=_('Clear Cache'),
-            subtitle=_('Remove all cached images'),
+    def _update_style_description(self, name: str):
+        self.style_description.set_label(
+            _STYLE_DESCRIPTIONS.get(name, '')
         )
-        clear_btn = Gtk.Button(
-            label=_('Clear'),
-            valign=Gtk.Align.CENTER,
-            css_classes=['destructive-action'],
-        )
-        clear_btn.connect('clicked', self._on_clear_clicked)
-        clear_row.add_suffix(clear_btn)
-        clear_row.set_activatable_widget(clear_btn)
-        group.add(clear_row)
 
-        page.add(group)
-        self.add(page)
+    def _update_accent_group_visibility(self, style: str):
+        self.accent_group.set_visible(style == 'accent')
 
     def _update_cache_size(self):
         size = get_cache_size()
-        self._cache_size_row.set_subtitle(_format_size(size))
+        self.cache_size_row.set_subtitle(_format_size(size))
 
-    def _on_clear_clicked(self, _button):
+    @Gtk.Template.Callback()
+    def on_style_changed(self, toggle_group, _pspec):
+        name = toggle_group.get_active_name()
+        self._settings.set_string('release-page-style', name)
+        self._update_style_description(name)
+        self._update_accent_group_visibility(name)
+
+    def _on_color_points_changed(self, row, _pspec):
+        self._settings.set_int('accent-color-points', int(row.get_value()))
+
+    def _on_fade_duration_changed(self, row, _pspec):
+        self._settings.set_int('accent-fade-duration', int(row.get_value()))
+
+    @Gtk.Template.Callback()
+    def on_clear_clicked(self, _button):
         clear_cache()
         self._update_cache_size()

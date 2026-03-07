@@ -1,0 +1,109 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsunePlayerView: Adw.NavigationPage {
+  child: Gtk.Overlay {
+    Gtk.Picture picture {
+      content-fit: contain;
+      hexpand: true;
+      vexpand: true;
+    }
+
+    [overlay]
+    Gtk.Box top_bar {
+      valign: start;
+      margin-start: 12;
+      margin-end: 12;
+      margin-top: 12;
+
+      styles ["osd"]
+
+      Gtk.Button {
+        icon-name: "go-previous-symbolic";
+        clicked => $on_back();
+
+        styles ["flat"]
+      }
+
+      Gtk.Label title_label {
+        hexpand: true;
+        ellipsize: end;
+        margin-start: 8;
+
+        styles ["heading"]
+      }
+    }
+
+    [overlay]
+    Gtk.Box controls {
+      orientation: vertical;
+      valign: end;
+      margin-start: 12;
+      margin-end: 12;
+      margin-bottom: 12;
+      spacing: 8;
+
+      styles ["osd"]
+
+      Gtk.Scale progress {
+        orientation: horizontal;
+        hexpand: true;
+        draw-value: false;
+        change-value => $on_seek();
+      }
+
+      Gtk.Box {
+        spacing: 8;
+        halign: center;
+        margin-bottom: 4;
+
+        Gtk.Label time_label {
+          label: "0:00 / 0:00";
+
+          styles ["caption"]
+        }
+
+        Gtk.Button {
+          icon-name: "media-seek-backward-symbolic";
+          clicked => $on_rewind();
+
+          styles ["flat", "circular"]
+        }
+
+        Gtk.Button play_btn {
+          icon-name: "media-playback-start-symbolic";
+          clicked => $on_play_pause();
+
+          styles ["flat", "circular"]
+        }
+
+        Gtk.Button {
+          icon-name: "media-seek-forward-symbolic";
+          clicked => $on_forward();
+
+          styles ["flat", "circular"]
+        }
+
+        Gtk.DropDown quality_dropdown {
+          visible: false;
+          notify::selected => $on_quality_changed();
+        }
+      }
+    }
+
+    [overlay]
+    Gtk.Button skip_btn {
+      label: _("Skip Intro");
+      visible: false;
+      halign: end;
+      valign: end;
+      margin-end: 24;
+      margin-bottom: 100;
+      clicked => $on_skip();
+
+      styles ["pill", "suggested-action"]
+    }
+  };
+}

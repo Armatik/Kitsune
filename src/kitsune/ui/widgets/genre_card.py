@@ -13,71 +13,31 @@ from kitsune.models import Genre
 from kitsune.ui.image_cache import load_image
 
 
+@Gtk.Template(resource_path='/net/armatik/Kitsune/genre_card.ui')
 class GenreCard(Gtk.FlowBoxChild):
+    __gtype_name__ = 'KitsuneGenreCard'
+
+    picture = Gtk.Template.Child()
+    spinner = Gtk.Template.Child()
+    title_label = Gtk.Template.Child()
+    subtitle_label = Gtk.Template.Child()
 
     def __init__(self, genre: Genre, **kwargs):
         super().__init__(**kwargs)
         self.genre = genre
-        self._build_ui()
+
+        self.title_label.set_label(genre.name)
+
+        if genre.total_releases:
+            self.subtitle_label.set_label(
+                f'{genre.total_releases} ' + _('titles'),
+            )
+            self.subtitle_label.set_visible(True)
+
         if genre.image:
-            self._load_image(genre.image)
-
-    def _build_ui(self):
-        box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            spacing=6,
-            margin_start=6,
-            margin_end=6,
-            margin_top=6,
-            margin_bottom=6,
-        )
-        box.set_size_request(180, -1)
-
-        # Poster container (overlay for spinner)
-        self._overlay = Gtk.Overlay()
-        self._overlay.set_size_request(180, 250)
-
-        self._picture = Gtk.Picture()
-        self._picture.set_size_request(180, 250)
-        self._picture.set_content_fit(Gtk.ContentFit.COVER)
-        self._picture.add_css_class('card')
-        self._overlay.set_child(self._picture)
-
-        self._spinner = Adw.Spinner()
-        self._spinner.set_halign(Gtk.Align.CENTER)
-        self._spinner.set_valign(Gtk.Align.CENTER)
-        self._overlay.add_overlay(self._spinner)
-
-        frame = Adw.Clamp(maximum_size=180)
-        frame.set_child(self._overlay)
-        box.append(frame)
-
-        # Title
-        title = Gtk.Label(
-            label=self.genre.name,
-            wrap=True,
-            max_width_chars=20,
-            lines=2,
-            ellipsize=3,  # PANGO_ELLIPSIZE_END
-            xalign=0,
-            css_classes=['heading'],
-        )
-        box.append(title)
-
-        # Subtitle: release count
-        subtitle = Gtk.Label(
-            label=f'{self.genre.total_releases} ' + _('titles'),
-            xalign=0,
-            css_classes=['dim-label', 'caption'],
-        )
-        box.append(subtitle)
-
-        self.set_child(box)
-
-    def _load_image(self, url: str):
-        load_image(url, self._on_image_loaded)
+            load_image(genre.image, self._on_image_loaded)
 
     def _on_image_loaded(self, texture, error):
-        self._spinner.set_visible(False)
+        self.spinner.set_visible(False)
         if texture:
-            self._picture.set_paintable(texture)
+            self.picture.set_paintable(texture)

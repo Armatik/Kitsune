@@ -1,0 +1,69 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsuneSearchView: Adw.NavigationPage {
+  title: _("Search");
+  tag: "search";
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      title-widget: Gtk.SearchEntry search_entry {
+        placeholder-text: _("Search anime...");
+        hexpand: true;
+        search-changed => $on_search_changed();
+      };
+    }
+
+    content: Gtk.ScrolledWindow {
+      vexpand: true;
+      hscrollbar-policy: never;
+
+      Gtk.Stack stack {
+        [empty]
+        Adw.StatusPage {
+          title: _("Search for Anime");
+          description: _("Enter a title name to find it");
+          icon-name: "system-search-symbolic";
+        }
+
+        [results]
+        Gtk.FlowBox flowbox {
+          homogeneous: true;
+          min-children-per-line: 2;
+          max-children-per-line: 6;
+          column-spacing: 12;
+          row-spacing: 12;
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          margin-bottom: 12;
+          selection-mode: none;
+          activate-on-single-click: true;
+          child-activated => $on_child_activated();
+        }
+
+        [loading]
+        Gtk.Box {
+          halign: center;
+          valign: center;
+          vexpand: true;
+
+          Adw.Spinner {
+            halign: center;
+            valign: center;
+          }
+        }
+
+        [no-results]
+        Adw.StatusPage {
+          title: _("No Results");
+          description: _("Try a different search query");
+          icon-name: "system-search-symbolic";
+        }
+      }
+    };
+  };
+}

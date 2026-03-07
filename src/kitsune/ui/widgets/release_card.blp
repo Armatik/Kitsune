@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsuneReleaseCard: Gtk.FlowBoxChild {
+  Gtk.Box {
+    orientation: vertical;
+    spacing: 6;
+    margin-start: 6;
+    margin-end: 6;
+    margin-top: 6;
+    margin-bottom: 6;
+    width-request: 180;
+
+    Adw.Clamp {
+      maximum-size: 180;
+
+      Gtk.Overlay {
+        width-request: 180;
+        height-request: 250;
+
+        Gtk.Picture picture {
+          width-request: 180;
+          height-request: 250;
+          content-fit: cover;
+
+          styles ["card"]
+        }
+
+        [overlay]
+        Adw.Spinner spinner {
+          halign: center;
+          valign: center;
+        }
+      }
+    }
+
+    Gtk.Label title_label {
+      wrap: true;
+      max-width-chars: 20;
+      lines: 2;
+      ellipsize: end;
+      xalign: 0;
+
+      styles ["heading"]
+    }
+
+    Gtk.Label subtitle_label {
+      xalign: 0;
+      visible: false;
+
+      styles ["dim-label", "caption"]
+    }
+  }
+}

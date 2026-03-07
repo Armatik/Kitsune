@@ -6,6 +6,23 @@
       <summary>Preferred video quality</summary>
       <description>Preferred HLS stream quality: 1080, 720, or 480</description>
     </key>
+    <key name="release-page-style" type="s">
+      <default>'classic'</default>
+      <summary>Release page style</summary>
+      <description>Visual style for the release page: classic, accent, image, or hybrid</description>
+    </key>
+    <key name="accent-fade-duration" type="i">
+      <default>2000</default>
+      <summary>Accent fade-in duration</summary>
+      <description>Duration of accent gradient fade-in animation in milliseconds (100–3000)</description>
+      <range min="100" max="3000"/>
+    </key>
+    <key name="accent-color-points" type="i">
+      <default>4</default>
+      <summary>Accent color points</summary>
+      <description>Number of color gradient points (2–6)</description>
+      <range min="2" max="6"/>
+    </key>
     <key name="window-width" type="i">
       <default>900</default>
       <summary>Window width</summary>

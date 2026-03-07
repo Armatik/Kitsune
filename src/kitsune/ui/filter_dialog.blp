@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsuneFilterDialog: Adw.Dialog {
+  title: _("Filters");
+  can-close: true;
+  content-width: 400;
+  content-height: 520;
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-title: true;
+      show-back-button: false;
+      show-end-title-buttons: false;
+      show-start-title-buttons: false;
+      decoration-layout: "";
+    }
+
+    content: Gtk.ScrolledWindow {
+      vexpand: true;
+      hscrollbar-policy: never;
+
+      Gtk.Box content_box {
+        orientation: vertical;
+        spacing: 10;
+        margin-start: 12;
+        margin-end: 12;
+        margin-top: 8;
+        margin-bottom: 12;
+
+        Gtk.Box {
+          spacing: 8;
+          margin-top: 2;
+
+          Gtk.Label {
+            label: _("Sorting");
+            xalign: 0;
+            hexpand: true;
+
+            styles ["heading"]
+          }
+
+          Gtk.MenuButton sorting_btn {
+            halign: end;
+
+            styles ["flat"]
+          }
+        }
+
+        Gtk.Label {
+          label: _("Release period");
+          xalign: 0;
+          margin-top: 2;
+
+          styles ["heading"]
+        }
+
+        Gtk.Box {
+          spacing: 8;
+
+          Gtk.Label {
+            label: _("from");
+          }
+
+          Gtk.SpinButton year_from {
+            hexpand: true;
+            value-changed => $on_year_changed();
+          }
+
+          Gtk.Label {
+            label: _("to");
+          }
+
+          Gtk.SpinButton year_to {
+            hexpand: true;
+            value-changed => $on_year_changed();
+          }
+        }
+      }
+    };
+
+    [bottom]
+    Gtk.Box {
+      spacing: 8;
+      homogeneous: true;
+      margin-start: 12;
+      margin-end: 12;
+      margin-top: 8;
+      margin-bottom: 8;
+
+      Gtk.Button {
+        label: _("Cancel");
+        clicked => $on_cancel();
+      }
+
+      Gtk.Button reset_btn {
+        label: _("Reset");
+        sensitive: false;
+        clicked => $on_reset();
+
+        styles ["destructive-action"]
+      }
+
+      Gtk.Button {
+        label: _("Apply");
+        clicked => $on_apply_clicked();
+
+        styles ["suggested-action"]
+      }
+    }
+  };
+}

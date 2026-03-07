@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsunePreferencesWindow: Adw.PreferencesDialog {
+  Adw.PreferencesPage {
+    title: _("Appearance");
+    icon-name: "applications-graphics-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Release Page Style");
+
+      Gtk.Box {
+        orientation: vertical;
+        spacing: 12;
+
+        Adw.ToggleGroup style_toggle {
+          homogeneous: true;
+
+          notify::active-name => $on_style_changed();
+
+          Adw.Toggle {
+            name: "classic";
+            label: _("Classic");
+          }
+
+          Adw.Toggle {
+            name: "accent";
+            label: _("Accent Colors");
+          }
+
+          Adw.Toggle {
+            name: "image";
+            label: _("Image");
+          }
+
+          Adw.Toggle {
+            name: "hybrid";
+            label: _("Hybrid");
+          }
+        }
+
+        Gtk.Label style_description {
+          xalign: 0;
+          wrap: true;
+
+          styles ["dim-label"]
+        }
+      }
+    }
+
+    Adw.PreferencesGroup accent_group {
+      title: _("Accent Colors Settings");
+
+      Adw.SpinRow color_points_row {
+        title: _("Color Points");
+        subtitle: _("Number of gradient color spots");
+
+        adjustment: Gtk.Adjustment {
+          lower: 2;
+          upper: 6;
+          step-increment: 1;
+          page-increment: 1;
+          value: 4;
+        };
+      }
+
+      Adw.SpinRow fade_duration_row {
+        title: _("Fade Duration");
+        subtitle: _("Animation duration in milliseconds");
+
+        adjustment: Gtk.Adjustment {
+          lower: 100;
+          upper: 3000;
+          step-increment: 100;
+          page-increment: 500;
+          value: 2000;
+        };
+      }
+    }
+  }
+
+  Adw.PreferencesPage {
+    title: _("Cache");
+    icon-name: "drive-harddisk-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Image Cache");
+      description: _("Cached poster images for offline access");
+
+      Adw.ActionRow cache_size_row {
+        title: _("Cache Size");
+      }
+
+      Adw.ActionRow {
+        title: _("Clear Cache");
+        subtitle: _("Remove all cached images");
+        activatable-widget: clear_btn;
+
+        [suffix]
+        Gtk.Button clear_btn {
+          label: _("Clear");
+          valign: center;
+          clicked => $on_clear_clicked();
+
+          styles ["destructive-action"]
+        }
+      }
+    }
+  }
+}
