@@ -7,4 +7,4 @@ configure_file(
   install_mode: 'rwxr-xr-x',
 )
 
-install_subdir('kitsune', install_dir: pkgdatadir)
+install_subdir('kitsune', install_dir: pkgdatadir, exclude_directories: ['__pycache__'])
