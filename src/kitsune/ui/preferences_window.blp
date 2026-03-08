@@ -110,6 +110,34 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
     }
 
     Adw.PreferencesGroup {
+      title: _("Release Cache");
+      description: _("Cached release information for offline access");
+
+      Adw.ActionRow release_count_row {
+        title: _("Cached Releases");
+      }
+
+      Adw.ActionRow release_size_row {
+        title: _("Storage Size");
+      }
+
+      Adw.ActionRow {
+        title: _("Clear Release Cache");
+        subtitle: _("Remove all cached release data");
+        activatable-widget: clear_release_btn;
+
+        [suffix]
+        Gtk.Button clear_release_btn {
+          label: _("Clear");
+          valign: center;
+          clicked => $on_clear_release_clicked();
+
+          styles ["destructive-action"]
+        }
+      }
+    }
+
+    Adw.PreferencesGroup {
       title: _("Watch Progress");
       description: _("Saved playback positions for episodes");
 

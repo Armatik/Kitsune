@@ -10,7 +10,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gio, Gtk
 
 from kitsune.ui.image_cache import get_cache_size, clear_cache
-from kitsune import watch_positions
+from kitsune import release_cache, watch_positions
 
 _STYLE_DESCRIPTIONS = {
     'classic': _('Standard layout without background effects'),
@@ -33,6 +33,8 @@ class PreferencesWindow(Adw.PreferencesDialog):
     __gtype_name__ = 'KitsunePreferencesWindow'
 
     cache_size_row = Gtk.Template.Child()
+    release_count_row = Gtk.Template.Child()
+    release_size_row = Gtk.Template.Child()
     watch_count_row = Gtk.Template.Child()
     watch_size_row = Gtk.Template.Child()
     style_toggle = Gtk.Template.Child()
@@ -65,6 +67,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.fade_duration_row.connect('notify::value', self._on_fade_duration_changed)
 
         self._update_cache_size()
+        self._update_release_cache()
         self._update_watch_progress()
 
     def _update_style_description(self, name: str):
@@ -103,6 +106,17 @@ class PreferencesWindow(Adw.PreferencesDialog):
         size = watch_positions.get_size()
         self.watch_count_row.set_subtitle(str(count))
         self.watch_size_row.set_subtitle(_format_size(size))
+
+    def _update_release_cache(self):
+        count = release_cache.get_count()
+        size = release_cache.get_size()
+        self.release_count_row.set_subtitle(str(count))
+        self.release_size_row.set_subtitle(_format_size(size))
+
+    @Gtk.Template.Callback()
+    def on_clear_release_clicked(self, _button):
+        release_cache.clear_all()
+        self._update_release_cache()
 
     @Gtk.Template.Callback()
     def on_clear_clicked(self, _button):

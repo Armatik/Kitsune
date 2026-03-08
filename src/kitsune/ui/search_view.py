@@ -58,7 +58,7 @@ class SearchView(Adw.NavigationPage):
 
     def _on_search_results(self, releases, error):
         if error:
-            self.stack.set_visible_child_name('empty')
+            self.stack.set_visible_child_name('error')
             return
 
         while child := self.flowbox.get_first_child():

@@ -45,9 +45,13 @@ class FranchiseReleasesView(Gtk.Box):
             callback=self._on_franchise_loaded,
         )
 
+    def retry(self):
+        self._grid.clear_error()
+        self._load_franchise()
+
     def _on_franchise_loaded(self, franchise, error):
-        self._grid.set_spinner_visible(False)
         if error or not franchise:
+            self._grid.show_error()
             return
         self._franchise = franchise
         self._populate(franchise.releases)

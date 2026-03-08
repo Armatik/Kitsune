@@ -12,6 +12,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from kitsune.api import AniLibriaClient
 from kitsune.models import Release, Episode
 from kitsune.ui.image_cache import load_image
+from kitsune import release_cache
 
 _css_loaded = False
 
@@ -102,6 +103,8 @@ class ReleaseView(Adw.NavigationPage):
         self._episodes_view = 'list'  # overridden from settings below
         self._sort_newest_first = False
         self._search_text = ''
+        self._refresh_fade_anim = None
+        self._refresh_timer = 0
         _ensure_css()
 
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
@@ -109,21 +112,41 @@ class ReleaseView(Adw.NavigationPage):
         self._vadjustment = self.scrolled.get_vadjustment()
         self._vadjustment.connect('value-changed', self._on_scroll)
 
+        # Try loading cached release data
+        cached = release_cache.get(release.id)
+        if cached:
+            self._release = Release.from_dict(cached)
+
         self._setup_tabs_toggle()
         self._setup_episodes_controls()
         self._populate_info()
 
-        if release.poster:
-            self._load_poster(release.poster)
-        if not release.episodes:
-            self._load_full_release()
-        else:
+        if self._release.poster:
+            self._load_poster(self._release.poster)
+
+        if self._release.episodes:
             self._populate_episodes()
             self._apply_episodes_view()
+        else:
+            self.episodes_spinner.set_visible(True)
 
         self._populate_team()
         self._populate_torrents()
         self._load_related()
+
+        # Header refresh indicator
+        self._header_spinner = Adw.Spinner()
+        self._header_check = Gtk.Image(
+            icon_name='object-select-symbolic',
+            css_classes=['success'],
+        )
+        self._header_check.set_opacity(0)
+        self._header_status = Gtk.Box()
+        self._header_status.append(self._header_spinner)
+        self.header_bar.pack_end(self._header_status)
+
+        # Always refresh from API
+        self._start_refresh()
 
         self.connect('realize', self._on_realize)
 
@@ -350,22 +373,69 @@ class ReleaseView(Adw.NavigationPage):
 
     # --- Episodes (list) ---
 
-    def _load_full_release(self):
-        self.episodes_spinner.set_visible(True)
-        self._client.get_release(
+    def _start_refresh(self):
+        self._client.get_release_raw(
             self._release.alias or str(self._release.id),
-            callback=self._on_release_loaded,
+            callback=self._on_raw_release_loaded,
         )
 
-    def _on_release_loaded(self, release, error):
+    def _on_raw_release_loaded(self, data, error):
         self.episodes_spinner.set_visible(False)
-        if error or not release:
+        if error or not data:
+            self._show_refresh_error()
+            if not self._release.episodes:
+                self._show_spinner_error(self.episodes_spinner)
             return
-        self._release = release
+
+        release_cache.save(self._release.id, data)
+        self._release = Release.from_dict(data)
+
+        # Clear and repopulate info
+        while child := self.info_box.get_first_child():
+            self.info_box.remove(child)
+        self._populate_info()
+
         self._populate_episodes()
         self._apply_episodes_view()
         self._populate_team()
         self._populate_torrents()
+        self.tabs_carousel.queue_resize()
+
+        self._show_refresh_done()
+
+    def _show_refresh_error(self):
+        self._header_spinner.set_visible(False)
+        error = Gtk.Image(
+            icon_name='cross-large-symbolic',
+            css_classes=['error'],
+        )
+        self._header_status.append(error)
+
+    def _show_spinner_error(self, spinner):
+        spinner.set_visible(False)
+        error = Gtk.Image(
+            icon_name='cross-large-symbolic',
+            pixel_size=32,
+            css_classes=['error'],
+            halign=Gtk.Align.CENTER,
+        )
+        parent = spinner.get_parent()
+        parent.insert_child_after(error, spinner)
+
+    def _show_refresh_done(self):
+        self._header_spinner.set_visible(False)
+        self._header_check.set_opacity(1)
+        self._header_status.append(self._header_check)
+        self._refresh_timer = GLib.timeout_add(3000, self._fade_checkmark)
+
+    def _fade_checkmark(self):
+        self._refresh_timer = 0
+        target = Adw.PropertyAnimationTarget.new(self._header_check, 'opacity')
+        self._refresh_fade_anim = Adw.TimedAnimation.new(
+            self._header_check, 1.0, 0.0, 500, target,
+        )
+        self._refresh_fade_anim.play()
+        return GLib.SOURCE_REMOVE
 
     def _populate_episodes(self):
         while child := self.episodes_list.get_first_child():
@@ -376,6 +446,7 @@ class ReleaseView(Adw.NavigationPage):
                 title=self._episode_title(episode),
                 subtitle=self._episode_subtitle(episode),
                 activatable=True,
+                use_markup=False,
             )
             play_btn = Gtk.Button(
                 icon_name='media-playback-start-symbolic',
@@ -502,11 +573,15 @@ class ReleaseView(Adw.NavigationPage):
 
     def _on_franchise_found(self, franchise, error):
         self.related_spinner.set_visible(False)
-        if error or not franchise:
+        if error:
+            self._show_spinner_error(self.related_spinner)
+            return
+        if not franchise:
             self.related_empty.set_visible(True)
             return
         self._franchise = franchise
         self._populate_related()
+        self.tabs_carousel.queue_resize()
 
     def _populate_related(self):
         self.related_spinner.set_visible(False)
@@ -558,11 +633,11 @@ class ReleaseView(Adw.NavigationPage):
             is_current = release.id == self._release.id
 
             row = Adw.ActionRow(
+                title=release.name.main,
                 subtitle=self._related_subtitle(release),
                 activatable=not is_current,
+                use_markup=False,
             )
-            row.set_use_markup(True)
-            row.set_title(GLib.markup_escape_text(release.name.main))
             row.add_css_class('heading')
 
             num_classes = ['title-2']
@@ -631,6 +706,7 @@ class ReleaseView(Adw.NavigationPage):
             row = Adw.ActionRow(
                 title=member.nickname,
                 subtitle=member.role,
+                use_markup=False,
             )
             avatar = Adw.Avatar(size=40, text=member.nickname)
             if member.avatar:
@@ -673,6 +749,7 @@ class ReleaseView(Adw.NavigationPage):
             row = Adw.ActionRow(
                 title=title,
                 subtitle=' \u2022 '.join(subtitle_parts),
+                use_markup=False,
             )
 
             download_btn = Gtk.Button(
@@ -844,4 +921,10 @@ class ReleaseView(Adw.NavigationPage):
         if self._fade_anim:
             self._fade_anim.skip()
             self._fade_anim = None
+        if self._refresh_fade_anim:
+            self._refresh_fade_anim.skip()
+            self._refresh_fade_anim = None
+        if self._refresh_timer:
+            GLib.source_remove(self._refresh_timer)
+            self._refresh_timer = 0
         Adw.NavigationPage.do_unmap(self)

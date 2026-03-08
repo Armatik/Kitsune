@@ -87,6 +87,14 @@ class GenresView(Gtk.Box):
         if self._on_navigation_changed:
             self._on_navigation_changed()
 
+    def retry(self):
+        if self.in_releases and self._releases_view and hasattr(self._releases_view, 'retry'):
+            self._releases_view.retry()
+            return
+        self._loaded = False
+        self._grid.clear_error()
+        self.load()
+
     def load(self):
         if self._loaded:
             return
@@ -98,7 +106,10 @@ class GenresView(Gtk.Box):
         self._client.get_genres(callback=self._on_genres_loaded)
 
     def _on_genres_loaded(self, genres, error):
-        if error or not genres:
+        if error:
+            self._grid.show_error()
+            return
+        if not genres:
             self._grid.set_spinner_visible(False)
             return
         self._pending_genres = sorted(genres, key=lambda g: g.name)

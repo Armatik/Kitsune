@@ -30,6 +30,7 @@ class ContentGrid(Gtk.Box):
         self._on_scroll_near_end = None
         self._on_child_activated = None
         self._has_content = False
+        self._error_widget = None
         self._vadjustment = self.scrolled.get_vadjustment()
         self._vadjustment.connect('value-changed', self._on_scroll)
 
@@ -52,6 +53,37 @@ class ContentGrid(Gtk.Box):
             self.spinner.set_visible(visible)
         else:
             self.initial_spinner.set_visible(visible)
+
+    def show_error(self):
+        self.spinner.set_visible(False)
+        self.initial_spinner.set_visible(False)
+        self.clear_error()
+        error = Gtk.Image(
+            icon_name='cross-large-symbolic',
+            pixel_size=48,
+            css_classes=['error'],
+            halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.CENTER,
+        )
+        self._error_widget = error
+        if not self._has_content:
+            overlay = self.initial_spinner.get_parent()
+            overlay.add_overlay(error)
+        else:
+            error.set_margin_top(24)
+            error.set_margin_bottom(24)
+            parent = self.spinner.get_parent()
+            parent.insert_child_after(error, self.spinner)
+
+    def clear_error(self):
+        if self._error_widget:
+            parent = self._error_widget.get_parent()
+            if parent:
+                if isinstance(parent, Gtk.Overlay):
+                    parent.remove_overlay(self._error_widget)
+                else:
+                    parent.remove(self._error_widget)
+            self._error_widget = None
 
     def show_end(self):
         self.spinner.set_visible(False)

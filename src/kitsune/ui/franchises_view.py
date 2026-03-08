@@ -86,6 +86,14 @@ class FranchisesView(Gtk.Box):
         if self._on_navigation_changed:
             self._on_navigation_changed()
 
+    def retry(self):
+        if self.in_releases and self._releases_view and hasattr(self._releases_view, 'retry'):
+            self._releases_view.retry()
+            return
+        self._loaded = False
+        self._grid.clear_error()
+        self.load()
+
     def load(self):
         if self._loaded:
             return
@@ -97,7 +105,10 @@ class FranchisesView(Gtk.Box):
         self._client.get_franchises(callback=self._on_franchises_loaded)
 
     def _on_franchises_loaded(self, franchises, error):
-        if error or not franchises:
+        if error:
+            self._grid.show_error()
+            return
+        if not franchises:
             self._grid.set_spinner_visible(False)
             return
         self._pending_franchises = sorted(franchises, key=lambda f: f.name)

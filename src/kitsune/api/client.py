@@ -14,6 +14,8 @@ from kitsune.models import CatalogResponse, Franchise, Genre, Release
 
 
 BASE_URL = 'https://anilibria.top/api/v1'
+_REQUEST_TIMEOUT_MS = 10000
+_OFFLINE_TIMEOUT_MS = 2000
 
 
 class AniLibriaClient:
@@ -21,31 +23,86 @@ class AniLibriaClient:
     def __init__(self):
         self._session = Soup.Session()
         self._session.set_user_agent('Kitsune/0.1')
+        self._on_network_error = None
+        self._on_network_ok = None
+        self._offline = False
+
+    def set_on_network_error(self, callback):
+        self._on_network_error = callback
+
+    def set_on_network_ok(self, callback):
+        self._on_network_ok = callback
 
     def _fetch(self, path: str, callback, cancellable: Gio.Cancellable | None = None):
         uri = f'{BASE_URL}{path}'
         msg = Soup.Message.new('GET', uri)
+
+        timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS
+        state = [False]  # [handled]
+
+        def on_timeout():
+            if not state[0]:
+                state[0] = True
+                self._offline = True
+                callback(None, 'timeout')
+                if self._on_network_error:
+                    self._on_network_error()
+            return GLib.SOURCE_REMOVE
+
+        timeout_id = GLib.timeout_add(timeout_ms, on_timeout)
+
         self._session.send_and_read_async(
             msg, GLib.PRIORITY_DEFAULT, cancellable,
-            self._on_response, (callback, msg),
+            self._on_response, (callback, msg, state, timeout_id),
         )
 
     def _on_response(self, session, result, user_data):
-        callback, msg = user_data
+        callback, msg, state, timeout_id = user_data
+        if state[0]:
+            return  # timeout already handled
         try:
             gbytes = session.send_and_read_finish(result)
             status = msg.get_status()
             if status != Soup.Status.OK:
+                if self._offline:
+                    return  # let timeout show X after spinner
+                state[0] = True
+                GLib.source_remove(timeout_id)
+                self._offline = True
                 callback(None, f'HTTP {status.value_nick}')
+                if self._on_network_error:
+                    self._on_network_error()
                 return
+            state[0] = True
+            GLib.source_remove(timeout_id)
             data = json.loads(gbytes.get_data())
             callback(data, None)
+            if self._offline:
+                self._offline = False
+                if self._on_network_ok:
+                    self._on_network_ok()
         except GLib.Error as e:
             if e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+                state[0] = True
+                GLib.source_remove(timeout_id)
                 return
+            if self._offline:
+                return  # let timeout show X after spinner
+            state[0] = True
+            GLib.source_remove(timeout_id)
+            self._offline = True
             callback(None, str(e))
+            if self._on_network_error:
+                self._on_network_error()
         except Exception as e:
+            if self._offline:
+                return  # let timeout show X after spinner
+            state[0] = True
+            GLib.source_remove(timeout_id)
+            self._offline = True
             callback(None, str(e))
+            if self._on_network_error:
+                self._on_network_error()
 
     def get_catalog(self, page: int = 1, limit: int = 20,
                     filters: dict | None = None,
@@ -90,6 +147,10 @@ class AniLibriaClient:
             callback(Release.from_dict(data), None)
 
         self._fetch(f'/anime/releases/{quote(str(id_or_alias))}', on_data, cancellable)
+
+    def get_release_raw(self, id_or_alias: str, callback=None, cancellable=None):
+        from urllib.parse import quote
+        self._fetch(f'/anime/releases/{quote(str(id_or_alias))}', callback, cancellable)
 
     def get_genres(self, callback=None, cancellable=None):
         def on_data(data, error):

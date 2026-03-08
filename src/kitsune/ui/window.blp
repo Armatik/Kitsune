@@ -7,8 +7,13 @@ template $KitsuneWindow: Adw.ApplicationWindow {
   default-width: 900;
   default-height: 600;
 
-  content: Adw.NavigationView nav_view {
-    Adw.NavigationPage {
+  content: Gtk.Box {
+    orientation: vertical;
+
+    Adw.NavigationView nav_view {
+      vexpand: true;
+
+      Adw.NavigationPage {
       title: "Kitsune";
       tag: "main";
 
@@ -229,6 +234,14 @@ template $KitsuneWindow: Adw.ApplicationWindow {
           };
         }
       };
+    }
+    }
+
+    Adw.Banner offline_banner {
+      title: _("No internet connection. App is working in limited mode.");
+      button-label: _("Retry");
+      revealed: false;
+      button-clicked => $on_retry();
     }
   };
 

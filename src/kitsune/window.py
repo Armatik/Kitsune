@@ -37,6 +37,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'KitsuneWindow'
 
     nav_view = Gtk.Template.Child()
+    offline_banner = Gtk.Template.Child()
     multi = Gtk.Template.Child()
     content_stack = Gtk.Template.Child()
     filter_btn = Gtk.Template.Child()
@@ -51,6 +52,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._client = AniLibriaClient()
+        self._client.set_on_network_error(self._on_network_error)
+        self._client.set_on_network_ok(self._on_network_ok)
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
         _ensure_nav_css()
         self._setup_window_state()
@@ -241,6 +244,22 @@ class KitsuneWindow(Adw.ApplicationWindow):
         view = ReleaseView(release=release, client=self._client)
         view.set_on_episode_play(self._play_episode)
         self.nav_view.push(view)
+
+    def _on_network_error(self):
+        self.offline_banner.set_revealed(True)
+
+    def _on_network_ok(self):
+        self.offline_banner.set_revealed(False)
+
+    @Gtk.Template.Callback()
+    def on_retry(self, _banner):
+        tab = self.content_stack.get_visible_child_name()
+        if tab == 'catalog':
+            self._catalog_view.retry()
+        elif tab == 'genres' and self._genres_view:
+            self._genres_view.retry()
+        elif tab == 'franchises' and self._franchises_view:
+            self._franchises_view.retry()
 
     def _play_episode(self, release, episode):
         from kitsune.ui.player_view import PlayerView

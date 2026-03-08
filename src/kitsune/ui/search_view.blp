@@ -63,6 +63,13 @@ template $KitsuneSearchView: Adw.NavigationPage {
           description: _("Try a different search query");
           icon-name: "system-search-symbolic";
         }
+
+        [error]
+        Adw.StatusPage {
+          title: _("Connection Error");
+          description: _("Check your internet connection and try again");
+          icon-name: "network-offline-symbolic";
+        }
       }
     };
   };

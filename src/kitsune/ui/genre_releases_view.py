@@ -57,10 +57,17 @@ class GenreReleasesView(Gtk.Box):
             callback=self._on_catalog_loaded,
         )
 
+    def retry(self):
+        self._grid.clear_error()
+        self._loading = False
+        self._reached_end = False
+        self._load_next_page()
+
     def _on_catalog_loaded(self, catalog_response, error):
         self._loading = False
-        self._grid.set_spinner_visible(False)
         if error or not catalog_response:
+            self._page -= 1
+            self._grid.show_error()
             return
         self._last_page = catalog_response.meta.last_page
         for release in catalog_response.releases:
