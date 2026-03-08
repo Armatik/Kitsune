@@ -30,11 +30,6 @@ def _ensure_nav_css():
         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
     )
 from kitsune.ui.catalog_view import CatalogView
-from kitsune.ui.franchises_view import FranchisesView
-from kitsune.ui.genres_view import GenresView
-from kitsune.ui.release_view import ReleaseView
-from kitsune.ui.player_view import PlayerView
-from kitsune.ui.preferences_window import PreferencesWindow
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/window.ui')
@@ -84,17 +79,38 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._catalog_view.set_on_release_activated(self._show_release_detail)
         self.content_stack.add_named(self._catalog_view, 'catalog')
 
+        self._genres_view = None
+        self._franchises_view = None
+        self._narrow = False
+
+        self.content_stack.add_named(Gtk.Box(), 'genres')
+        self.content_stack.add_named(Gtk.Box(), 'franchises')
+
+        self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+
+    def _ensure_genres_view(self):
+        if self._genres_view:
+            return
+        from kitsune.ui.genres_view import GenresView
+        old = self.content_stack.get_child_by_name('genres')
+        self.content_stack.remove(old)
         self._genres_view = GenresView(client=self._client)
         self._genres_view.set_on_release_activated(self._show_release_detail)
         self._genres_view.set_on_navigation_changed(self._on_sub_navigation_changed)
+        self._genres_view.set_narrow(self._narrow)
         self.content_stack.add_named(self._genres_view, 'genres')
 
+    def _ensure_franchises_view(self):
+        if self._franchises_view:
+            return
+        from kitsune.ui.franchises_view import FranchisesView
+        old = self.content_stack.get_child_by_name('franchises')
+        self.content_stack.remove(old)
         self._franchises_view = FranchisesView(client=self._client)
         self._franchises_view.set_on_release_activated(self._show_release_detail)
         self._franchises_view.set_on_navigation_changed(self._on_sub_navigation_changed)
+        self._franchises_view.set_narrow(self._narrow)
         self.content_stack.add_named(self._franchises_view, 'franchises')
-
-        self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
 
     # --- Template Callbacks ---
 
@@ -114,9 +130,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_back_clicked(self, _button):
         tab = self.content_stack.get_visible_child_name()
-        if tab == 'genres':
+        if tab == 'genres' and self._genres_view:
             self._genres_view.go_back()
-        elif tab == 'franchises':
+        elif tab == 'franchises' and self._franchises_view:
             self._franchises_view.go_back()
         self._update_content_header()
 
@@ -143,23 +159,33 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_narrow_apply(self, _bp):
+        self._narrow = True
         self._catalog_view.set_narrow(True)
-        self._genres_view.set_narrow(True)
-        self._franchises_view.set_narrow(True)
+        if self._genres_view:
+            self._genres_view.set_narrow(True)
+        if self._franchises_view:
+            self._franchises_view.set_narrow(True)
 
     @Gtk.Template.Callback()
     def on_narrow_unapply(self, _bp):
+        self._narrow = False
         self._catalog_view.set_narrow(False)
-        self._genres_view.set_narrow(False)
-        self._franchises_view.set_narrow(False)
+        if self._genres_view:
+            self._genres_view.set_narrow(False)
+        if self._franchises_view:
+            self._franchises_view.set_narrow(False)
 
     # --- Internal Methods ---
 
     def _switch_tab(self, name: str):
-        if self._genres_view.in_releases:
+        if self._genres_view and self._genres_view.in_releases:
             self._genres_view.go_back()
-        if self._franchises_view.in_releases:
+        if self._franchises_view and self._franchises_view.in_releases:
             self._franchises_view.go_back()
+        if name == 'genres':
+            self._ensure_genres_view()
+        elif name == 'franchises':
+            self._ensure_franchises_view()
         self.content_stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)
@@ -186,10 +212,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
         }
         title = titles.get(tab, '')
 
-        if tab == 'genres' and self._genres_view.in_releases:
+        if tab == 'genres' and self._genres_view and self._genres_view.in_releases:
             title = self._genres_view.current_genre_name
             show_back = True
-        elif tab == 'franchises' and self._franchises_view.in_releases:
+        elif tab == 'franchises' and self._franchises_view and self._franchises_view.in_releases:
             title = self._franchises_view.current_franchise_name
             show_back = True
 
@@ -204,14 +230,17 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._update_content_header()
 
     def _on_preferences(self, _action, _param):
+        from kitsune.ui.preferences_window import PreferencesWindow
         prefs = PreferencesWindow()
         prefs.present(self)
 
     def _show_release_detail(self, release):
+        from kitsune.ui.release_view import ReleaseView
         view = ReleaseView(release=release, client=self._client)
         view.set_on_episode_play(self._play_episode)
         self.nav_view.push(view)
 
     def _play_episode(self, release, episode):
+        from kitsune.ui.player_view import PlayerView
         view = PlayerView(release=release, episode=episode)
         self.nav_view.push(view)

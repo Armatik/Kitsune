@@ -34,8 +34,6 @@ class CatalogView(Gtk.Box):
         self._grid.set_on_child_activated(self._on_child_activated)
         self.append(self._grid)
 
-        self._load_genres()
-        self._load_year_range()
         self._load_next_page()
 
     @property
@@ -49,6 +47,10 @@ class CatalogView(Gtk.Box):
         self._on_release_activated = callback
 
     def open_filter_dialog(self):
+        if not self._genres_data:
+            self._load_genres()
+        if not self._year_range:
+            self._load_year_range()
         dialog = FilterDialog(genres=self._genres_data, year_range=self._year_range)
         dialog.set_filters(self._filters)
         dialog.set_on_apply(self._on_filters_applied)
