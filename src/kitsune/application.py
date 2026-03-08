@@ -45,7 +45,15 @@ class KitsuneApplication(Adw.Application):
             version=self._version,
             developer_name='Armatik',
             license_type=Gtk.License.GPL_3_0,
-            website='https://github.com/armatik/Kitsune',
-            issue_url='https://github.com/armatik/Kitsune/issues',
+            website='https://altlinux.space/armatik/Kitsune',
+            issue_url='https://altlinux.space/armatik/Kitsune/issues',
+            comments=_('Libadwaita client for watching anime from AniLiberty'),
+        )
+        about.add_link(_('AniLiberty Website'), 'https://anilibria.top')
+        about.add_link(_('AniLiberty Telegram'), 'https://t.me/anilibria')
+        about.add_link(_('AniLiberty VK'), 'https://vk.com/anilibria')
+        about.add_acknowledgement_section(
+            _('Uses'),
+            ['AniLiberty API https://anilibria.top/api/docs/v1'],
         )
         about.present(self.props.active_window)
