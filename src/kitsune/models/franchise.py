@@ -29,6 +29,7 @@ class Franchise:
     last_year: int | None = None
     total_releases: int | None = None
     total_episodes: int | None = None
+    total_duration: str | None = None
     releases: list[Release] = field(default_factory=list)
 
     @classmethod
@@ -48,5 +49,6 @@ class Franchise:
             last_year=data.get('last_year'),
             total_releases=data.get('total_releases'),
             total_episodes=data.get('total_episodes'),
+            total_duration=data.get('total_duration'),
             releases=releases,
         )

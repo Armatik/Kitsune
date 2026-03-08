@@ -27,11 +27,23 @@ def _ensure_css():
         ' background: alpha(currentColor, 0.1); }'
         ' .poster-fade { background: linear-gradient(to bottom,'
         ' transparent 40%, @window_bg_color 100%); }'
+        ' .episode-card { border-radius: 12px; }'
+        ' .episode-overlay { background: linear-gradient(to top,'
+        ' alpha(black, 0.7) 0%, transparent 50%); }'
+        ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
     )
+
+
+def _format_size(size_bytes: int) -> str:
+    if size_bytes >= 1_073_741_824:
+        return f'{size_bytes / 1_073_741_824:.2f} GB'
+    if size_bytes >= 1_048_576:
+        return f'{size_bytes / 1_048_576:.1f} MB'
+    return f'{size_bytes / 1024:.0f} KB'
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/release_view.ui')
@@ -49,9 +61,34 @@ class ReleaseView(Adw.NavigationPage):
     bg_poster = Gtk.Template.Child()
     content_area = Gtk.Template.Child()
     description_label = Gtk.Template.Child()
+    gradient_bg = Gtk.Template.Child()
+
+    tabs_header = Gtk.Template.Child()
+    tabs_carousel = Gtk.Template.Child()
+
+    episodes_page = Gtk.Template.Child()
+    episodes_toolbar = Gtk.Template.Child()
+    episodes_search = Gtk.Template.Child()
+    episodes_controls = Gtk.Template.Child()
     episodes_spinner = Gtk.Template.Child()
     episodes_list = Gtk.Template.Child()
-    gradient_bg = Gtk.Template.Child()
+    episodes_grid = Gtk.Template.Child()
+
+    related_page = Gtk.Template.Child()
+    related_spinner = Gtk.Template.Child()
+    related_empty = Gtk.Template.Child()
+    related_header = Gtk.Template.Child()
+    related_list = Gtk.Template.Child()
+
+    team_page = Gtk.Template.Child()
+    team_empty = Gtk.Template.Child()
+    team_list = Gtk.Template.Child()
+
+    torrents_page = Gtk.Template.Child()
+    torrents_empty = Gtk.Template.Child()
+    torrents_list = Gtk.Template.Child()
+
+    _TAB_PAGES = ('episodes', 'related', 'team', 'torrents')
 
     def __init__(self, release: Release, client: AniLibriaClient, **kwargs):
         super().__init__(title=release.name.main, **kwargs)
@@ -61,6 +98,10 @@ class ReleaseView(Adw.NavigationPage):
         self._narrow_mode = False
         self._fade_anim = None
         self._accent_mode = False
+        self._franchise = None
+        self._episodes_view = 'list'  # overridden from settings below
+        self._sort_newest_first = False
+        self._search_text = ''
         _ensure_css()
 
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
@@ -68,6 +109,8 @@ class ReleaseView(Adw.NavigationPage):
         self._vadjustment = self.scrolled.get_vadjustment()
         self._vadjustment.connect('value-changed', self._on_scroll)
 
+        self._setup_tabs_toggle()
+        self._setup_episodes_controls()
         self._populate_info()
 
         if release.poster:
@@ -76,11 +119,182 @@ class ReleaseView(Adw.NavigationPage):
             self._load_full_release()
         else:
             self._populate_episodes()
+            self._apply_episodes_view()
+
+        self._populate_team()
+        self._populate_torrents()
+        self._load_related()
 
         self.connect('realize', self._on_realize)
 
     def set_on_episode_play(self, callback):
         self._on_episode_play = callback
+
+    # --- Tabs (ToggleGroup + Carousel) ---
+
+    def _setup_tabs_toggle(self):
+        self._tabs_toggle = Adw.ToggleGroup()
+
+        labels = {
+            'episodes': _('Episodes'),
+            'related': _('Related'),
+            'team': _('Team'),
+            'torrents': _('Torrents'),
+        }
+        for name in self._TAB_PAGES:
+            toggle = Adw.Toggle(name=name, label=labels[name])
+            self._tabs_toggle.add(toggle)
+
+        self._tabs_toggle.set_active_name('episodes')
+        self._tabs_toggle.connect('notify::active-name', self._on_tab_changed)
+        self.tabs_header.append(self._tabs_toggle)
+
+    def _on_tab_changed(self, toggle_group, _pspec):
+        name = toggle_group.get_active_name()
+        idx = self._TAB_PAGES.index(name) if name in self._TAB_PAGES else 0
+        page = self.tabs_carousel.get_nth_page(idx)
+        self.tabs_carousel.scroll_to(page, True)
+
+    # --- Episodes controls ---
+
+    def _setup_episodes_controls(self):
+        # Search
+        self.episodes_search.connect('search-changed', self._on_episodes_search_changed)
+        self.episodes_controls.set_spacing(6)
+
+        # Filter: All / Watched / Unwatched (wide mode)
+        self._filter_toggle = Adw.ToggleGroup()
+        self._filter_toggle.add(Adw.Toggle(name='all', label=_('All')))
+        self._filter_toggle.add(Adw.Toggle(
+            name='watched', label=_('Watched'), enabled=False,
+        ))
+        self._filter_toggle.add(Adw.Toggle(
+            name='unwatched', label=_('Unwatched'), enabled=False,
+        ))
+        self._filter_toggle.set_active_name('all')
+        self.episodes_controls.append(self._filter_toggle)
+
+        # Filter: MenuButton (compact mode, hidden by default)
+        self._filter_menu_btn = Gtk.MenuButton(
+            icon_name='funnel-symbolic',
+            visible=False,
+        )
+        popover = Gtk.Popover()
+        pop_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        pop_list.add_css_class('boxed-list')
+        all_row = Adw.ActionRow(title=_('All'), activatable=True)
+        all_row.add_prefix(Gtk.Image(icon_name='object-select-symbolic'))
+        pop_list.append(all_row)
+        pop_list.append(Adw.ActionRow(title=_('Watched'), sensitive=False))
+        pop_list.append(Adw.ActionRow(title=_('Unwatched'), sensitive=False))
+        popover.set_child(pop_list)
+        self._filter_menu_btn.set_popover(popover)
+        self.episodes_controls.append(self._filter_menu_btn)
+
+        # Sort toggle
+        sort_box = Gtk.Box(css_classes=['linked'])
+        self._sort_btn = Gtk.Button(
+            icon_name='view-sort-descending-symbolic',
+            tooltip_text=_('Newest first'),
+        )
+        self._sort_btn.connect('clicked', self._on_sort_clicked)
+        sort_box.append(self._sort_btn)
+        self.episodes_controls.append(sort_box)
+
+        # View toggle (list / grid)
+        saved_view = self._settings.get_string('episodes-view')
+        self._episodes_view = saved_view if saved_view in ('list', 'grid') else 'list'
+
+        self._view_toggle = Adw.ToggleGroup()
+        self._view_toggle.add(Adw.Toggle(
+            name='list', icon_name='view-list-symbolic',
+            tooltip=_('List view'),
+        ))
+        self._view_toggle.add(Adw.Toggle(
+            name='grid', icon_name='view-grid-symbolic',
+            tooltip=_('Grid view'),
+        ))
+        self._view_toggle.set_active_name(self._episodes_view)
+        self._view_toggle.connect('notify::active-name', self._on_episodes_view_changed)
+        self.episodes_controls.append(self._view_toggle)
+
+        # Mark all watched / Unmark all
+        mark_box = Gtk.Box(css_classes=['linked'])
+        mark_btn = Gtk.Button(
+            icon_name='object-select-symbolic',
+            tooltip_text=_('Mark all as watched'),
+            sensitive=False,
+        )
+        unmark_btn = Gtk.Button(
+            icon_name='cross-large-symbolic',
+            tooltip_text=_('Unmark all'),
+            sensitive=False,
+        )
+        mark_box.append(mark_btn)
+        mark_box.append(unmark_btn)
+        self.episodes_controls.append(mark_box)
+
+    def _on_episodes_view_changed(self, toggle, _pspec):
+        name = toggle.get_active_name()
+        self._episodes_view = name
+        self._settings.set_string('episodes-view', name)
+        if name == 'grid':
+            self.episodes_list.set_visible(False)
+            self.episodes_grid.set_visible(True)
+            self._refresh_episodes_grid()
+        else:
+            self.episodes_list.set_visible(True)
+            self.episodes_grid.set_visible(False)
+
+    def _apply_episodes_view(self):
+        if self._episodes_view == 'grid':
+            self.episodes_list.set_visible(False)
+            self.episodes_grid.set_visible(True)
+            self._populate_episodes_grid()
+        else:
+            self.episodes_list.set_visible(True)
+            self.episodes_grid.set_visible(False)
+
+    def _on_episodes_search_changed(self, entry):
+        self._search_text = entry.get_text().strip().lower()
+        self._refresh_episodes()
+
+    def _on_sort_clicked(self, _button):
+        self._sort_newest_first = not self._sort_newest_first
+        if self._sort_newest_first:
+            self._sort_btn.set_icon_name('view-sort-ascending-symbolic')
+            self._sort_btn.set_tooltip_text(_('Oldest first'))
+        else:
+            self._sort_btn.set_icon_name('view-sort-descending-symbolic')
+            self._sort_btn.set_tooltip_text(_('Newest first'))
+        self._refresh_episodes()
+
+    def _get_filtered_episodes(self) -> list[Episode]:
+        episodes = list(self._release.episodes)
+        if self._search_text:
+            query = self._search_text
+            filtered = []
+            for ep in episodes:
+                ordinal = int(ep.ordinal) if ep.ordinal == int(ep.ordinal) else ep.ordinal
+                if query in str(ordinal):
+                    filtered.append(ep)
+                elif ep.name and query in ep.name.lower():
+                    filtered.append(ep)
+            episodes = filtered
+        if self._sort_newest_first:
+            episodes = list(reversed(episodes))
+        return episodes
+
+    def _refresh_episodes(self):
+        self._populate_episodes()
+        if self._episodes_view == 'grid':
+            self._refresh_episodes_grid()
+
+    def _refresh_episodes_grid(self):
+        if self.episodes_grid.get_visible():
+            self._populate_episodes_grid()
+
+    # --- Info ---
 
     def _populate_info(self):
         title_label = Gtk.Label(
@@ -134,6 +348,8 @@ class ReleaseView(Adw.NavigationPage):
             self.description_label.set_label(self._release.description)
             self.description_label.set_visible(True)
 
+    # --- Episodes (list) ---
+
     def _load_full_release(self):
         self.episodes_spinner.set_visible(True)
         self._client.get_release(
@@ -147,12 +363,15 @@ class ReleaseView(Adw.NavigationPage):
             return
         self._release = release
         self._populate_episodes()
+        self._apply_episodes_view()
+        self._populate_team()
+        self._populate_torrents()
 
     def _populate_episodes(self):
         while child := self.episodes_list.get_first_child():
             self.episodes_list.remove(child)
 
-        for episode in self._release.episodes:
+        for episode in self._get_filtered_episodes():
             row = Adw.ActionRow(
                 title=self._episode_title(episode),
                 subtitle=self._episode_subtitle(episode),
@@ -166,6 +385,82 @@ class ReleaseView(Adw.NavigationPage):
             row.add_suffix(play_btn)
             row.connect('activated', lambda _r, ep=episode: self._play_episode(ep))
             self.episodes_list.append(row)
+
+    # --- Episodes (grid) ---
+
+    def _populate_episodes_grid(self):
+        while child := self.episodes_grid.get_first_child():
+            self.episodes_grid.remove(child)
+
+        for episode in self._get_filtered_episodes():
+            card = self._build_episode_card(episode)
+            self.episodes_grid.append(card)
+
+    _EP_CARD_W = 240
+    _EP_CARD_H = 135  # 16:9
+
+    def _build_episode_card(self, episode: Episode) -> Gtk.Widget:
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+
+        clamp = Adw.Clamp(maximum_size=self._EP_CARD_W)
+
+        overlay = Gtk.Overlay(
+            css_classes=['episode-card'],
+            width_request=self._EP_CARD_W,
+            height_request=self._EP_CARD_H,
+        )
+        overlay.set_overflow(Gtk.Overflow.HIDDEN)
+        overlay.set_cursor(Gdk.Cursor.new_from_name('pointer'))
+
+        picture = Gtk.Picture(
+            content_fit=Gtk.ContentFit.COVER,
+            width_request=self._EP_CARD_W,
+            height_request=self._EP_CARD_H,
+        )
+        overlay.set_child(picture)
+
+        if episode.preview:
+            load_image(episode.preview, lambda tex, err, pic=picture:
+                       pic.set_paintable(tex) if tex else None)
+
+        gradient = Gtk.Box(
+            css_classes=['episode-overlay'],
+            hexpand=True, vexpand=True,
+        )
+        overlay.add_overlay(gradient)
+
+        label_box = Gtk.Box(
+            spacing=4, margin_start=10, margin_end=10,
+            margin_bottom=8, valign=Gtk.Align.END,
+        )
+        ordinal = int(episode.ordinal) if episode.ordinal == int(episode.ordinal) else episode.ordinal
+        ep_label = Gtk.Label(
+            label=_('Episode {}').format(ordinal),
+            xalign=0, hexpand=True,
+            css_classes=['caption-heading', 'ep-overlay-text'],
+        )
+        label_box.append(ep_label)
+
+        if episode.duration:
+            mins = episode.duration // 60
+            secs = episode.duration % 60
+            dur_label = Gtk.Label(
+                label=f'{mins}:{secs:02d}',
+                css_classes=['caption', 'ep-overlay-text'],
+            )
+            label_box.append(dur_label)
+        overlay.add_overlay(label_box)
+
+        gesture = Gtk.GestureClick()
+        gesture.connect('released',
+                        lambda g, n, x, y, ep=episode: self._play_episode(ep))
+        overlay.add_controller(gesture)
+
+        clamp.set_child(overlay)
+        box.append(clamp)
+        return box
+
+    # --- Episodes helpers ---
 
     def _episode_title(self, episode: Episode) -> str:
         ordinal = int(episode.ordinal) if episode.ordinal == int(episode.ordinal) else episode.ordinal
@@ -187,7 +482,7 @@ class ReleaseView(Adw.NavigationPage):
             qualities.append('480p')
         if qualities:
             parts.append(' / '.join(qualities))
-        return ' — '.join(parts) if parts else ''
+        return ' \u2014 '.join(parts) if parts else ''
 
     def _on_play_clicked(self, _button, episode):
         self._play_episode(episode)
@@ -196,9 +491,229 @@ class ReleaseView(Adw.NavigationPage):
         if self._on_episode_play:
             self._on_episode_play(self._release, episode)
 
+    # --- Related (franchise) ---
+
+    def _load_related(self):
+        self.related_spinner.set_visible(True)
+        self._client.get_franchise_for_release(
+            self._release.id,
+            callback=self._on_franchise_found,
+        )
+
+    def _on_franchise_found(self, franchise, error):
+        self.related_spinner.set_visible(False)
+        if error or not franchise:
+            self.related_empty.set_visible(True)
+            return
+        self._franchise = franchise
+        self._populate_related()
+
+    def _populate_related(self):
+        self.related_spinner.set_visible(False)
+        f = self._franchise
+
+        # Franchise header
+        self.related_header.set_visible(True)
+        title = Gtk.Label(
+            label=f.name, xalign=0, wrap=True,
+            margin_start=16, margin_end=16, margin_top=12,
+            css_classes=['title-4'],
+        )
+        self.related_header.append(title)
+
+        if f.name_english:
+            en = Gtk.Label(
+                label=f.name_english, xalign=0, wrap=True,
+                margin_start=16, margin_end=16,
+                css_classes=['dim-label'],
+            )
+            self.related_header.append(en)
+
+        meta_parts = []
+        if f.first_year and f.last_year:
+            meta_parts.append(f'{f.first_year} \u2014 {f.last_year}')
+        elif f.first_year:
+            meta_parts.append(str(f.first_year))
+        if f.total_releases:
+            meta_parts.append(
+                _('%d seasons') % f.total_releases
+                if f.total_releases > 1 else _('1 season')
+            )
+        if f.total_episodes:
+            meta_parts.append(_('%d episodes') % f.total_episodes)
+        if f.total_duration:
+            meta_parts.append(f.total_duration)
+
+        if meta_parts:
+            meta = Gtk.Label(
+                label=' \u2022 '.join(meta_parts), xalign=0, wrap=True,
+                margin_start=16, margin_end=16, margin_bottom=12,
+                css_classes=['dim-label', 'caption'],
+            )
+            self.related_header.append(meta)
+
+        # Franchise releases
+        self.related_list.set_visible(True)
+        for idx, release in enumerate(f.releases):
+            is_current = release.id == self._release.id
+
+            row = Adw.ActionRow(
+                subtitle=self._related_subtitle(release),
+                activatable=not is_current,
+            )
+            row.set_use_markup(True)
+            row.set_title(GLib.markup_escape_text(release.name.main))
+            row.add_css_class('heading')
+
+            num_classes = ['title-2']
+            num_classes.append('accent' if is_current else 'dim-label')
+            num_label = Gtk.Label(
+                label=f'#{idx + 1}',
+                css_classes=num_classes,
+                valign=Gtk.Align.CENTER,
+            )
+            row.add_suffix(num_label)
+
+            clamp = Adw.Clamp(maximum_size=90, valign=Gtk.Align.CENTER)
+            pic_overlay = Gtk.Overlay(
+                width_request=90, height_request=126,
+                css_classes=['card'],
+            )
+            pic_overlay.set_overflow(Gtk.Overflow.HIDDEN)
+            pic = Gtk.Picture(
+                width_request=90, height_request=126,
+                content_fit=Gtk.ContentFit.COVER,
+            )
+            pic_overlay.set_child(pic)
+            clamp.set_child(pic_overlay)
+            if release.poster:
+                load_image(release.poster, lambda tex, err, p=pic:
+                           p.set_paintable(tex) if tex else None)
+            row.add_prefix(clamp)
+
+            if not is_current:
+                row.connect('activated', lambda _r, rel=release:
+                            self._on_related_activated(rel))
+
+            self.related_list.append(row)
+
+    def _related_subtitle(self, release: Release) -> str:
+        parts = []
+        if release.year:
+            parts.append(str(release.year))
+        if release.season:
+            parts.append(release.season)
+        if release.type:
+            parts.append(release.type)
+        if release.episodes_total:
+            parts.append(_('%d episodes') % release.episodes_total)
+        return ' \u2022 '.join(parts)
+
+    def _on_related_activated(self, release: Release):
+        nav = self.get_ancestor(Adw.NavigationView)
+        if nav:
+            view = ReleaseView(release=release, client=self._client)
+            view.set_on_episode_play(self._on_episode_play)
+            nav.push(view)
+
+    # --- Team ---
+
+    def _populate_team(self):
+        while child := self.team_list.get_first_child():
+            self.team_list.remove(child)
+
+        if not self._release.members:
+            self.team_empty.set_visible(True)
+            return
+        self.team_empty.set_visible(False)
+
+        for member in self._release.members:
+            row = Adw.ActionRow(
+                title=member.nickname,
+                subtitle=member.role,
+            )
+            avatar = Adw.Avatar(size=40, text=member.nickname)
+            if member.avatar:
+                load_image(member.avatar, lambda tex, err, a=avatar:
+                           a.set_custom_image(tex) if tex else None)
+            row.add_prefix(avatar)
+            self.team_list.append(row)
+
+    # --- Torrents ---
+
+    def _populate_torrents(self):
+        while child := self.torrents_list.get_first_child():
+            self.torrents_list.remove(child)
+
+        if not self._release.torrents:
+            self.torrents_empty.set_visible(True)
+            return
+        self.torrents_empty.set_visible(False)
+
+        for torrent in self._release.torrents:
+            title_parts = []
+            if torrent.episode_range:
+                title_parts.append(_('Episodes: %s') % torrent.episode_range)
+            if torrent.codec:
+                title_parts.append(torrent.codec)
+            title = '  '.join(title_parts) if title_parts else torrent.label
+
+            subtitle_parts = [_format_size(torrent.size)]
+            if torrent.quality:
+                subtitle_parts.append(torrent.quality)
+            if torrent.seeders:
+                subtitle_parts.append(f'\u2191{torrent.seeders}')
+            if torrent.leechers:
+                subtitle_parts.append(f'\u2193{torrent.leechers}')
+            if torrent.completed_times:
+                subtitle_parts.append(f'\u2713{torrent.completed_times}')
+            if torrent.is_hardsub:
+                subtitle_parts.append(_('Hardsub'))
+
+            row = Adw.ActionRow(
+                title=title,
+                subtitle=' \u2022 '.join(subtitle_parts),
+            )
+
+            download_btn = Gtk.Button(
+                icon_name='folder-download-symbolic',
+                valign=Gtk.Align.CENTER,
+                css_classes=['flat'],
+                tooltip_text=_('Download torrent'),
+            )
+            download_btn.connect('clicked', self._on_torrent_download, torrent)
+            row.add_suffix(download_btn)
+
+            magnet_btn = Gtk.Button(
+                icon_name='magnet-symbolic',
+                valign=Gtk.Align.CENTER,
+                css_classes=['flat'],
+                tooltip_text=_('Open magnet link'),
+            )
+            magnet_btn.connect('clicked', self._on_magnet_clicked, torrent)
+            row.add_suffix(magnet_btn)
+
+            self.torrents_list.append(row)
+
+    def _on_torrent_download(self, _button, torrent):
+        url = f'https://anilibria.top/api/v1/anime/torrents/{torrent.id}/file'
+        launcher = Gtk.UriLauncher(uri=url)
+        launcher.launch(self.get_root(), None, None, None)
+
+    def _on_magnet_clicked(self, _button, torrent):
+        if torrent.magnet:
+            launcher = Gtk.UriLauncher(uri=torrent.magnet)
+            launcher.launch(self.get_root(), None, None, None)
+
+    # --- Toolbar / scroll ---
+
     @Gtk.Template.Callback()
     def on_bp_apply(self, _bp):
         self._narrow_mode = True
+        self._filter_toggle.set_visible(False)
+        self._filter_menu_btn.set_visible(True)
+        self.episodes_toolbar.reorder_child_after(self.episodes_controls, None)
+        self.episodes_controls.set_halign(Gtk.Align.CENTER)
         self._update_toolbar()
         if self._accent_mode:
             mobile_ok = self._settings.get_boolean('accent-mobile-enabled')
@@ -208,6 +723,12 @@ class ReleaseView(Adw.NavigationPage):
     @Gtk.Template.Callback()
     def on_bp_unapply(self, _bp):
         self._narrow_mode = False
+        self._filter_toggle.set_visible(True)
+        self._filter_menu_btn.set_visible(False)
+        self.episodes_toolbar.reorder_child_after(
+            self.episodes_controls, self.episodes_search,
+        )
+        self.episodes_controls.set_halign(Gtk.Align.FILL)
         self._update_toolbar()
         if self._accent_mode:
             self.gradient_bg.set_opacity(0.3)
@@ -241,6 +762,8 @@ class ReleaseView(Adw.NavigationPage):
     def _on_scroll(self, _adjustment):
         self._update_toolbar()
 
+    # --- Misc ---
+
     def _on_genre_clicked(self, _button):
         dialog = Adw.AlertDialog(
             heading=_('Genre'),
@@ -266,6 +789,8 @@ class ReleaseView(Adw.NavigationPage):
             'R16_PLUS': '16+', 'R18_PLUS': '18+',
         }
         return mapping.get(rating, rating)
+
+    # --- Poster / accent ---
 
     def _load_poster(self, url: str):
         load_image(url, self._on_poster_loaded)

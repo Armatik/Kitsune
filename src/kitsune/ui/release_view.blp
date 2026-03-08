@@ -76,41 +76,160 @@ template $KitsuneReleaseView: Adw.NavigationPage {
 
             Gtk.Box content_area {
               orientation: vertical;
-              spacing: 24;
-              margin-start: 24;
-              margin-end: 24;
-              margin-top: 24;
-              margin-bottom: 24;
+              spacing: 12;
+              margin-top: 12;
+              margin-bottom: 12;
 
               Gtk.Label description_label {
                 wrap: true;
                 xalign: 0;
                 visible: false;
+                margin-start: 24;
+                margin-end: 24;
               }
 
-              Gtk.Label {
-                label: _("Episodes");
-                xalign: 0;
+              Gtk.ScrolledWindow tabs_scroll {
+                hscrollbar-policy: external;
+                vscrollbar-policy: never;
+                hexpand: true;
+                margin-start: 24;
+                margin-end: 24;
 
-                styles ["title-3"]
+                Gtk.Box tabs_header {
+                  halign: center;
+                  hexpand: true;
+                }
               }
 
-              Adw.Spinner episodes_spinner {
-                halign: center;
-                visible: false;
-              }
+              Adw.Carousel tabs_carousel {
+                interactive: false;
+                allow-mouse-drag: false;
+                allow-scroll-wheel: false;
+                hexpand: true;
 
-              Gtk.ListBox episodes_list {
-                selection-mode: none;
+                Gtk.Box episodes_page {
+                  orientation: vertical;
+                  spacing: 12;
+                  hexpand: true;
+                  margin-start: 24;
+                  margin-end: 24;
 
-                styles ["boxed-list"]
+                  Gtk.Box episodes_toolbar {
+                    spacing: 12;
+
+                    Gtk.SearchEntry episodes_search {
+                      placeholder-text: _("Enter name or number…");
+                      hexpand: true;
+                    }
+
+                    Gtk.Box episodes_controls {}
+                  }
+
+                  Adw.Spinner episodes_spinner {
+                    halign: center;
+                    visible: false;
+                  }
+
+                  Gtk.ListBox episodes_list {
+                    selection-mode: none;
+
+                    styles ["boxed-list"]
+                  }
+
+                  Gtk.FlowBox episodes_grid {
+                    visible: false;
+                    selection-mode: none;
+                    homogeneous: true;
+                    min-children-per-line: 2;
+                    max-children-per-line: 8;
+                    column-spacing: 12;
+                    row-spacing: 12;
+                  }
+                }
+
+                Gtk.Box related_page {
+                  orientation: vertical;
+                  spacing: 12;
+                  hexpand: true;
+                  margin-start: 24;
+                  margin-end: 24;
+
+                  Adw.Spinner related_spinner {
+                    halign: center;
+                    visible: false;
+                  }
+
+                  Gtk.Label related_empty {
+                    label: _("No related releases");
+                    visible: false;
+
+                    styles ["dim-label"]
+                  }
+
+                  Gtk.Box related_header {
+                    orientation: vertical;
+                    spacing: 4;
+                    visible: false;
+
+                    styles ["card"]
+                  }
+
+                  Gtk.ListBox related_list {
+                    selection-mode: none;
+                    visible: false;
+
+                    styles ["boxed-list"]
+                  }
+                }
+
+                Gtk.Box team_page {
+                  orientation: vertical;
+                  spacing: 12;
+                  hexpand: true;
+                  margin-start: 24;
+                  margin-end: 24;
+
+                  Gtk.Label team_empty {
+                    label: _("No team information");
+                    visible: false;
+
+                    styles ["dim-label"]
+                  }
+
+                  Gtk.ListBox team_list {
+                    selection-mode: none;
+
+                    styles ["boxed-list"]
+                  }
+                }
+
+                Gtk.Box torrents_page {
+                  orientation: vertical;
+                  spacing: 12;
+                  hexpand: true;
+                  margin-start: 24;
+                  margin-end: 24;
+
+                  Gtk.Label torrents_empty {
+                    label: _("No torrents available");
+                    visible: false;
+
+                    styles ["dim-label"]
+                  }
+
+                  Gtk.ListBox torrents_list {
+                    selection-mode: none;
+
+                    styles ["boxed-list"]
+                  }
+                }
               }
             }
           }
         }
 
         Adw.Breakpoint {
-          condition ("max-width: 500px")
+          condition ("max-width: 550px")
 
           setters {
             bg_wrapper.opacity: 0.15;
@@ -122,6 +241,9 @@ template $KitsuneReleaseView: Adw.NavigationPage {
             header.margin-end: 24;
             header.margin-top: 128;
             header.margin-bottom: 24;
+            episodes_grid.min-children-per-line: 1;
+            episodes_grid.max-children-per-line: 1;
+            episodes_toolbar.orientation: vertical;
           }
 
           apply => $on_bp_apply();

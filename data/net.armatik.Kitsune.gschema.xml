@@ -33,6 +33,11 @@
       <description>Number of color gradient points (2–6)</description>
       <range min="2" max="6"/>
     </key>
+    <key name="episodes-view" type="s">
+      <default>'list'</default>
+      <summary>Episodes view mode</summary>
+      <description>How to display episodes: list or grid</description>
+    </key>
     <key name="window-width" type="i">
       <default>900</default>
       <summary>Window width</summary>

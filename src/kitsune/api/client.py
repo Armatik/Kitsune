@@ -122,6 +122,18 @@ class AniLibriaClient:
 
         self._fetch(f'/anime/franchises/{quote(franchise_id)}', on_data, cancellable)
 
+    def get_franchise_for_release(self, release_id: int, callback=None, cancellable=None):
+        def on_data(data, error):
+            if error:
+                callback(None, error)
+                return
+            if isinstance(data, list) and data:
+                callback(Franchise.from_dict(data[0]), None)
+            else:
+                callback(None, None)
+
+        self._fetch(f'/anime/franchises/release/{release_id}', on_data, cancellable)
+
     def get_year_range(self, callback=None, cancellable=None):
         """Fetch min and max years from catalog. callback((min_year, max_year), error)."""
         result = {}

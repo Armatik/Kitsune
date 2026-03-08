@@ -17,3 +17,13 @@ install_data(
   join_paths('hicolor', 'scalable', 'actions', 'franchises-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
+
+install_data(
+  join_paths('hicolor', 'scalable', 'actions', 'magnet-symbolic.svg'),
+  install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
+)
+
+install_data(
+  join_paths('hicolor', 'scalable', 'actions', 'cross-large-symbolic.svg'),
+  install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
+)

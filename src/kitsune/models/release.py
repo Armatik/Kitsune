@@ -74,6 +74,69 @@ def _poster_url(data: dict | None) -> str | None:
 
 
 @dataclass
+class Member:
+    id: str
+    nickname: str
+    role: str
+    role_value: str
+    avatar: str | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Member:
+        role_data = data.get('role', {})
+        user_data = data.get('user', {})
+        avatar = _genre_image_url(user_data.get('avatar')) if user_data else None
+        return cls(
+            id=data.get('id', ''),
+            nickname=data.get('nickname', ''),
+            role=role_data.get('description', ''),
+            role_value=role_data.get('value', ''),
+            avatar=avatar,
+        )
+
+
+@dataclass
+class Torrent:
+    id: int
+    hash: str
+    size: int
+    label: str
+    codec: str
+    codec_value: str
+    quality: str
+    magnet: str
+    seeders: int = 0
+    leechers: int = 0
+    completed_times: int = 0
+    episode_range: str = ''
+    is_hardsub: bool = False
+    created_at: str = ''
+    updated_at: str = ''
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Torrent:
+        codec_data = data.get('codec', {})
+        quality_data = data.get('quality', {})
+        return cls(
+            id=data.get('id', 0),
+            hash=data.get('hash', ''),
+            size=data.get('size', 0),
+            label=data.get('label', ''),
+            codec=codec_data.get('label', '') if isinstance(codec_data, dict) else str(codec_data),
+            codec_value=codec_data.get('value', '') if isinstance(codec_data, dict) else '',
+            quality=quality_data.get('value', '') if isinstance(quality_data, dict) else str(quality_data),
+            magnet=data.get('magnet', ''),
+            seeders=data.get('seeders', 0),
+            leechers=data.get('leechers', 0),
+            completed_times=data.get('completed_times', 0),
+            episode_range=data.get('description', ''),
+            is_hardsub=data.get('is_hardsub', False),
+            created_at=data.get('created_at', ''),
+            updated_at=data.get('updated_at', ''),
+        )
+
+
+@dataclass
 class Episode:
     id: str
     name: str | None
@@ -129,6 +192,8 @@ class Release:
     is_ongoing: bool = False
     genres: list[Genre] = field(default_factory=list)
     episodes: list[Episode] = field(default_factory=list)
+    members: list[Member] = field(default_factory=list)
+    torrents: list[Torrent] = field(default_factory=list)
 
     @classmethod
     def from_dict(cls, data: dict) -> Release:
@@ -140,6 +205,8 @@ class Release:
         genres = [Genre.from_dict(g) for g in data.get('genres', [])]
         episodes = [Episode.from_dict(e) for e in data.get('episodes', [])]
         episodes.sort(key=lambda e: e.sort_order)
+        members = [Member.from_dict(m) for m in data.get('members', [])]
+        torrents = [Torrent.from_dict(t) for t in data.get('torrents', [])]
 
         return cls(
             id=data['id'],
@@ -155,4 +222,6 @@ class Release:
             is_ongoing=data.get('is_ongoing', False),
             genres=genres,
             episodes=episodes,
+            members=members,
+            torrents=torrents,
         )
