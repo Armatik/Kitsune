@@ -285,13 +285,20 @@ class ReleaseView(Adw.NavigationPage):
         if style != 'accent':
             return
 
+        n_points = self._settings.get_int('accent-color-points')
+        glass = self._settings.get_boolean('accent-glass-effect')
+
+        import threading
         from kitsune.ui.color_extractor import extract_colors, create_gradient_texture
 
-        colors = extract_colors(texture)
-        n_points = self._settings.get_int('accent-color-points')
+        def _generate():
+            colors = extract_colors(texture)
+            gradient = create_gradient_texture(colors, n_points=n_points, noise=glass)
+            GLib.idle_add(self._on_gradient_ready, gradient)
 
-        glass = self._settings.get_boolean('accent-glass-effect')
-        gradient = create_gradient_texture(colors, n_points=n_points, noise=glass)
+        threading.Thread(target=_generate, daemon=True).start()
+
+    def _on_gradient_ready(self, gradient):
         self.gradient_bg.set_paintable(gradient)
         self._accent_mode = True
 
@@ -299,7 +306,7 @@ class ReleaseView(Adw.NavigationPage):
         if self._narrow_mode and not mobile_ok:
             return
 
-        GLib.idle_add(self._start_gradient_fade)
+        self._start_gradient_fade()
 
     def _start_gradient_fade(self):
         duration = self._settings.get_int('accent-fade-duration')
