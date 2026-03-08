@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.ui.filter_dialog import FilterDialog
@@ -105,21 +105,30 @@ class CatalogView(Gtk.Box):
 
     def _on_catalog_loaded(self, catalog_response, error):
         self._loading = False
-        self._grid.set_spinner_visible(False)
 
         if error:
+            self._grid.set_spinner_visible(False)
             return
 
         self._last_page = catalog_response.meta.last_page
-        for release in catalog_response.releases:
+        self._pending_releases = list(catalog_response.releases)
+        self._add_pending_batch()
+
+    def _add_pending_batch(self):
+        batch = self._pending_releases[:4]
+        self._pending_releases = self._pending_releases[4:]
+        for release in batch:
             self._grid.append_child(ReleaseCard(release))
 
-        if self._on_first_load:
-            self._on_first_load()
-            self._on_first_load = None
-
-        if self._page >= self._last_page:
-            self._show_end()
+        if self._pending_releases:
+            GLib.idle_add(self._add_pending_batch)
+        else:
+            self._grid.set_spinner_visible(False)
+            if self._on_first_load:
+                self._on_first_load()
+                self._on_first_load = None
+            if self._page >= self._last_page:
+                self._show_end()
 
     def _show_end(self):
         self._reached_end = True
