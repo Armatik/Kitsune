@@ -21,6 +21,7 @@ class ContentGrid(Gtk.Box):
     scrolled = Gtk.Template.Child()
     flowbox = Gtk.Template.Child()
     spinner = Gtk.Template.Child()
+    initial_spinner = Gtk.Template.Child()
     end_label = Gtk.Template.Child()
     scroll_up_revealer = Gtk.Template.Child()
 
@@ -28,6 +29,7 @@ class ContentGrid(Gtk.Box):
         super().__init__(**kwargs)
         self._on_scroll_near_end = None
         self._on_child_activated = None
+        self._has_content = False
         self._vadjustment = self.scrolled.get_vadjustment()
         self._vadjustment.connect('value-changed', self._on_scroll)
 
@@ -46,19 +48,27 @@ class ContentGrid(Gtk.Box):
         self._on_child_activated = callback
 
     def set_spinner_visible(self, visible: bool):
-        self.spinner.set_visible(visible)
+        if self._has_content:
+            self.spinner.set_visible(visible)
+        else:
+            self.initial_spinner.set_visible(visible)
 
     def show_end(self):
         self.spinner.set_visible(False)
+        self.initial_spinner.set_visible(False)
         self.end_label.set_visible(True)
 
     def clear(self):
+        self._has_content = False
         self.end_label.set_visible(False)
         while child := self.flowbox.get_first_child():
             self.flowbox.remove(child)
         self._vadjustment.set_value(0)
 
     def append_child(self, widget):
+        if not self._has_content:
+            self._has_content = True
+            self.initial_spinner.set_visible(False)
         self.flowbox.append(widget)
 
     def _on_scroll(self, adjustment):

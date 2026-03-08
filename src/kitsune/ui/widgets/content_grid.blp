@@ -51,6 +51,15 @@ template $KitsuneContentGrid: Gtk.Box {
     }
 
     [overlay]
+    Adw.Spinner initial_spinner {
+      halign: center;
+      valign: center;
+      width-request: 48;
+      height-request: 48;
+      visible: false;
+    }
+
+    [overlay]
     Gtk.Revealer scroll_up_revealer {
       transition-type: crossfade;
       transition-duration: 300;

@@ -5,7 +5,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, Gtk, Gio
+from gi.repository import Adw, Gdk, GLib, Gtk, Gio
 
 from kitsune.api import AniLibriaClient
 
@@ -87,6 +87,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self.content_stack.add_named(Gtk.Box(), 'franchises')
 
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+        self._catalog_view.set_on_first_load(self._on_catalog_first_load)
+
+    def _on_catalog_first_load(self):
+        GLib.idle_add(self._ensure_genres_view)
+        GLib.idle_add(self._ensure_franchises_view)
 
     def _ensure_genres_view(self):
         if self._genres_view:
