@@ -291,7 +291,8 @@ class ReleaseView(Adw.NavigationPage):
         n_points = self._settings.get_int('accent-color-points')
         _log.debug('Extracted %d colors, using %d points: %s', len(colors), n_points, colors)
 
-        gradient = create_gradient_texture(colors, n_points=n_points)
+        glass = self._settings.get_boolean('accent-glass-effect')
+        gradient = create_gradient_texture(colors, n_points=n_points, noise=glass)
         self.gradient_bg.set_paintable(gradient)
         self._accent_mode = True
 

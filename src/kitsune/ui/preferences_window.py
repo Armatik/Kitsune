@@ -35,6 +35,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
     style_toggle = Gtk.Template.Child()
     style_description = Gtk.Template.Child()
     accent_group = Gtk.Template.Child()
+    glass_effect_row = Gtk.Template.Child()
     color_points_row = Gtk.Template.Child()
     fade_duration_row = Gtk.Template.Child()
 
@@ -46,6 +47,9 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.style_toggle.set_active_name(current)
         self._update_style_description(current)
         self._update_accent_group_visibility(current)
+
+        self.glass_effect_row.set_active(self._settings.get_boolean('accent-glass-effect'))
+        self.glass_effect_row.connect('notify::active', self._on_glass_effect_changed)
 
         self.color_points_row.set_value(self._settings.get_int('accent-color-points'))
         self.fade_duration_row.set_value(self._settings.get_int('accent-fade-duration'))
@@ -73,6 +77,9 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._settings.set_string('release-page-style', name)
         self._update_style_description(name)
         self._update_accent_group_visibility(name)
+
+    def _on_glass_effect_changed(self, row, _pspec):
+        self._settings.set_boolean('accent-glass-effect', row.get_active())
 
     def _on_color_points_changed(self, row, _pspec):
         self._settings.set_int('accent-color-points', int(row.get_value()))

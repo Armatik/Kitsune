@@ -43,6 +43,11 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
     Adw.PreferencesGroup accent_group {
       title: _("Accent Colors Settings");
 
+      Adw.SwitchRow glass_effect_row {
+        title: _("Glass Effect ⚠");
+        subtitle: _("Frosted glass noise overlay (may reduce performance)");
+      }
+
       Adw.SpinRow color_points_row {
         title: _("Color Points");
         subtitle: _("Number of gradient color spots");

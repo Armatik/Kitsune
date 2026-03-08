@@ -52,20 +52,23 @@ def extract_colors(texture: Gdk.Texture, count: int = 6) -> list[tuple[int, int,
     return result
 
 
-def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 3, size: int = 64) -> Gdk.Texture:
+def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 3,
+                            size: int = 64, noise: bool = False) -> Gdk.Texture:
     """Create a small gradient image with colored blobs. Looks blurred when scaled up."""
+    render_size = 512 if noise else size
     n_points = max(2, min(n_points, len(colors)))
     chosen = random.sample(colors, n_points)
 
-    _log.debug('Creating gradient texture %dx%d with %d color points', size, size, len(chosen))
+    _log.debug('Creating gradient texture %dx%d with %d color points, noise=%s',
+               render_size, render_size, len(chosen), noise)
 
-    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, render_size, render_size)
     ctx = cairo.Context(surface)
 
     for r, g, b in chosen:
-        cx = random.uniform(0.1, 0.9) * size
-        cy = random.uniform(0.05, 0.55) * size
-        radius = random.uniform(0.25, 0.5) * size
+        cx = random.uniform(0.1, 0.9) * render_size
+        cy = random.uniform(0.05, 0.55) * render_size
+        radius = random.uniform(0.25, 0.5) * render_size
         alpha = random.uniform(0.6, 0.95)
 
         pattern = cairo.RadialGradient(cx, cy, 0, cx, cy, radius)
@@ -75,6 +78,9 @@ def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 
         ctx.set_source(pattern)
         ctx.paint()
 
+    if noise:
+        _apply_noise(surface, render_size)
+
     buf = io.BytesIO()
     surface.write_to_png(buf)
     gbytes = GLib.Bytes.new(buf.getvalue())
@@ -82,6 +88,27 @@ def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 
 
     _log.debug('Gradient texture created: %dx%d', texture.get_width(), texture.get_height())
     return texture
+
+
+def _apply_noise(surface: cairo.ImageSurface, size: int):
+    """Overlay fine uniform monochrome noise for a frosted glass effect."""
+    noise_surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+    data = noise_surf.get_data()
+    for i in range(0, len(data), 4):
+        val = random.randint(0, 255)
+        alpha = random.randint(4, 12)
+        pval = val * alpha // 255
+        data[i] = pval        # B
+        data[i + 1] = pval    # G
+        data[i + 2] = pval    # R
+        data[i + 3] = alpha   # A
+    noise_surf.mark_dirty()
+
+    ctx = cairo.Context(surface)
+    ctx.set_operator(cairo.OPERATOR_OVER)
+    ctx.set_source_surface(noise_surf, 0, 0)
+    ctx.paint()
+    _log.debug('Fine noise overlay applied (%dx%d)', size, size)
 
 
 def _is_interesting(r: int, g: int, b: int) -> bool:

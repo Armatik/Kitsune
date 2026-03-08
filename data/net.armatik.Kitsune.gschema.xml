@@ -17,6 +17,11 @@
       <description>Duration of accent gradient fade-in animation in milliseconds (100–3000)</description>
       <range min="100" max="3000"/>
     </key>
+    <key name="accent-glass-effect" type="b">
+      <default>false</default>
+      <summary>Glass effect</summary>
+      <description>Overlay subtle noise on the accent gradient for a frosted glass look</description>
+    </key>
     <key name="accent-color-points" type="i">
       <default>4</default>
       <summary>Accent color points</summary>
