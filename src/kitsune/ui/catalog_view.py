@@ -25,7 +25,6 @@ class CatalogView(Gtk.Box):
         self._loading = False
         self._reached_end = False
         self._on_release_activated = None
-        self._on_first_load = None
         self._filters: dict = {}
         self._genres_data: list = []
         self._year_range: tuple[int, int] | None = None
@@ -46,9 +45,6 @@ class CatalogView(Gtk.Box):
 
     def set_on_release_activated(self, callback):
         self._on_release_activated = callback
-
-    def set_on_first_load(self, callback):
-        self._on_first_load = callback
 
     def open_filter_dialog(self):
         if not self._genres_data:
@@ -124,9 +120,6 @@ class CatalogView(Gtk.Box):
             GLib.idle_add(self._add_pending_batch)
         else:
             self._grid.set_spinner_visible(False)
-            if self._on_first_load:
-                self._on_first_load()
-                self._on_first_load = None
             if self._page >= self._last_page:
                 self._show_end()
 

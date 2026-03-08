@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.ui.franchise_releases_view import FranchiseReleasesView
@@ -97,11 +97,21 @@ class FranchisesView(Gtk.Box):
         self._client.get_franchises(callback=self._on_franchises_loaded)
 
     def _on_franchises_loaded(self, franchises, error):
-        self._grid.set_spinner_visible(False)
         if error or not franchises:
+            self._grid.set_spinner_visible(False)
             return
-        for franchise in sorted(franchises, key=lambda f: f.name):
+        self._pending_franchises = sorted(franchises, key=lambda f: f.name)
+        self._add_pending_batch()
+
+    def _add_pending_batch(self):
+        batch = self._pending_franchises[:4]
+        self._pending_franchises = self._pending_franchises[4:]
+        for franchise in batch:
             self._grid.append_child(FranchiseCard(franchise))
+        if self._pending_franchises:
+            GLib.idle_add(self._add_pending_batch)
+        else:
+            self._grid.set_spinner_visible(False)
 
     def _on_child_activated(self, child):
         if isinstance(child, FranchiseCard):

@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk
+from gi.repository import GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.ui.genre_releases_view import GenreReleasesView
@@ -98,11 +98,21 @@ class GenresView(Gtk.Box):
         self._client.get_genres(callback=self._on_genres_loaded)
 
     def _on_genres_loaded(self, genres, error):
-        self._grid.set_spinner_visible(False)
         if error or not genres:
+            self._grid.set_spinner_visible(False)
             return
-        for genre in sorted(genres, key=lambda g: g.name):
+        self._pending_genres = sorted(genres, key=lambda g: g.name)
+        self._add_pending_batch()
+
+    def _add_pending_batch(self):
+        batch = self._pending_genres[:4]
+        self._pending_genres = self._pending_genres[4:]
+        for genre in batch:
             self._grid.append_child(GenreCard(genre))
+        if self._pending_genres:
+            GLib.idle_add(self._add_pending_batch)
+        else:
+            self._grid.set_spinner_visible(False)
 
     def _on_child_activated(self, child):
         if isinstance(child, GenreCard):
