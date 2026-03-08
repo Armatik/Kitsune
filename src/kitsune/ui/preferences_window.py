@@ -14,8 +14,6 @@ from kitsune.ui.image_cache import get_cache_size, clear_cache
 _STYLE_DESCRIPTIONS = {
     'classic': _('Standard layout without background effects'),
     'accent': _('Gradient background from poster accent colors'),
-    'image': _('Blurred poster image as background'),
-    'hybrid': _('Combines accent colors with a blurred image'),
 }
 
 

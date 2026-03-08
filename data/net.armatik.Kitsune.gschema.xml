@@ -9,7 +9,7 @@
     <key name="release-page-style" type="s">
       <default>'classic'</default>
       <summary>Release page style</summary>
-      <description>Visual style for the release page: classic, accent, image, or hybrid</description>
+      <description>Visual style for the release page: classic or accent</description>
     </key>
     <key name="accent-fade-duration" type="i">
       <default>2000</default>
