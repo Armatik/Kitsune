@@ -17,6 +17,11 @@
       <description>Duration of accent gradient fade-in animation in milliseconds (100–3000)</description>
       <range min="100" max="3000"/>
     </key>
+    <key name="accent-mobile-enabled" type="b">
+      <default>false</default>
+      <summary>Enable accent in mobile mode</summary>
+      <description>Show accent gradient in narrow/mobile layout (experimental)</description>
+    </key>
     <key name="accent-glass-effect" type="b">
       <default>false</default>
       <summary>Glass effect</summary>

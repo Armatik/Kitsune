@@ -204,11 +204,17 @@ class ReleaseView(Adw.NavigationPage):
     def on_bp_apply(self, _bp):
         self._narrow_mode = True
         self._update_toolbar()
+        if self._accent_mode:
+            mobile_ok = self._settings.get_boolean('accent-mobile-enabled')
+            if not mobile_ok:
+                self.gradient_bg.set_opacity(0)
 
     @Gtk.Template.Callback()
     def on_bp_unapply(self, _bp):
         self._narrow_mode = False
         self._update_toolbar()
+        if self._accent_mode:
+            self.gradient_bg.set_opacity(0.3)
 
     def _on_realize(self, _widget):
         root = self.get_root()
@@ -295,6 +301,11 @@ class ReleaseView(Adw.NavigationPage):
         gradient = create_gradient_texture(colors, n_points=n_points, noise=glass)
         self.gradient_bg.set_paintable(gradient)
         self._accent_mode = True
+
+        mobile_ok = self._settings.get_boolean('accent-mobile-enabled')
+        if self._narrow_mode and not mobile_ok:
+            _log.debug('Accent gradient prepared but hidden (narrow mode)')
+            return
 
         GLib.idle_add(self._start_gradient_fade)
         _log.debug('Set gradient paintable, fade scheduled')
