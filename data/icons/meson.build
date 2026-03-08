@@ -4,6 +4,11 @@ install_data(
 )
 
 install_data(
+  join_paths('hicolor', 'symbolic', 'apps', 'net.armatik.Kitsune-symbolic.svg'),
+  install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'symbolic', 'apps'),
+)
+
+install_data(
   join_paths('hicolor', 'scalable', 'actions', 'funnel-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )

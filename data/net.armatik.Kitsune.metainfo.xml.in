@@ -3,25 +3,34 @@
   <id>net.armatik.Kitsune</id>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
+
   <name>Kitsune</name>
-  <summary>Watch anime from AniLibria</summary>
+  <summary>Watch anime from AniLiberty</summary>
   <description>
     <p>
-      Kitsune is a GNOME client for watching anime translated by the AniLibria team.
+      Kitsune is a Libadwaita client for watching anime translated by the AniLiberty team.
       Browse the catalog, search for titles, and watch episodes with the built-in player.
     </p>
   </description>
+
   <launchable type="desktop-id">net.armatik.Kitsune.desktop</launchable>
-  <url type="homepage">https://github.com/armatik/Kitsune</url>
-  <url type="bugtracker">https://github.com/armatik/Kitsune/issues</url>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#FE3635</color>
+    <color type="primary" scheme_preference="dark">#A51D2D</color>
+  </branding>
+
+  <url type="homepage">https://altlinux.space/armatik/Kitsune</url>
+  <url type="bugtracker">https://altlinux.space/armatik/Kitsune/issues</url>
+  <url type="vcs-browser">https://altlinux.space/armatik/Kitsune</url>
+  <url type="translate">https://altlinux.space/armatik/Kitsune/tree/master/po</url>
+
+  <developer id="net.armatik">
+    <name>Semen (Armatik) Fomchenkov</name>
+  </developer>
+
   <content_rating type="oars-1.1" />
-  <releases>
-    <release version="0.1.0" date="2026-03-07">
-      <description>
-        <p>Initial release with catalog, search, and video player.</p>
-      </description>
-    </release>
-  </releases>
+
   <requires>
     <display_length compare="ge">360</display_length>
   </requires>
@@ -30,4 +39,20 @@
     <control>keyboard</control>
     <control>touch</control>
   </recommends>
+  <supports>
+    <internet>always</internet>
+  </supports>
+
+  <releases>
+    <release version="0.5.0" date="2026-03-08">
+      <description>
+        <p>Major update with genres, franchises, tabbed release page, Blueprint UI, accent colors, offline mode, and full Russian translation.</p>
+      </description>
+    </release>
+    <release version="0.1.0" date="2026-03-07">
+      <description>
+        <p>Initial release with catalog, search, and video player.</p>
+      </description>
+    </release>
+  </releases>
 </component>
