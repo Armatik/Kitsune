@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: kitsune 0.1.0\n"
+"Project-Id-Version: kitsune 0.5.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-07 17:22+0300\n"
-"PO-Revision-Date: 2026-03-07 17:30+0300\n"
+"POT-Creation-Date: 2026-03-08 08:41+0300\n"
+"PO-Revision-Date: 2026-03-08 08:30+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
 "Language: ru\n"
@@ -17,81 +17,544 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
-#: src/kitsune/window.py:59 src/kitsune/ui/catalog_view.py:19
-msgid "Catalog"
-msgstr "Каталог"
+#: src/kitsune/application.py:50
+msgid "Libadwaita client for watching anime from AniLiberty"
+msgstr "Libadwaita-клиент для просмотра аниме от AniLiberty"
 
-#: src/kitsune/window.py:60 src/kitsune/ui/search_view.py:19
+#: src/kitsune/application.py:52
+msgid "AniLiberty Website"
+msgstr "Сайт AniLiberty"
+
+#: src/kitsune/application.py:53
+msgid "AniLiberty Telegram"
+msgstr "AniLiberty Telegram"
+
+#: src/kitsune/application.py:54
+msgid "AniLiberty VK"
+msgstr "AniLiberty VK"
+
+#: src/kitsune/application.py:56
+msgid "Uses"
+msgstr "Использует"
+
+#: src/kitsune/window.py:129 src/kitsune/ui/search_view.blp:7
+#: src/kitsune/ui/window.blp:49 src/kitsune/ui/window.blp:134
 msgid "Search"
 msgstr "Поиск"
 
-#: src/kitsune/ui/catalog_view.py:93
-msgid "Failed to load catalog"
-msgstr "Не удалось загрузить каталог"
+#: src/kitsune/window.py:130 src/kitsune/ui/release_view.py:847
+msgid "This feature is under development"
+msgstr "Эта функция в разработке"
 
-#: src/kitsune/ui/search_view.py:35
-msgid "Search anime..."
-msgstr "Поиск аниме..."
+#: src/kitsune/window.py:132 src/kitsune/ui/release_view.py:849
+msgid "OK"
+msgstr "ОК"
 
-#: src/kitsune/ui/search_view.py:48
-msgid "Search for Anime"
-msgstr "Поиск аниме"
+#: src/kitsune/window.py:214 src/kitsune/ui/window.blp:69
+#: src/kitsune/ui/window.blp:89 src/kitsune/ui/window.blp:182
+msgid "Catalog"
+msgstr "Каталог"
 
-#: src/kitsune/ui/search_view.py:49
-msgid "Enter a title name to find it"
-msgstr "Введите название для поиска"
+#: src/kitsune/window.py:215 src/kitsune/ui/filter_dialog.py:151
+#: src/kitsune/ui/window.blp:74 src/kitsune/ui/window.blp:204
+msgid "Genres"
+msgstr "Жанры"
 
-#: src/kitsune/ui/search_view.py:79
-msgid "No Results"
-msgstr "Нет результатов"
+#: src/kitsune/window.py:216 src/kitsune/ui/window.blp:79
+#: src/kitsune/ui/window.blp:226
+msgid "Franchises"
+msgstr "Франшизы"
 
-#: src/kitsune/ui/search_view.py:80
-msgid "Try a different search query"
-msgstr "Попробуйте другой запрос"
+#: src/kitsune/ui/filter_dialog.py:33
+msgid "TV"
+msgstr "ТВ"
 
-#: src/kitsune/ui/release_view.py:144
-msgid "Episodes"
-msgstr "Серии"
+#: src/kitsune/ui/filter_dialog.py:38
+msgid "Movie"
+msgstr "Фильм"
 
-#: src/kitsune/ui/release_view.py:186
-msgid "Episode {}"
-msgstr "Серия {}"
+#: src/kitsune/ui/filter_dialog.py:39
+msgid "Dorama"
+msgstr "Дорама"
 
-#: src/kitsune/ui/release_view.py:192
-msgid "min"
-msgstr "мин"
+#: src/kitsune/ui/filter_dialog.py:40
+msgid "Special"
+msgstr "Спешл"
 
-#: src/kitsune/ui/player_view.py:143 src/kitsune/ui/player_view.py:189
+#: src/kitsune/ui/filter_dialog.py:46
+msgid "Winter"
+msgstr "Зима"
+
+#: src/kitsune/ui/filter_dialog.py:47
+msgid "Spring"
+msgstr "Весна"
+
+#: src/kitsune/ui/filter_dialog.py:48
+msgid "Summer"
+msgstr "Лето"
+
+#: src/kitsune/ui/filter_dialog.py:49
+msgid "Autumn"
+msgstr "Осень"
+
+#: src/kitsune/ui/filter_dialog.py:65
+msgid "By default"
+msgstr "По умолчанию"
+
+#: src/kitsune/ui/filter_dialog.py:66
+msgid "Recently updated"
+msgstr "Недавно обновлённые"
+
+#: src/kitsune/ui/filter_dialog.py:67
+msgid "Year (new ones first)"
+msgstr "Год (сначала новые)"
+
+#: src/kitsune/ui/filter_dialog.py:68
+msgid "Year (old ones first)"
+msgstr "Год (сначала старые)"
+
+#: src/kitsune/ui/filter_dialog.py:69
+msgid "By rating"
+msgstr "По рейтингу"
+
+#: src/kitsune/ui/filter_dialog.py:75 src/kitsune/ui/release_view.py:366
+msgid "Ongoing"
+msgstr "Онгоинг"
+
+#: src/kitsune/ui/filter_dialog.py:76
+msgid "Not ongoing"
+msgstr "Не онгоинг"
+
+#: src/kitsune/ui/filter_dialog.py:82
+msgid "Now dubbing"
+msgstr "Озвучивается"
+
+#: src/kitsune/ui/filter_dialog.py:83
+msgid "Dubbing completed"
+msgstr "Озвучка завершена"
+
+#: src/kitsune/ui/filter_dialog.py:143 src/kitsune/ui/release_view.py:353
+msgid "Type"
+msgstr "Тип"
+
+#: src/kitsune/ui/filter_dialog.py:144 src/kitsune/ui/release_view.py:357
+msgid "Season"
+msgstr "Сезон"
+
+#: src/kitsune/ui/filter_dialog.py:145
+msgid "Age Rating"
+msgstr "Возрастной рейтинг"
+
+#: src/kitsune/ui/filter_dialog.py:146
+msgid "Release status"
+msgstr "Статус релиза"
+
+#: src/kitsune/ui/filter_dialog.py:147
+msgid "Dubbing status"
+msgstr "Статус озвучки"
+
+#: src/kitsune/ui/player_view.py:441 src/kitsune/ui/player_view.blp:202
 msgid "Skip Intro"
 msgstr "Пропустить опенинг"
 
-#: src/kitsune/ui/player_view.py:193
+#: src/kitsune/ui/player_view.py:445
 msgid "Skip Outro"
 msgstr "Пропустить эндинг"
 
-#: src/kitsune/ui/player_view.py:224
+#: src/kitsune/ui/player_view.py:486
 msgid "Playback error: {}"
 msgstr "Ошибка воспроизведения: {}"
 
+#: src/kitsune/ui/preferences_window.py:16
+msgid "Standard layout without background effects"
+msgstr "Стандартный вид без фоновых эффектов"
+
+#: src/kitsune/ui/preferences_window.py:17
+msgid "Gradient background from poster accent colors"
+msgstr "Градиентный фон из акцентных цветов постера"
+
+#: src/kitsune/ui/release_view.py:162 src/kitsune/ui/release_view.py:364
+msgid "Episodes"
+msgstr "Серии"
+
+#: src/kitsune/ui/release_view.py:163
+msgid "Related"
+msgstr "Связанные"
+
+#: src/kitsune/ui/release_view.py:164
+msgid "Team"
+msgstr "Команда"
+
+#: src/kitsune/ui/release_view.py:165
+msgid "Torrents"
+msgstr "Торренты"
+
+#: src/kitsune/ui/release_view.py:190 src/kitsune/ui/release_view.py:208
+msgid "All"
+msgstr "Все"
+
+#: src/kitsune/ui/release_view.py:192 src/kitsune/ui/release_view.py:211
+msgid "Watched"
+msgstr "Просмотренные"
+
+#: src/kitsune/ui/release_view.py:195 src/kitsune/ui/release_view.py:212
+msgid "Unwatched"
+msgstr "Непросмотренные"
+
+#: src/kitsune/ui/release_view.py:221 src/kitsune/ui/release_view.py:292
+msgid "Newest first"
+msgstr "Сначала новые"
+
+#: src/kitsune/ui/release_view.py:234
+msgid "List view"
+msgstr "Список"
+
+#: src/kitsune/ui/release_view.py:238
+msgid "Grid view"
+msgstr "Сетка"
+
+#: src/kitsune/ui/release_view.py:248
+msgid "Mark all as watched"
+msgstr "Отметить все как просмотренные"
+
+#: src/kitsune/ui/release_view.py:253
+msgid "Unmark all"
+msgstr "Снять отметки"
+
+#: src/kitsune/ui/release_view.py:289
+msgid "Oldest first"
+msgstr "Сначала старые"
+
+#: src/kitsune/ui/release_view.py:355
+msgid "Year"
+msgstr "Год"
+
+#: src/kitsune/ui/release_view.py:360
+msgid "Age rating"
+msgstr "Возрастной рейтинг"
+
+#: src/kitsune/ui/release_view.py:366
+msgid "Completed"
+msgstr "Завершён"
+
+#: src/kitsune/ui/release_view.py:367
+msgid "Status"
+msgstr "Статус"
+
+#: src/kitsune/ui/release_view.py:509 src/kitsune/ui/release_view.py:540
+msgid "Episode {}"
+msgstr "Серия {}"
+
+#: src/kitsune/ui/release_view.py:546
+msgid "min"
+msgstr "мин"
+
+#: src/kitsune/ui/release_view.py:614
+#, python-format
+msgid "%d seasons"
+msgstr "%d сезонов"
+
+#: src/kitsune/ui/release_view.py:615
+msgid "1 season"
+msgstr "1 сезон"
+
+#: src/kitsune/ui/release_view.py:618 src/kitsune/ui/release_view.py:684
+#, python-format
+msgid "%d episodes"
+msgstr "%d серий"
+
+#: src/kitsune/ui/release_view.py:732
+#, python-format
+msgid "Episodes: %s"
+msgstr "Серии: %s"
+
+#: src/kitsune/ui/release_view.py:747
+msgid "Hardsub"
+msgstr "Хардсаб"
+
+#: src/kitsune/ui/release_view.py:759
+msgid "Download torrent"
+msgstr "Скачать торрент"
+
+#: src/kitsune/ui/release_view.py:768
+msgid "Open magnet link"
+msgstr "Открыть магнет-ссылку"
+
+#: src/kitsune/ui/release_view.py:846
+msgid "Genre"
+msgstr "Жанр"
+
+#: src/kitsune/ui/widgets/franchise_card.py:38
+#: src/kitsune/ui/widgets/genre_card.py:33
+msgid "titles"
+msgstr "тайтлов"
+
+#: src/kitsune/ui/filter_dialog.blp:7 src/kitsune/ui/window.blp:29
+msgid "Filters"
+msgstr "Фильтры"
+
+#: src/kitsune/ui/filter_dialog.blp:39
+msgid "Sorting"
+msgstr "Сортировка"
+
+#: src/kitsune/ui/filter_dialog.blp:54
+msgid "Release period"
+msgstr "Период выхода"
+
+#: src/kitsune/ui/filter_dialog.blp:65
+msgid "from"
+msgstr "от"
+
+#: src/kitsune/ui/filter_dialog.blp:74
+msgid "to"
+msgstr "до"
+
+#: src/kitsune/ui/filter_dialog.blp:95
+msgid "Cancel"
+msgstr "Отмена"
+
+#: src/kitsune/ui/filter_dialog.blp:100
+msgid "Reset"
+msgstr "Сбросить"
+
+#: src/kitsune/ui/filter_dialog.blp:108
+msgid "Apply"
+msgstr "Применить"
+
+#: src/kitsune/ui/preferences_window.blp:8
+msgid "Appearance"
+msgstr "Внешний вид"
+
+#: src/kitsune/ui/preferences_window.blp:12
+msgid "Release Page Style"
+msgstr "Стиль страницы релиза"
+
+#: src/kitsune/ui/preferences_window.blp:25
+msgid "Classic"
+msgstr "Классический"
+
+#: src/kitsune/ui/preferences_window.blp:30
+msgid "Accent Colors"
+msgstr "Акцентные цвета"
+
+#: src/kitsune/ui/preferences_window.blp:44
+msgid "Accent Colors Settings"
+msgstr "Настройки акцентных цветов"
+
+#: src/kitsune/ui/preferences_window.blp:47
+msgid "Mobile Mode ⚠"
+msgstr "Мобильный режим ⚠"
+
+#: src/kitsune/ui/preferences_window.blp:48
+msgid "Enable accent gradient in narrow layout (experimental)"
+msgstr "Включить акцентный градиент в узком режиме (экспериментально)"
+
+#: src/kitsune/ui/preferences_window.blp:52
+msgid "Glass Effect ⚠"
+msgstr "Эффект стекла ⚠"
+
+#: src/kitsune/ui/preferences_window.blp:53
+msgid "Frosted glass noise overlay (may reduce performance)"
+msgstr "Наложение матового стекла (может снизить производительность)"
+
+#: src/kitsune/ui/preferences_window.blp:57
+msgid "Color Points"
+msgstr "Цветовые точки"
+
+#: src/kitsune/ui/preferences_window.blp:58
+msgid "Number of gradient color spots"
+msgstr "Количество цветовых точек градиента"
+
+#: src/kitsune/ui/preferences_window.blp:70
+msgid "Fade Duration"
+msgstr "Длительность затухания"
+
+#: src/kitsune/ui/preferences_window.blp:71
+msgid "Animation duration in milliseconds"
+msgstr "Длительность анимации в миллисекундах"
+
+#: src/kitsune/ui/preferences_window.blp:85
+msgid "Cache"
+msgstr "Кэш"
+
+#: src/kitsune/ui/preferences_window.blp:89
+msgid "Image Cache"
+msgstr "Кэш изображений"
+
+#: src/kitsune/ui/preferences_window.blp:90
+msgid "Cached poster images for offline access"
+msgstr "Кэшированные постеры для офлайн-доступа"
+
+#: src/kitsune/ui/preferences_window.blp:93
+msgid "Cache Size"
+msgstr "Размер кэша"
+
+#: src/kitsune/ui/preferences_window.blp:97
+msgid "Clear Cache"
+msgstr "Очистить кэш"
+
+#: src/kitsune/ui/preferences_window.blp:98
+msgid "Remove all cached images"
+msgstr "Удалить все кэшированные изображения"
+
+#: src/kitsune/ui/preferences_window.blp:103
+#: src/kitsune/ui/preferences_window.blp:131
+#: src/kitsune/ui/preferences_window.blp:159
+msgid "Clear"
+msgstr "Очистить"
+
+#: src/kitsune/ui/preferences_window.blp:113
+msgid "Release Cache"
+msgstr "Кэш релизов"
+
+#: src/kitsune/ui/preferences_window.blp:114
+msgid "Cached release information for offline access"
+msgstr "Кэшированная информация о релизах для офлайн-доступа"
+
+#: src/kitsune/ui/preferences_window.blp:117
+msgid "Cached Releases"
+msgstr "Кэшированные релизы"
+
+#: src/kitsune/ui/preferences_window.blp:121
+#: src/kitsune/ui/preferences_window.blp:149
+msgid "Storage Size"
+msgstr "Размер хранилища"
+
+#: src/kitsune/ui/preferences_window.blp:125
+msgid "Clear Release Cache"
+msgstr "Очистить кэш релизов"
+
+#: src/kitsune/ui/preferences_window.blp:126
+msgid "Remove all cached release data"
+msgstr "Удалить все кэшированные данные релизов"
+
+#: src/kitsune/ui/preferences_window.blp:141
+msgid "Watch Progress"
+msgstr "Прогресс просмотра"
+
+#: src/kitsune/ui/preferences_window.blp:142
+msgid "Saved playback positions for episodes"
+msgstr "Сохранённые позиции воспроизведения серий"
+
+#: src/kitsune/ui/preferences_window.blp:145
+msgid "Saved Positions"
+msgstr "Сохранённые позиции"
+
+#: src/kitsune/ui/preferences_window.blp:153
+msgid "Clear Progress"
+msgstr "Очистить прогресс"
+
+#: src/kitsune/ui/preferences_window.blp:154
+msgid "Remove all saved playback positions"
+msgstr "Удалить все сохранённые позиции воспроизведения"
+
+#: src/kitsune/ui/release_view.blp:121
+msgid "Enter name or number…"
+msgstr "Введите название или номер…"
+
+#: src/kitsune/ui/release_view.blp:163
+msgid "No related releases"
+msgstr "Нет связанных релизов"
+
+#: src/kitsune/ui/release_view.blp:193
+msgid "No team information"
+msgstr "Нет информации о команде"
+
+#: src/kitsune/ui/release_view.blp:214
+msgid "No torrents available"
+msgstr "Нет доступных торрентов"
+
+#: src/kitsune/ui/search_view.blp:14
+msgid "Search anime..."
+msgstr "Поиск аниме..."
+
+#: src/kitsune/ui/search_view.blp:27
+msgid "Search for Anime"
+msgstr "Поиск аниме"
+
+#: src/kitsune/ui/search_view.blp:28
+msgid "Enter a title name to find it"
+msgstr "Введите название для поиска"
+
+#: src/kitsune/ui/search_view.blp:62
+msgid "No Results"
+msgstr "Нет результатов"
+
+#: src/kitsune/ui/search_view.blp:63
+msgid "Try a different search query"
+msgstr "Попробуйте другой запрос"
+
+#: src/kitsune/ui/search_view.blp:69
+msgid "Connection Error"
+msgstr "Ошибка соединения"
+
+#: src/kitsune/ui/search_view.blp:70
+msgid "Check your internet connection and try again"
+msgstr "Проверьте подключение к интернету и попробуйте снова"
+
+#: src/kitsune/ui/widgets/content_grid.blp:44
+msgid "That's all!"
+msgstr "Это всё!"
+
+#: src/kitsune/ui/widgets/content_grid.blp:75
+msgid "Scroll to top"
+msgstr "Наверх"
+
+#: src/kitsune/ui/window.blp:57 src/kitsune/ui/window.blp:142
+msgid "Main Menu"
+msgstr "Главное меню"
+
+#: src/kitsune/ui/window.blp:95 src/kitsune/ui/window.blp:126
+msgid "Back"
+msgstr "Назад"
+
+#: src/kitsune/ui/window.blp:241
+msgid "No internet connection. App is working in limited mode."
+msgstr ""
+"Нет подключения к интернету. Приложение работает в ограниченном режиме."
+
+#: src/kitsune/ui/window.blp:242
+msgid "Retry"
+msgstr "Повторить"
+
+#: src/kitsune/ui/window.blp:261
+msgid "Preferences"
+msgstr "Настройки"
+
+#: src/kitsune/ui/window.blp:262
+msgid "About Kitsune"
+msgstr "О Кицунэ"
+
 #: data/net.armatik.Kitsune.desktop.in:3
-#: data/net.armatik.Kitsune.metainfo.xml.in:6
+#: data/net.armatik.Kitsune.metainfo.xml.in:7
 msgid "Kitsune"
-msgstr "Kitsune"
+msgstr "Кицунэ"
 
 #: data/net.armatik.Kitsune.desktop.in:4
-#: data/net.armatik.Kitsune.metainfo.xml.in:7
-msgid "Watch anime from AniLibria"
-msgstr "Смотрите аниме от AniLibria"
+#: data/net.armatik.Kitsune.metainfo.xml.in:8
+msgid "Watch anime from AniLiberty"
+msgstr "Смотрите аниме от AniLiberty"
 
 #: data/net.armatik.Kitsune.desktop.in:10
-msgid "anime;video;anilibria;"
-msgstr "аниме;видео;анилибрия;"
+msgid "anime;video;aniliberty;"
+msgstr "аниме;видео;анилиберти;"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:9
+#: data/net.armatik.Kitsune.metainfo.xml.in:10
 msgid ""
-"Kitsune is a GNOME client for watching anime translated by the AniLibria "
+"Kitsune is a Libadwaita client for watching anime translated by the AniLiberty "
 "team. Browse the catalog, search for titles, and watch episodes with the "
 "built-in player."
 msgstr ""
-"Kitsune — клиент GNOME для просмотра аниме в переводе команды AniLibria. "
+"Kitsune — Libadwaita-клиент для просмотра аниме в переводе команды AniLiberty. "
 "Просматривайте каталог, ищите тайтлы и смотрите серии во встроенном плеере."
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:29
+msgid "Semen (Armatik) Fomchenkov"
+msgstr "Семён (Armatik) Фомченков"
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:49
+msgid "Initial release with catalog, search, and video player."
+msgstr "Первый выпуск с каталогом, поиском и видеоплеером."
+
+#~ msgid "Episode"
+#~ msgstr "Серия"
