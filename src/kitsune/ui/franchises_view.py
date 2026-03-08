@@ -17,7 +17,7 @@ from kitsune.ui.widgets.franchise_card import FranchiseCard
 
 class FranchisesView(Gtk.Box):
 
-    def __init__(self, client: AniLibriaClient, **kwargs):
+    def __init__(self, client: AniLibriaClient, auto_load: bool = True, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self._client = client
         self._on_release_activated = None
@@ -25,6 +25,7 @@ class FranchisesView(Gtk.Box):
         self._releases_view = None
         self._current_franchise = None
         self._narrow = False
+        self._loaded = False
 
         self._stack = Gtk.Stack(
             transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT,
@@ -38,7 +39,8 @@ class FranchisesView(Gtk.Box):
         self._stack.add_named(self._releases_placeholder, 'releases')
 
         self.append(self._stack)
-        self._load_franchises()
+        if auto_load:
+            self.load()
 
     @property
     def in_releases(self) -> bool:
@@ -83,6 +85,12 @@ class FranchisesView(Gtk.Box):
 
         if self._on_navigation_changed:
             self._on_navigation_changed()
+
+    def load(self):
+        if self._loaded:
+            return
+        self._loaded = True
+        self._load_franchises()
 
     def _load_franchises(self):
         self._grid.set_spinner_visible(True)
