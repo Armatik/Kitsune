@@ -220,25 +220,26 @@ class ReleaseView(Adw.NavigationPage):
             self.toolbar.set_extend_content_to_top_edge(True)
 
     def _update_toolbar(self):
+        hero_h = self.hero.get_height()
+        past_hero = hero_h > 0 and self._vadjustment.get_value() > hero_h
+
         if not self._narrow_mode:
             self.toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
             self.toolbar.set_extend_content_to_top_edge(False)
+            self.header_bar.set_show_title(past_hero)
             return
-        if self._vadjustment.get_value() > 50:
+
+        if past_hero:
             self.toolbar.set_top_bar_style(Adw.ToolbarStyle.RAISED)
             self.toolbar.set_extend_content_to_top_edge(False)
+            self.header_bar.set_show_title(True)
         else:
             self.toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
             self.toolbar.set_extend_content_to_top_edge(True)
+            self.header_bar.set_show_title(False)
 
     def _on_scroll(self, _adjustment):
         self._update_toolbar()
-        self._update_header_title()
-
-    def _update_header_title(self):
-        hero_h = self.hero.get_height()
-        show = hero_h > 0 and self._vadjustment.get_value() > hero_h
-        self.header_bar.set_show_title(show)
 
     def _on_genre_clicked(self, _button):
         dialog = Adw.AlertDialog(
