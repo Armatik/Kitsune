@@ -1,7 +1,10 @@
 _build/
-_build_dev/
+build/
 __pycache__/
 *.pyc
 *.egg-info/
 .eggs/
 data/gschemas.compiled
+CLAUDE.md
+docs/
+.claude/
