@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import io
-import logging
 import random
 
 import cairo
@@ -15,12 +14,10 @@ gi.require_version('GdkPixbuf', '2.0')
 
 from gi.repository import Gdk, GdkPixbuf, GLib, Gio
 
-_log = logging.getLogger('kitsune.color_extractor')
 
 
 def extract_colors(texture: Gdk.Texture, count: int = 6) -> list[tuple[int, int, int]]:
     """Extract dominant colors from a Gdk.Texture using median cut."""
-    _log.debug('Extracting colors from texture %dx%d', texture.get_width(), texture.get_height())
     png_bytes = texture.save_to_png_bytes()
     stream = Gio.MemoryInputStream.new_from_bytes(png_bytes)
     pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
@@ -31,8 +28,6 @@ def extract_colors(texture: Gdk.Texture, count: int = 6) -> list[tuple[int, int,
     rowstride = small.get_rowstride()
     w = small.get_width()
     h = small.get_height()
-    _log.debug('Downscaled to %dx%d, channels=%d, rowstride=%d', w, h, n_channels, rowstride)
-
     pixels = []
     for y in range(h):
         for x in range(w):
@@ -41,15 +36,10 @@ def extract_colors(texture: Gdk.Texture, count: int = 6) -> list[tuple[int, int,
             if _is_interesting(r, g, b):
                 pixels.append((r, g, b))
 
-    _log.debug('Interesting pixels: %d / %d', len(pixels), w * h)
-
     if not pixels:
-        _log.debug('No interesting pixels, returning fallback color')
         return [(80, 80, 120)]
 
-    result = _median_cut(pixels, count)
-    _log.debug('Median cut result: %s', result)
-    return result
+    return _median_cut(pixels, count)
 
 
 def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 3,
@@ -58,9 +48,6 @@ def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 
     render_size = 512 if noise else size
     n_points = max(2, min(n_points, len(colors)))
     chosen = random.sample(colors, n_points)
-
-    _log.debug('Creating gradient texture %dx%d with %d color points, noise=%s',
-               render_size, render_size, len(chosen), noise)
 
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, render_size, render_size)
     ctx = cairo.Context(surface)
@@ -86,7 +73,6 @@ def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 
     gbytes = GLib.Bytes.new(buf.getvalue())
     texture = Gdk.Texture.new_from_bytes(gbytes)
 
-    _log.debug('Gradient texture created: %dx%d', texture.get_width(), texture.get_height())
     return texture
 
 
@@ -108,7 +94,6 @@ def _apply_noise(surface: cairo.ImageSurface, size: int):
     ctx.set_operator(cairo.OPERATOR_OVER)
     ctx.set_source_surface(noise_surf, 0, 0)
     ctx.paint()
-    _log.debug('Fine noise overlay applied (%dx%d)', size, size)
 
 
 def _is_interesting(r: int, g: int, b: int) -> bool:
