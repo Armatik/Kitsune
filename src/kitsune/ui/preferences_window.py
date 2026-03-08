@@ -10,6 +10,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gio, Gtk
 
 from kitsune.ui.image_cache import get_cache_size, clear_cache
+from kitsune import watch_positions
 
 _STYLE_DESCRIPTIONS = {
     'classic': _('Standard layout without background effects'),
@@ -32,6 +33,8 @@ class PreferencesWindow(Adw.PreferencesDialog):
     __gtype_name__ = 'KitsunePreferencesWindow'
 
     cache_size_row = Gtk.Template.Child()
+    watch_count_row = Gtk.Template.Child()
+    watch_size_row = Gtk.Template.Child()
     style_toggle = Gtk.Template.Child()
     style_description = Gtk.Template.Child()
     accent_group = Gtk.Template.Child()
@@ -62,6 +65,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.fade_duration_row.connect('notify::value', self._on_fade_duration_changed)
 
         self._update_cache_size()
+        self._update_watch_progress()
 
     def _update_style_description(self, name: str):
         self.style_description.set_label(
@@ -94,7 +98,18 @@ class PreferencesWindow(Adw.PreferencesDialog):
     def _on_fade_duration_changed(self, row, _pspec):
         self._settings.set_int('accent-fade-duration', int(row.get_value()))
 
+    def _update_watch_progress(self):
+        count = watch_positions.get_count()
+        size = watch_positions.get_size()
+        self.watch_count_row.set_subtitle(str(count))
+        self.watch_size_row.set_subtitle(_format_size(size))
+
     @Gtk.Template.Callback()
     def on_clear_clicked(self, _button):
         clear_cache()
         self._update_cache_size()
+
+    @Gtk.Template.Callback()
+    def on_clear_progress_clicked(self, _button):
+        watch_positions.clear_all()
+        self._update_watch_progress()

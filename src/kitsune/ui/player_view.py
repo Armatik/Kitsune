@@ -2,29 +2,81 @@
 
 from __future__ import annotations
 
+from time import monotonic
+
 import gi
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from kitsune.models import Episode, Release
 from kitsune.player.gst_player import GstPlayer
+from kitsune import watch_positions
+
+_HIDE_DELAY = 2
+_css_loaded = False
+
+
+def _ensure_player_css():
+    global _css_loaded
+    if _css_loaded:
+        return
+    _css_loaded = True
+    css = Gtk.CssProvider()
+    css.load_from_string(
+        '.player-bg { background: black; }'
+        ' .player-shade {'
+        '   background: linear-gradient(to bottom,'
+        '     alpha(black, 0.5) 0%, alpha(black, 0.08) 18%,'
+        '     transparent 30%, transparent 70%,'
+        '     alpha(black, 0.08) 82%, alpha(black, 0.6) 100%);'
+        ' }'
+        ' .player-text { color: white;'
+        '   text-shadow: 0 1px 3px alpha(black, 0.8); }'
+        ' .player-play-btn { -gtk-icon-size: 32px;'
+        '   color: white; min-width: 64px; min-height: 64px; padding: 0; }'
+        ' .player-center-btn { -gtk-icon-size: 24px;'
+        '   color: white; min-width: 48px; min-height: 48px; padding: 0; }'
+        ' .player-shade scale { padding: 0; }'
+        ' .player-shade scale trough {'
+        '   background: alpha(white, 0.3); min-height: 4px;'
+        '   margin: 0; padding: 0; }'
+        ' .player-shade scale highlight {'
+        '   background: white; min-height: 4px; }'
+        ' .player-shade scale slider {'
+        '   background: white; border: none;'
+        '   min-width: 14px; min-height: 14px;'
+        '   border-radius: 7px; margin: -5px; }'
+    )
+    Gtk.StyleContext.add_provider_for_display(
+        Gdk.Display.get_default(), css,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/player_view.ui')
 class PlayerView(Adw.NavigationPage):
     __gtype_name__ = 'KitsunePlayerView'
 
+    main_overlay = Gtk.Template.Child()
     picture = Gtk.Template.Child()
+    controls_box = Gtk.Template.Child()
     top_bar = Gtk.Template.Child()
     title_label = Gtk.Template.Child()
-    controls = Gtk.Template.Child()
-    progress = Gtk.Template.Child()
-    time_label = Gtk.Template.Child()
+    fullscreen_btn = Gtk.Template.Child()
+    center_controls = Gtk.Template.Child()
     play_btn = Gtk.Template.Child()
+    prev_btn = Gtk.Template.Child()
+    next_btn = Gtk.Template.Child()
+    bottom_box = Gtk.Template.Child()
+    progress = Gtk.Template.Child()
+    position_label = Gtk.Template.Child()
+    duration_label = Gtk.Template.Child()
+    volume_btn = Gtk.Template.Child()
     quality_dropdown = Gtk.Template.Child()
+    seek_label = Gtk.Template.Child()
     skip_btn = Gtk.Template.Child()
 
     def __init__(self, release: Release, episode: Episode, **kwargs):
@@ -32,23 +84,56 @@ class PlayerView(Adw.NavigationPage):
         self._release = release
         self._episode = episode
         self._player = GstPlayer()
-        self._controls_visible = True
-        self._hide_timer = 0
         self._seeking = False
+        self._seek_reset_timer = 0
         self._skip_target = None
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
+        self._last_motion = 0
+        self._hide_timer = 0
+        self._controls_visible = True
+        self._hovering_controls = False
+        self._fullscreen = False
+        self._fade_anim = None
+        self._last_duration = 0
+        self._muted_volume = 0.0
+        self._ignore_quality_change = False
+        self._save_counter = 0
+        self._seek_accum = 0
+        self._seek_base = 0
+        self._seek_debounce = 0
+        self._restore_position = None
+        self._buffering = False
+        self._autoplay_timer = 0
+        self._spinner = Adw.Spinner()
+        self._spinner.set_size_request(32, 32)
+        _ensure_player_css()
+
+        # Episode navigation
+        self._episodes = list(release.episodes) if release.episodes else []
+        self._current_idx = next(
+            (i for i, ep in enumerate(self._episodes)
+             if ep.ordinal == episode.ordinal), -1
+        )
 
         self._setup_title()
         self._setup_paintable()
         self._setup_quality()
-        self._setup_click_handler()
+        self._setup_volume()
+        self._setup_nav_buttons()
+        self._setup_input()
         self._connect_signals()
-        self._start_playback()
+        # Show spinner until stream is ready
+        self._buffering = True
+        self.play_btn.set_child(self._spinner)
+        # Defer playback until widget is mapped (gtk4paintablesink needs GL context)
+        self.connect('map', self._on_first_map)
 
     def _setup_title(self):
-        ordinal = int(self._episode.ordinal) if self._episode.ordinal == int(self._episode.ordinal) else self._episode.ordinal
+        ordinal = int(self._episode.ordinal) \
+            if self._episode.ordinal == int(self._episode.ordinal) \
+            else self._episode.ordinal
         self.title_label.set_label(
-            f'{self._release.name.main} — {_("Episode")} {ordinal}'
+            f'{self._release.name.main} \u2014 {_("Episode")} {ordinal}'
         )
 
     def _setup_paintable(self):
@@ -56,6 +141,7 @@ class PlayerView(Adw.NavigationPage):
             self.picture.set_paintable(self._player.paintable)
 
     def _setup_quality(self):
+        self._ignore_quality_change = True
         quality_model = Gtk.StringList()
         available_qualities = []
         if self._episode.hls_1080:
@@ -67,21 +153,92 @@ class PlayerView(Adw.NavigationPage):
         if self._episode.hls_480:
             quality_model.append('480p')
             available_qualities.append('480')
-
         self._available_qualities = available_qualities
-
         if len(available_qualities) > 1:
             self.quality_dropdown.set_model(quality_model)
             self.quality_dropdown.set_visible(True)
             preferred = self._settings.get_string('preferred-quality')
             if preferred in available_qualities:
-                self.quality_dropdown.set_selected(available_qualities.index(preferred))
+                self.quality_dropdown.set_selected(
+                    available_qualities.index(preferred),
+                )
+        else:
+            self.quality_dropdown.set_visible(False)
+        self._ignore_quality_change = False
 
-    def _setup_click_handler(self):
+    def _setup_volume(self):
+        scale = Gtk.Scale(
+            orientation=Gtk.Orientation.VERTICAL,
+            inverted=True,
+            vexpand=True,
+        )
+        scale.set_range(0, 100)
+        scale.set_value(self._player.get_volume() * 100)
+        scale.set_draw_value(False)
+        scale.set_size_request(-1, 120)
+        scale.connect('value-changed', self._on_volume_changed)
+        self._volume_scale = scale
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            margin_top=8, margin_bottom=8,
+            margin_start=6, margin_end=6,
+        )
+        box.append(scale)
+
+        popover = Gtk.Popover()
+        popover.set_child(box)
+        popover.set_position(Gtk.PositionType.TOP)
+        self.volume_btn.set_popover(popover)
+        self._update_volume_icon(self._player.get_volume())
+
+    def _on_volume_changed(self, scale):
+        volume = scale.get_value() / 100
+        self._player.set_volume(volume)
+        self._update_volume_icon(volume)
+
+    def _update_volume_icon(self, volume):
+        if volume <= 0:
+            name = 'audio-volume-muted-symbolic'
+        elif volume < 0.33:
+            name = 'audio-volume-low-symbolic'
+        elif volume < 0.66:
+            name = 'audio-volume-medium-symbolic'
+        else:
+            name = 'audio-volume-high-symbolic'
+        self.volume_btn.set_icon_name(name)
+
+    def _setup_nav_buttons(self):
+        self.prev_btn.set_sensitive(self._current_idx > 0)
+        self.next_btn.set_sensitive(
+            self._current_idx >= 0
+            and self._current_idx < len(self._episodes) - 1
+        )
+
+    def _setup_input(self):
+        # Motion on overlay — reveal controls on mouse movement
+        motion = Gtk.EventControllerMotion()
+        motion.connect('motion', self._on_motion)
+        self.main_overlay.add_controller(motion)
+
+        # Track hover over controls — don't auto-hide while hovering
+        ctrl_motion = Gtk.EventControllerMotion()
+        ctrl_motion.connect('enter', lambda *a: setattr(self, '_hovering_controls', True))
+        ctrl_motion.connect('leave', self._on_controls_leave)
+        self.controls_box.add_controller(ctrl_motion)
+
+        # Click on video — tap to reveal, double-click to fullscreen
         click = Gtk.GestureClick()
-        click.connect('released', self._on_click)
-        overlay = self.get_child()
-        overlay.add_controller(click)
+        click.connect('released', self._on_click_released)
+        self.picture.add_controller(click)
+
+        # Keyboard shortcuts (CAPTURE phase to intercept before buttons)
+        key_ctrl = Gtk.EventControllerKey()
+        key_ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        key_ctrl.connect('key-pressed', self._on_key_pressed)
+        self.main_overlay.add_controller(key_ctrl)
+        self.main_overlay.set_focusable(True)
+        self.connect('realize', lambda _w: self.main_overlay.grab_focus())
 
     def _connect_signals(self):
         self._player.connect('position-updated', self._on_position_updated)
@@ -89,21 +246,193 @@ class PlayerView(Adw.NavigationPage):
         self._player.connect('eos', self._on_eos)
         self._player.connect('error', self._on_error)
 
+    def _on_first_map(self, _widget):
+        self.disconnect_by_func(self._on_first_map)
+        self._start_playback()
+
     def _start_playback(self):
+        self._buffering = True
+        self.play_btn.set_child(self._spinner)
         quality = self._settings.get_string('preferred-quality')
         url = self._episode.get_hls_url(quality)
         if url:
+            saved = watch_positions.get_position(
+                self._release.id, self._episode.ordinal,
+            )
+            if saved > 5:
+                self._restore_position = saved
+                self._seeking = True
             self._player.play_uri(url)
-            self._schedule_hide_controls()
+            if self._autoplay_timer:
+                GLib.source_remove(self._autoplay_timer)
+            self._autoplay_timer = GLib.timeout_add(
+                1500, self._ensure_autoplay,
+            )
+            self._schedule_hide()
+
+    def _ensure_autoplay(self):
+        self._autoplay_timer = 0
+        if not self._player.is_playing:
+            self._player.play()
+        return GLib.SOURCE_REMOVE
+
+    # --- Controls visibility ---
+
+    def _reveal_controls(self):
+        self.main_overlay.set_cursor(None)
+        if not self._controls_visible:
+            self._controls_visible = True
+            self._animate_controls(1.0)
+            self.controls_box.set_can_target(True)
+        self._schedule_hide()
+
+    def _hide_controls(self):
+        if not self._controls_visible or not self._player.is_playing:
+            return
+        self._controls_visible = False
+        self._animate_controls(0.0)
+        self.controls_box.set_can_target(False)
+        self.main_overlay.set_cursor(Gdk.Cursor.new_from_name('none'))
+
+    def _animate_controls(self, target: float):
+        if self._fade_anim:
+            self._fade_anim.skip()
+        prop = Adw.PropertyAnimationTarget.new(self.controls_box, 'opacity')
+        self._fade_anim = Adw.TimedAnimation.new(
+            self.controls_box,
+            self.controls_box.get_opacity(), target,
+            250, prop,
+        )
+        self._fade_anim.play()
+
+    def _schedule_hide(self):
+        self._last_motion = monotonic()
+        if self._hide_timer:
+            GLib.source_remove(self._hide_timer)
+        self._hide_timer = GLib.timeout_add_seconds(
+            _HIDE_DELAY, self._on_hide_timeout, self._last_motion,
+        )
+
+    def _on_hide_timeout(self, scheduled_at):
+        self._hide_timer = 0
+        if scheduled_at != self._last_motion:
+            return GLib.SOURCE_REMOVE
+        if self._hovering_controls:
+            return GLib.SOURCE_REMOVE
+        self._hide_controls()
+        return GLib.SOURCE_REMOVE
+
+    # --- Input handlers ---
+
+    def _on_motion(self, _ctrl, _x, _y):
+        self._reveal_controls()
+
+    def _on_controls_leave(self, *_args):
+        self._hovering_controls = False
+        if self._player.is_playing:
+            self._schedule_hide()
+
+    def _on_click_released(self, _gesture, n_press, _x, _y):
+        if n_press == 2:
+            self._toggle_fullscreen()
+        else:
+            self._reveal_controls()
+
+    def _on_key_pressed(self, _ctrl, keyval, _keycode, _state):
+        if keyval in (Gdk.KEY_space, Gdk.KEY_k, Gdk.KEY_K):
+            self._player.toggle_play_pause()
+            self._reveal_controls()
+            return True
+        if keyval == Gdk.KEY_Left:
+            self._accumulate_seek(-10)
+            self._reveal_controls()
+            return True
+        if keyval == Gdk.KEY_Right:
+            self._accumulate_seek(10)
+            self._reveal_controls()
+            return True
+        if keyval in (Gdk.KEY_f, Gdk.KEY_F, Gdk.KEY_F11):
+            self._toggle_fullscreen()
+            return True
+        if keyval == Gdk.KEY_Escape:
+            if self._fullscreen:
+                self._toggle_fullscreen()
+            else:
+                self._do_back()
+            return True
+        if keyval == Gdk.KEY_Up:
+            vol = min(1.0, self._player.get_volume() + 0.05)
+            self._player.set_volume(vol)
+            self._volume_scale.set_value(vol * 100)
+            self._update_volume_icon(vol)
+            self._reveal_controls()
+            return True
+        if keyval == Gdk.KEY_Down:
+            vol = max(0.0, self._player.get_volume() - 0.05)
+            self._player.set_volume(vol)
+            self._volume_scale.set_value(vol * 100)
+            self._update_volume_icon(vol)
+            self._reveal_controls()
+            return True
+        if keyval in (Gdk.KEY_m, Gdk.KEY_M):
+            self._toggle_mute()
+            self._reveal_controls()
+            return True
+        return False
+
+    def _toggle_mute(self):
+        vol = self._player.get_volume()
+        if vol > 0:
+            self._muted_volume = vol
+            self._player.set_volume(0)
+            self._volume_scale.set_value(0)
+            self._update_volume_icon(0)
+        else:
+            restored = self._muted_volume if self._muted_volume > 0 else 0.5
+            self._player.set_volume(restored)
+            self._volume_scale.set_value(restored * 100)
+            self._update_volume_icon(restored)
+
+    # --- Fullscreen ---
+
+    def _toggle_fullscreen(self):
+        root = self.get_root()
+        if not root:
+            return
+        self._fullscreen = not self._fullscreen
+        if self._fullscreen:
+            root.fullscreen()
+            self.fullscreen_btn.set_icon_name('view-restore-symbolic')
+        else:
+            root.unfullscreen()
+            self.fullscreen_btn.set_icon_name('view-fullscreen-symbolic')
+
+    # --- Player events ---
 
     def _on_position_updated(self, _player, position, duration):
-        if duration > 0 and not self._seeking:
-            self.progress.set_range(0, duration)
-            self.progress.set_value(position)
-        self.time_label.set_label(
-            f'{self._fmt_time(position)} / {self._fmt_time(duration)}'
-        )
+        if self._buffering and self._player.is_playing:
+            self._buffering = False
+            self.play_btn.set_icon_name('media-playback-pause-symbolic')
+        if self._restore_position is not None and duration > 0:
+            pos = self._restore_position
+            self._restore_position = None
+            self._do_seek(pos)
+            return
+        if not self._seeking:
+            if duration > 0:
+                if duration != self._last_duration:
+                    self.progress.set_range(0, duration)
+                    self._last_duration = duration
+                self.progress.set_value(position)
+        if not self._seek_debounce:
+            self.position_label.set_label(self._fmt_time(position))
+        self.duration_label.set_label(self._fmt_time(duration))
         self._update_skip_button(position)
+        # Save position every ~30s (60 ticks * 500ms)
+        self._save_counter += 1
+        if self._save_counter >= 60:
+            self._save_counter = 0
+            self._save_watch_position()
 
     def _update_skip_button(self, position):
         op = self._episode.opening
@@ -120,14 +449,38 @@ class PlayerView(Adw.NavigationPage):
             self.skip_btn.set_visible(False)
             self._skip_target = None
 
+    def _save_watch_position(self):
+        pos = self._player.get_position()
+        dur = self._player.get_duration()
+        if dur > 0 and pos > 5 and (dur - pos) > 60:
+            watch_positions.save_position(
+                self._release.id, self._episode.ordinal, pos,
+            )
+        elif dur > 0 and (dur - pos) <= 60:
+            watch_positions.remove_position(
+                self._release.id, self._episode.ordinal,
+            )
+
     def _on_state_changed(self, _player, state):
         if state == 'playing':
+            self._buffering = False
             self.play_btn.set_icon_name('media-playback-pause-symbolic')
         else:
-            self.play_btn.set_icon_name('media-playback-start-symbolic')
+            if not self._buffering:
+                self.play_btn.set_icon_name('media-playback-start-symbolic')
+            self._reveal_controls()
+            if state == 'paused':
+                self._save_watch_position()
 
     def _on_eos(self, _player):
-        self._do_back()
+        watch_positions.remove_position(
+            self._release.id, self._episode.ordinal,
+        )
+        if self._current_idx >= 0 \
+                and self._current_idx < len(self._episodes) - 1:
+            self._switch_episode(self._episodes[self._current_idx + 1])
+        else:
+            self._do_back()
 
     def _on_error(self, _player, message):
         toast = Adw.Toast(title=_('Playback error: {}').format(message))
@@ -135,35 +488,33 @@ class PlayerView(Adw.NavigationPage):
         if hasattr(root, 'add_toast'):
             root.add_toast(toast)
 
-    def _on_click(self, _gesture, _n_press, _x, _y):
-        if self._controls_visible:
-            self._hide_controls()
-        else:
-            self._show_controls()
-            self._schedule_hide_controls()
+    # --- Episode navigation ---
 
-    def _show_controls(self):
-        self.controls.set_visible(True)
-        self.top_bar.set_visible(True)
-        self._controls_visible = True
+    def _switch_episode(self, episode):
+        self._save_watch_position()
+        self._episode = episode
+        self._current_idx = next(
+            (i for i, ep in enumerate(self._episodes)
+             if ep.ordinal == episode.ordinal), -1
+        )
+        self._player.stop()
+        self._last_duration = 0
+        self._skip_target = None
+        self.skip_btn.set_visible(False)
+        self.progress.set_value(0)
+        self.position_label.set_label('0:00')
+        self.duration_label.set_label('0:00')
+        self._setup_title()
+        self._setup_quality()
+        self._start_playback()
+        self._setup_nav_buttons()
 
-    def _hide_controls(self):
-        self.controls.set_visible(False)
-        self.top_bar.set_visible(False)
-        self._controls_visible = False
-
-    def _schedule_hide_controls(self):
-        if self._hide_timer:
-            GLib.source_remove(self._hide_timer)
-        self._hide_timer = GLib.timeout_add_seconds(3, self._auto_hide_controls)
-
-    def _auto_hide_controls(self):
-        self._hide_timer = 0
-        if self._player.is_playing:
-            self._hide_controls()
-        return GLib.SOURCE_REMOVE
+    # --- Callbacks ---
 
     def _do_back(self):
+        self._save_watch_position()
+        if self._fullscreen:
+            self._toggle_fullscreen()
         self._player.cleanup()
         nav = self.get_ancestor(Adw.NavigationView)
         if nav:
@@ -174,53 +525,133 @@ class PlayerView(Adw.NavigationPage):
         self._do_back()
 
     @Gtk.Template.Callback()
-    def on_seek(self, _scale, _scroll_type, value):
-        self._seeking = True
-        self._player.seek(value)
-        GLib.timeout_add(200, self._reset_seeking)
-        return False
-
-    def _reset_seeking(self):
-        self._seeking = False
-        return GLib.SOURCE_REMOVE
+    def on_fullscreen(self, _button):
+        self._toggle_fullscreen()
 
     @Gtk.Template.Callback()
-    def on_rewind(self, _button):
-        self._player.seek(max(0, self._player.get_position() - 10))
+    def on_close(self, _button):
+        root = self.get_root()
+        if root:
+            root.close()
 
     @Gtk.Template.Callback()
     def on_play_pause(self, _button):
         self._player.toggle_play_pause()
 
+    def _do_seek(self, position):
+        self._seeking = True
+        self._player.seek(position)
+        if self._seek_reset_timer:
+            GLib.source_remove(self._seek_reset_timer)
+        self._seek_reset_timer = GLib.timeout_add(1000, self._reset_seeking)
+
+    def _reset_seeking(self):
+        self._seeking = False
+        self._seek_reset_timer = 0
+        return GLib.SOURCE_REMOVE
+
+    def _accumulate_seek(self, offset):
+        if self._seek_debounce == 0:
+            self._seek_base = self._player.get_position()
+            self._seek_accum = 0
+        self._seek_accum += offset
+        self._seeking = True
+        target = max(0, self._seek_base + self._seek_accum)
+        self.progress.set_value(target)
+        self.position_label.set_label(self._fmt_time(target))
+        # Show seek indicator
+        accum = self._seek_accum
+        if accum > 0:
+            self.seek_label.set_label(f'\u25b6 +{self._fmt_time(accum)}')
+        elif accum < 0:
+            self.seek_label.set_label(f'\u25c0 -{self._fmt_time(-accum)}')
+        self.seek_label.set_visible(True)
+        if self._seek_debounce:
+            GLib.source_remove(self._seek_debounce)
+        self._seek_debounce = GLib.timeout_add(500, self._flush_accumulated_seek)
+
+    def _flush_accumulated_seek(self):
+        self._seek_debounce = 0
+        self.seek_label.set_visible(False)
+        target = max(0, self._seek_base + self._seek_accum)
+        self._seek_accum = 0
+        self._do_seek(target)
+        return GLib.SOURCE_REMOVE
+
+    @Gtk.Template.Callback()
+    def on_rewind(self, _button):
+        self._accumulate_seek(-10)
+
     @Gtk.Template.Callback()
     def on_forward(self, _button):
-        self._player.seek(self._player.get_position() + 10)
+        self._accumulate_seek(10)
+
+    @Gtk.Template.Callback()
+    def on_seek(self, _scale, _scroll_type, value):
+        self._do_seek(value)
+        return False
 
     @Gtk.Template.Callback()
     def on_quality_changed(self, dropdown, _pspec):
+        if self._ignore_quality_change:
+            return
         idx = dropdown.get_selected()
         if idx < len(self._available_qualities):
             quality = self._available_qualities[idx]
             self._settings.set_string('preferred-quality', quality)
-            position = self._player.get_position()
+            self._restore_position = self._player.get_position()
+            self._buffering = True
+            self.play_btn.set_child(self._spinner)
             url = self._episode.get_hls_url(quality)
             if url:
+                self._seeking = True
                 self._player.play_uri(url)
-                GLib.timeout_add(500, lambda: self._player.seek(position) or GLib.SOURCE_REMOVE)
 
     @Gtk.Template.Callback()
     def on_skip(self, _btn):
         if self._skip_target:
-            self._player.seek(self._skip_target)
+            self._do_seek(self._skip_target)
+
+    @Gtk.Template.Callback()
+    def on_prev_episode(self, _btn):
+        if self._current_idx > 0:
+            self._switch_episode(self._episodes[self._current_idx - 1])
+
+    @Gtk.Template.Callback()
+    def on_next_episode(self, _btn):
+        if self._current_idx >= 0 \
+                and self._current_idx < len(self._episodes) - 1:
+            self._switch_episode(self._episodes[self._current_idx + 1])
 
     @staticmethod
-    def _fmt_time(seconds: int) -> str:
-        m, s = divmod(max(0, seconds), 60)
+    def _fmt_time(seconds) -> str:
+        seconds = int(max(0, seconds))
+        m, s = divmod(seconds, 60)
         h, m = divmod(m, 60)
         if h:
             return f'{h}:{m:02d}:{s:02d}'
         return f'{m}:{s:02d}'
 
     def do_unmap(self):
+        self._save_watch_position()
+        if self._fullscreen:
+            root = self.get_root()
+            if root:
+                root.unfullscreen()
+        if self._hide_timer:
+            GLib.source_remove(self._hide_timer)
+            self._hide_timer = 0
+        if self._seek_reset_timer:
+            GLib.source_remove(self._seek_reset_timer)
+            self._seek_reset_timer = 0
+        if self._seek_debounce:
+            GLib.source_remove(self._seek_debounce)
+            self._seek_debounce = 0
+        if self._autoplay_timer:
+            GLib.source_remove(self._autoplay_timer)
+            self._autoplay_timer = 0
+        if self._fade_anim:
+            self._fade_anim.skip()
+            self._fade_anim = None
         self._player.cleanup()
         Adw.NavigationPage.do_unmap(self)

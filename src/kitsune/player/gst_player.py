@@ -131,6 +131,12 @@ class GstPlayer(GObject.Object):
         }
         self.emit('state-changed', state_names.get(new, 'unknown'))
 
+    def get_volume(self) -> float:
+        return self._playbin.get_property('volume')
+
+    def set_volume(self, volume: float):
+        self._playbin.set_property('volume', max(0.0, min(1.0, volume)))
+
     def cleanup(self):
         self.stop()
         self._playbin.set_state(Gst.State.NULL)

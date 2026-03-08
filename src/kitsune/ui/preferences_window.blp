@@ -108,5 +108,33 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
         }
       }
     }
+
+    Adw.PreferencesGroup {
+      title: _("Watch Progress");
+      description: _("Saved playback positions for episodes");
+
+      Adw.ActionRow watch_count_row {
+        title: _("Saved Positions");
+      }
+
+      Adw.ActionRow watch_size_row {
+        title: _("Storage Size");
+      }
+
+      Adw.ActionRow {
+        title: _("Clear Progress");
+        subtitle: _("Remove all saved playback positions");
+        activatable-widget: clear_progress_btn;
+
+        [suffix]
+        Gtk.Button clear_progress_btn {
+          label: _("Clear");
+          valign: center;
+          clicked => $on_clear_progress_clicked();
+
+          styles ["destructive-action"]
+        }
+      }
+    }
   }
 }

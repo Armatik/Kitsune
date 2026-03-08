@@ -4,7 +4,9 @@ using Gtk 4.0;
 using Adw 1;
 
 template $KitsunePlayerView: Adw.NavigationPage {
-  child: Gtk.Overlay {
+  child: Gtk.Overlay main_overlay {
+    styles ["player-bg"]
+
     Gtk.Picture picture {
       content-fit: contain;
       hexpand: true;
@@ -12,85 +14,187 @@ template $KitsunePlayerView: Adw.NavigationPage {
     }
 
     [overlay]
-    Gtk.Box top_bar {
-      valign: start;
-      margin-start: 12;
-      margin-end: 12;
-      margin-top: 12;
+    Gtk.Box controls_box {
+      orientation: vertical;
+      hexpand: true;
+      vexpand: true;
 
-      styles ["osd"]
+      styles ["player-shade"]
 
-      Gtk.Button {
-        icon-name: "go-previous-symbolic";
-        clicked => $on_back();
+      // Top bar wrapped in WindowHandle for window dragging
+      Gtk.WindowHandle {
+        Gtk.Box top_bar {
+          margin-start: 12;
+          margin-end: 12;
+          margin-top: 12;
+          spacing: 8;
 
-        styles ["flat"]
+          Gtk.Button {
+            icon-name: "go-previous-symbolic";
+            focusable: false;
+            clicked => $on_back();
+
+            styles ["circular", "osd"]
+          }
+
+          Gtk.Box {
+            hexpand: true;
+          }
+
+          Gtk.Button fullscreen_btn {
+            icon-name: "view-fullscreen-symbolic";
+            focusable: false;
+            clicked => $on_fullscreen();
+
+            styles ["circular", "osd"]
+          }
+
+          Gtk.Button {
+            icon-name: "window-close-symbolic";
+            focusable: false;
+            clicked => $on_close();
+
+            styles ["circular", "osd"]
+          }
+        }
       }
 
-      Gtk.Label title_label {
+      // Center area: play controls always centered,
+      // episode buttons at edges via overlay
+      Gtk.Overlay {
         hexpand: true;
-        ellipsize: end;
-        margin-start: 8;
+        vexpand: true;
 
-        styles ["heading"]
+        Gtk.Box center_controls {
+          halign: center;
+          valign: center;
+          spacing: 24;
+
+          Gtk.Button {
+            icon-name: "seek-backward-10-symbolic";
+            focusable: false;
+            valign: center;
+            clicked => $on_rewind();
+
+            styles ["flat", "player-center-btn"]
+          }
+
+          Gtk.Button play_btn {
+            icon-name: "media-playback-start-symbolic";
+            focusable: false;
+            valign: center;
+            clicked => $on_play_pause();
+
+            styles ["flat", "player-play-btn"]
+          }
+
+          Gtk.Button {
+            icon-name: "seek-forward-10-symbolic";
+            focusable: false;
+            valign: center;
+            clicked => $on_forward();
+
+            styles ["flat", "player-center-btn"]
+          }
+        }
+
+        [overlay]
+        Gtk.Button prev_btn {
+          icon-name: "media-skip-backward-symbolic";
+          focusable: false;
+          halign: start;
+          valign: center;
+          margin-start: 24;
+          clicked => $on_prev_episode();
+
+          styles ["flat", "player-center-btn"]
+        }
+
+        [overlay]
+        Gtk.Button next_btn {
+          icon-name: "media-skip-forward-symbolic";
+          focusable: false;
+          halign: end;
+          valign: center;
+          margin-end: 24;
+          clicked => $on_next_episode();
+
+          styles ["flat", "player-center-btn"]
+        }
+      }
+
+      // Bottom bar
+      Gtk.Box bottom_box {
+        orientation: vertical;
+        margin-start: 12;
+        margin-end: 12;
+        margin-bottom: 12;
+        spacing: 4;
+
+        Gtk.Box {
+          spacing: 8;
+
+          Gtk.Label title_label {
+            hexpand: true;
+            ellipsize: end;
+            xalign: 0;
+
+            styles ["title-4", "player-text"]
+          }
+
+          Gtk.DropDown quality_dropdown {
+            visible: false;
+            focusable: false;
+            notify::selected => $on_quality_changed();
+          }
+        }
+
+        Gtk.Scale progress {
+          orientation: horizontal;
+          hexpand: true;
+          draw-value: false;
+          change-value => $on_seek();
+        }
+
+        Gtk.Box {
+          spacing: 8;
+
+          Gtk.Label position_label {
+            label: "0:00";
+            xalign: 0;
+
+            styles ["caption", "player-text", "numeric"]
+          }
+
+          Gtk.Box {
+            hexpand: true;
+          }
+
+          Gtk.MenuButton volume_btn {
+            icon-name: "audio-volume-high-symbolic";
+            focusable: false;
+
+            styles ["flat", "circular", "player-text"]
+          }
+
+          Gtk.Label duration_label {
+            label: "0:00";
+            xalign: 1;
+
+            styles ["caption", "player-text", "numeric"]
+          }
+        }
       }
     }
 
     [overlay]
-    Gtk.Box controls {
-      orientation: vertical;
-      valign: end;
-      margin-start: 12;
-      margin-end: 12;
-      margin-bottom: 12;
-      spacing: 8;
+    Gtk.Label seek_label {
+      visible: false;
+      halign: center;
+      valign: center;
+      margin-top: 120;
 
-      styles ["osd"]
-
-      Gtk.Scale progress {
-        orientation: horizontal;
-        hexpand: true;
-        draw-value: false;
-        change-value => $on_seek();
-      }
-
-      Gtk.Box {
-        spacing: 8;
-        halign: center;
-        margin-bottom: 4;
-
-        Gtk.Label time_label {
-          label: "0:00 / 0:00";
-
-          styles ["caption"]
-        }
-
-        Gtk.Button {
-          icon-name: "media-seek-backward-symbolic";
-          clicked => $on_rewind();
-
-          styles ["flat", "circular"]
-        }
-
-        Gtk.Button play_btn {
-          icon-name: "media-playback-start-symbolic";
-          clicked => $on_play_pause();
-
-          styles ["flat", "circular"]
-        }
-
-        Gtk.Button {
-          icon-name: "media-seek-forward-symbolic";
-          clicked => $on_forward();
-
-          styles ["flat", "circular"]
-        }
-
-        Gtk.DropDown quality_dropdown {
-          visible: false;
-          notify::selected => $on_quality_changed();
-        }
-      }
+      styles ["title-1", "player-text"]
     }
 
     [overlay]
@@ -101,6 +205,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
       valign: end;
       margin-end: 24;
       margin-bottom: 100;
+      focusable: false;
       clicked => $on_skip();
 
       styles ["pill", "suggested-action"]
