@@ -17,6 +17,7 @@ class GstPlayer(GObject.Object):
         'position-updated': (GObject.SignalFlags.RUN_LAST, None, (int, int)),
         'error': (GObject.SignalFlags.RUN_LAST, None, (str,)),
         'eos': (GObject.SignalFlags.RUN_LAST, None, ()),
+        'buffering': (GObject.SignalFlags.RUN_LAST, None, (int,)),
     }
 
     def __init__(self):
@@ -27,12 +28,15 @@ class GstPlayer(GObject.Object):
 
         self._paintable = None
         self._setup_video_sink()
+        self._target_state = Gst.State.NULL
+        self._is_buffering = False
 
         bus = self._playbin.get_bus()
         bus.add_signal_watch()
         bus.connect('message::error', self._on_error)
         bus.connect('message::eos', self._on_eos)
         bus.connect('message::state-changed', self._on_state_changed)
+        bus.connect('message::buffering', self._on_buffering)
 
         self._position_timer = 0
 
@@ -54,19 +58,25 @@ class GstPlayer(GObject.Object):
     def play_uri(self, uri: str):
         self._playbin.set_state(Gst.State.NULL)
         self._playbin.set_property('uri', uri)
+        self._target_state = Gst.State.PLAYING
+        self._is_buffering = False
         self._playbin.set_state(Gst.State.PLAYING)
         self._start_position_timer()
 
     def play(self):
+        self._target_state = Gst.State.PLAYING
         self._playbin.set_state(Gst.State.PLAYING)
         self._start_position_timer()
 
     def pause(self):
+        self._target_state = Gst.State.PAUSED
         self._playbin.set_state(Gst.State.PAUSED)
         self._stop_position_timer()
 
     def stop(self):
         self._stop_position_timer()
+        self._target_state = Gst.State.NULL
+        self._is_buffering = False
         self._playbin.set_state(Gst.State.NULL)
 
     def toggle_play_pause(self):
@@ -79,7 +89,7 @@ class GstPlayer(GObject.Object):
     def seek(self, position_seconds: float):
         self._playbin.seek_simple(
             Gst.Format.TIME,
-            Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+            Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
             int(position_seconds * Gst.SECOND),
         )
 
@@ -119,6 +129,18 @@ class GstPlayer(GObject.Object):
     def _on_eos(self, _bus, _msg):
         self.emit('eos')
         self.stop()
+
+    def _on_buffering(self, _bus, msg):
+        percent = msg.parse_buffering()
+        self.emit('buffering', percent)
+        if percent < 100:
+            if not self._is_buffering:
+                self._is_buffering = True
+                self._playbin.set_state(Gst.State.PAUSED)
+        else:
+            self._is_buffering = False
+            if self._target_state == Gst.State.PLAYING:
+                self._playbin.set_state(Gst.State.PLAYING)
 
     def _on_state_changed(self, _bus, msg):
         if msg.src != self._playbin:

@@ -75,6 +75,7 @@ class PlayerView(Adw.NavigationPage):
     position_label = Gtk.Template.Child()
     duration_label = Gtk.Template.Child()
     volume_btn = Gtk.Template.Child()
+    volume_scale = Gtk.Template.Child()
     quality_dropdown = Gtk.Template.Child()
     seek_label = Gtk.Template.Child()
     skip_btn = Gtk.Template.Child()
@@ -103,7 +104,6 @@ class PlayerView(Adw.NavigationPage):
         self._seek_debounce = 0
         self._restore_position = None
         self._buffering = False
-        self._autoplay_timer = 0
         self._spinner = Adw.Spinner()
         self._spinner.set_size_request(32, 32)
         _ensure_player_css()
@@ -167,35 +167,38 @@ class PlayerView(Adw.NavigationPage):
         self._ignore_quality_change = False
 
     def _setup_volume(self):
-        scale = Gtk.Scale(
-            orientation=Gtk.Orientation.VERTICAL,
-            inverted=True,
-            vexpand=True,
+        saved_volume = self._settings.get_double('volume')
+        self._player.set_volume(saved_volume)
+        self._update_volume_icon(saved_volume)
+        self.volume_scale.set_value(saved_volume)
+        scroll = Gtk.EventControllerScroll(
+            flags=Gtk.EventControllerScrollFlags.VERTICAL,
         )
-        scale.set_range(0, 100)
-        scale.set_value(self._player.get_volume() * 100)
-        scale.set_draw_value(False)
-        scale.set_size_request(-1, 120)
-        scale.connect('value-changed', self._on_volume_changed)
-        self._volume_scale = scale
+        scroll.connect('scroll', self._on_volume_scroll)
+        self.volume_btn.add_controller(scroll)
 
-        box = Gtk.Box(
-            orientation=Gtk.Orientation.VERTICAL,
-            margin_top=8, margin_bottom=8,
-            margin_start=6, margin_end=6,
-        )
-        box.append(scale)
+    @Gtk.Template.Callback()
+    def on_volume_toggle(self, _button):
+        self._toggle_mute()
 
-        popover = Gtk.Popover()
-        popover.set_child(box)
-        popover.set_position(Gtk.PositionType.TOP)
-        self.volume_btn.set_popover(popover)
-        self._update_volume_icon(self._player.get_volume())
+    @Gtk.Template.Callback()
+    def on_volume_change(self, _scale, _scroll_type, value):
+        vol = max(0.0, min(1.0, value))
+        self._player.set_volume(vol)
+        self._update_volume_icon(vol)
+        if vol > 0:
+            self._settings.set_double('volume', vol)
+        return False
 
-    def _on_volume_changed(self, scale):
-        volume = scale.get_value() / 100
-        self._player.set_volume(volume)
-        self._update_volume_icon(volume)
+    def _on_volume_scroll(self, _ctrl, _dx, dy):
+        delta = -dy * 0.05
+        vol = max(0.0, min(1.0, self._player.get_volume() + delta))
+        self._player.set_volume(vol)
+        self._update_volume_icon(vol)
+        self.volume_scale.set_value(vol)
+        if vol > 0:
+            self._settings.set_double('volume', vol)
+        return True
 
     def _update_volume_icon(self, volume):
         if volume <= 0:
@@ -245,12 +248,15 @@ class PlayerView(Adw.NavigationPage):
         self._player.connect('state-changed', self._on_state_changed)
         self._player.connect('eos', self._on_eos)
         self._player.connect('error', self._on_error)
+        self._player.connect('buffering', self._on_buffering_signal)
 
     def _on_first_map(self, _widget):
         self.disconnect_by_func(self._on_first_map)
-        self._start_playback()
+        GLib.idle_add(self._start_playback)
 
     def _start_playback(self):
+        if not self.get_mapped():
+            return
         self._buffering = True
         self.play_btn.set_child(self._spinner)
         quality = self._settings.get_string('preferred-quality')
@@ -263,18 +269,7 @@ class PlayerView(Adw.NavigationPage):
                 self._restore_position = saved
                 self._seeking = True
             self._player.play_uri(url)
-            if self._autoplay_timer:
-                GLib.source_remove(self._autoplay_timer)
-            self._autoplay_timer = GLib.timeout_add(
-                1500, self._ensure_autoplay,
-            )
             self._schedule_hide()
-
-    def _ensure_autoplay(self):
-        self._autoplay_timer = 0
-        if not self._player.is_playing:
-            self._player.play()
-        return GLib.SOURCE_REMOVE
 
     # --- Controls visibility ---
 
@@ -363,15 +358,18 @@ class PlayerView(Adw.NavigationPage):
         if keyval == Gdk.KEY_Up:
             vol = min(1.0, self._player.get_volume() + 0.05)
             self._player.set_volume(vol)
-            self._volume_scale.set_value(vol * 100)
             self._update_volume_icon(vol)
+            self.volume_scale.set_value(vol)
+            self._settings.set_double('volume', vol)
             self._reveal_controls()
             return True
         if keyval == Gdk.KEY_Down:
             vol = max(0.0, self._player.get_volume() - 0.05)
             self._player.set_volume(vol)
-            self._volume_scale.set_value(vol * 100)
             self._update_volume_icon(vol)
+            self.volume_scale.set_value(vol)
+            if vol > 0:
+                self._settings.set_double('volume', vol)
             self._reveal_controls()
             return True
         if keyval in (Gdk.KEY_m, Gdk.KEY_M):
@@ -385,13 +383,16 @@ class PlayerView(Adw.NavigationPage):
         if vol > 0:
             self._muted_volume = vol
             self._player.set_volume(0)
-            self._volume_scale.set_value(0)
             self._update_volume_icon(0)
+            self.volume_scale.set_value(0)
         else:
-            restored = self._muted_volume if self._muted_volume > 0 else 0.5
+            restored = self._muted_volume if self._muted_volume > 0 \
+                else self._settings.get_double('volume')
+            if restored <= 0:
+                restored = 0.5
             self._player.set_volume(restored)
-            self._volume_scale.set_value(restored * 100)
             self._update_volume_icon(restored)
+            self.volume_scale.set_value(restored)
 
     # --- Fullscreen ---
 
@@ -424,7 +425,7 @@ class PlayerView(Adw.NavigationPage):
                     self.progress.set_range(0, duration)
                     self._last_duration = duration
                 self.progress.set_value(position)
-        if not self._seek_debounce:
+        if not self._seeking and not self._seek_debounce:
             self.position_label.set_label(self._fmt_time(position))
         self.duration_label.set_label(self._fmt_time(duration))
         self._update_skip_button(position)
@@ -437,11 +438,11 @@ class PlayerView(Adw.NavigationPage):
     def _update_skip_button(self, position):
         op = self._episode.opening
         ed = self._episode.ending
-        if op and op.start <= position <= op.stop:
+        if op and op.start <= position < op.stop:
             self.skip_btn.set_label(_('Skip Intro'))
             self.skip_btn.set_visible(True)
             self._skip_target = op.stop
-        elif ed and ed.start <= position <= ed.stop:
+        elif ed and ed.start <= position < ed.stop:
             self.skip_btn.set_label(_('Skip Outro'))
             self.skip_btn.set_visible(True)
             self._skip_target = ed.stop
@@ -465,9 +466,8 @@ class PlayerView(Adw.NavigationPage):
         if state == 'playing':
             self._buffering = False
             self.play_btn.set_icon_name('media-playback-pause-symbolic')
-        else:
-            if not self._buffering:
-                self.play_btn.set_icon_name('media-playback-start-symbolic')
+        elif not self._buffering:
+            self.play_btn.set_icon_name('media-playback-start-symbolic')
             self._reveal_controls()
             if state == 'paused':
                 self._save_watch_position()
@@ -487,6 +487,17 @@ class PlayerView(Adw.NavigationPage):
         root = self.get_root()
         if hasattr(root, 'add_toast'):
             root.add_toast(toast)
+
+    def _on_buffering_signal(self, _player, percent):
+        if percent < 100:
+            self._buffering = True
+            self.play_btn.set_child(self._spinner)
+        else:
+            self._buffering = False
+            if self._player.is_playing:
+                self.play_btn.set_icon_name('media-playback-pause-symbolic')
+            else:
+                self.play_btn.set_icon_name('media-playback-start-symbolic')
 
     # --- Episode navigation ---
 
@@ -610,7 +621,10 @@ class PlayerView(Adw.NavigationPage):
     @Gtk.Template.Callback()
     def on_skip(self, _btn):
         if self._skip_target:
-            self._do_seek(self._skip_target)
+            target = self._skip_target
+            self._skip_target = None
+            self.skip_btn.set_visible(False)
+            self._do_seek(target)
 
     @Gtk.Template.Callback()
     def on_prev_episode(self, _btn):
@@ -647,9 +661,6 @@ class PlayerView(Adw.NavigationPage):
         if self._seek_debounce:
             GLib.source_remove(self._seek_debounce)
             self._seek_debounce = 0
-        if self._autoplay_timer:
-            GLib.source_remove(self._autoplay_timer)
-            self._autoplay_timer = 0
         if self._fade_anim:
             self._fade_anim.skip()
             self._fade_anim = None

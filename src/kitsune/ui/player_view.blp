@@ -170,11 +170,31 @@ template $KitsunePlayerView: Adw.NavigationPage {
             hexpand: true;
           }
 
-          Gtk.MenuButton volume_btn {
-            icon-name: "audio-volume-high-symbolic";
-            focusable: false;
+          Gtk.Box {
+            spacing: 4;
+            valign: center;
 
-            styles ["flat", "circular", "player-text"]
+            Gtk.Button volume_btn {
+              icon-name: "audio-volume-high-symbolic";
+              focusable: false;
+              clicked => $on_volume_toggle();
+
+              styles ["flat", "circular", "player-text"]
+            }
+
+            Gtk.Scale volume_scale {
+              orientation: horizontal;
+              draw-value: false;
+              hexpand: false;
+              width-request: 80;
+              adjustment: Gtk.Adjustment {
+                lower: 0;
+                upper: 1;
+                step-increment: 0.05;
+                page-increment: 0.1;
+              };
+              change-value => $on_volume_change();
+            }
           }
 
           Gtk.Label duration_label {

@@ -6,6 +6,12 @@
       <summary>Preferred video quality</summary>
       <description>Preferred HLS stream quality: 1080, 720, or 480</description>
     </key>
+    <key name="volume" type="d">
+      <default>1.0</default>
+      <summary>Player volume</summary>
+      <description>Player volume level (0.0 to 1.0)</description>
+      <range min="0.0" max="1.0"/>
+    </key>
     <key name="release-page-style" type="s">
       <default>'classic'</default>
       <summary>Release page style</summary>
