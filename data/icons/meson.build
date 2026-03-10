@@ -9,46 +9,46 @@ install_data(
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'funnel-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.funnel-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'genres-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.genres-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'franchises-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.franchises-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'magnet-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.magnet-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'cross-large-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.cross-large-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'seek-backward-10-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.seek-backward-10-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'seek-forward-10-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.seek-forward-10-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'image-missing-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.image-missing-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
 
 install_data(
-  join_paths('hicolor', 'scalable', 'actions', 'sidebar-collapse-right-symbolic.svg'),
+  join_paths('hicolor', 'scalable', 'actions', 'net.armatik.Kitsune.sidebar-collapse-right-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )

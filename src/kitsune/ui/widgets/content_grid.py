@@ -59,7 +59,7 @@ class ContentGrid(Gtk.Box):
         self.initial_spinner.set_visible(False)
         self.clear_error()
         error = Gtk.Image(
-            icon_name='cross-large-symbolic',
+            icon_name='net.armatik.Kitsune.cross-large-symbolic',
             pixel_size=48,
             css_classes=['error'],
             halign=Gtk.Align.CENTER,

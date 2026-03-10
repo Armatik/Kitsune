@@ -310,7 +310,7 @@ class ReleaseView(Adw.NavigationPage):
 
         # Filter: MenuButton (compact mode, hidden by default)
         self._filter_menu_btn = Gtk.MenuButton(
-            icon_name='funnel-symbolic',
+            icon_name='net.armatik.Kitsune.funnel-symbolic',
             visible=False,
         )
         popover = Gtk.Popover()
@@ -363,7 +363,7 @@ class ReleaseView(Adw.NavigationPage):
             sensitive=False,
         )
         unmark_btn = Gtk.Button(
-            icon_name='cross-large-symbolic',
+            icon_name='net.armatik.Kitsune.cross-large-symbolic',
             tooltip_text=_('Unmark all'),
             sensitive=False,
         )
@@ -558,7 +558,7 @@ class ReleaseView(Adw.NavigationPage):
     def _show_refresh_error(self):
         self._header_spinner.set_visible(False)
         error = Gtk.Image(
-            icon_name='cross-large-symbolic',
+            icon_name='net.armatik.Kitsune.cross-large-symbolic',
             css_classes=['error'],
         )
         self._header_status.append(error)
@@ -566,7 +566,7 @@ class ReleaseView(Adw.NavigationPage):
     def _show_spinner_error(self, spinner):
         spinner.set_visible(False)
         error = Gtk.Image(
-            icon_name='cross-large-symbolic',
+            icon_name='net.armatik.Kitsune.cross-large-symbolic',
             pixel_size=32,
             css_classes=['error'],
             halign=Gtk.Align.CENTER,
@@ -688,7 +688,7 @@ class ReleaseView(Adw.NavigationPage):
                     pic.set_paintable(tex)
                 else:
                     ov.add_overlay(Gtk.Image(
-                        icon_name='image-missing-symbolic',
+                        icon_name='net.armatik.Kitsune.image-missing-symbolic',
                         pixel_size=48, opacity=0.4,
                         halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
                     ))
@@ -697,7 +697,7 @@ class ReleaseView(Adw.NavigationPage):
                        category='previews')
         else:
             placeholder = Gtk.Image(
-                icon_name='image-missing-symbolic',
+                icon_name='net.armatik.Kitsune.image-missing-symbolic',
                 pixel_size=48, opacity=0.4,
                 halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
             )
@@ -1045,7 +1045,7 @@ class ReleaseView(Adw.NavigationPage):
             row.add_suffix(download_btn)
 
             magnet_btn = Gtk.Button(
-                icon_name='magnet-symbolic',
+                icon_name='net.armatik.Kitsune.magnet-symbolic',
                 valign=Gtk.Align.CENTER,
                 css_classes=['flat'],
                 tooltip_text=_('Open magnet link'),
