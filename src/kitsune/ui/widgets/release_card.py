@@ -18,6 +18,7 @@ class ReleaseCard(Gtk.FlowBoxChild):
     __gtype_name__ = 'KitsuneReleaseCard'
 
     picture = Gtk.Template.Child()
+    placeholder = Gtk.Template.Child()
     spinner = Gtk.Template.Child()
     title_label = Gtk.Template.Child()
     subtitle_label = Gtk.Template.Child()
@@ -38,9 +39,22 @@ class ReleaseCard(Gtk.FlowBoxChild):
             self.subtitle_label.set_visible(True)
 
         if release.poster:
+            if release.poster_preview:
+                load_image(release.poster_preview, self._on_preview_loaded)
             load_image(release.poster, self._on_poster_loaded)
+        elif release.poster_preview:
+            load_image(release.poster_preview, self._on_poster_loaded)
+        else:
+            self.spinner.set_visible(False)
+            self.placeholder.set_visible(True)
+
+    def _on_preview_loaded(self, texture, error):
+        if texture and not self.picture.get_paintable():
+            self.picture.set_paintable(texture)
 
     def _on_poster_loaded(self, texture, error):
         self.spinner.set_visible(False)
         if texture:
             self.picture.set_paintable(texture)
+        elif not self.picture.get_paintable():
+            self.placeholder.set_visible(True)

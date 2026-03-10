@@ -73,6 +73,18 @@ def _poster_url(data: dict | None) -> str | None:
     return None
 
 
+def _poster_preview_url(data: dict | None) -> str | None:
+    if not data:
+        return None
+    optimized = data.get('optimized')
+    if optimized and optimized.get('preview'):
+        return 'https://anilibria.top' + optimized['preview']
+    preview = data.get('preview')
+    if preview:
+        return 'https://anilibria.top' + preview
+    return None
+
+
 @dataclass
 class Member:
     id: str
@@ -184,6 +196,7 @@ class Release:
     alias: str
     description: str | None = None
     poster: str | None = None
+    poster_preview: str | None = None
     type: str = ''
     year: int = 0
     season: str | None = None
@@ -214,6 +227,7 @@ class Release:
             alias=data.get('alias', ''),
             description=data.get('description'),
             poster=_poster_url(data.get('poster')),
+            poster_preview=_poster_preview_url(data.get('poster')),
             type=type_data.get('value', '') if isinstance(type_data, dict) else str(type_data),
             year=data.get('year', 0),
             season=season_data.get('value') if isinstance(season_data, dict) else season_data,

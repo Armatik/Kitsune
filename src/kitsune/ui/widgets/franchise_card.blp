@@ -29,6 +29,17 @@ template $KitsuneFranchiseCard: Gtk.FlowBoxChild {
         }
 
         [overlay]
+        Gtk.Image placeholder {
+          icon-name: "image-missing-symbolic";
+          pixel-size: 48;
+          halign: center;
+          valign: center;
+          visible: false;
+
+          styles ["dim-label"]
+        }
+
+        [overlay]
         Adw.Spinner spinner {
           halign: center;
           valign: center;

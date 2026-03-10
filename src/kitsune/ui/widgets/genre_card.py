@@ -18,6 +18,7 @@ class GenreCard(Gtk.FlowBoxChild):
     __gtype_name__ = 'KitsuneGenreCard'
 
     picture = Gtk.Template.Child()
+    placeholder = Gtk.Template.Child()
     spinner = Gtk.Template.Child()
     title_label = Gtk.Template.Child()
     subtitle_label = Gtk.Template.Child()
@@ -36,8 +37,13 @@ class GenreCard(Gtk.FlowBoxChild):
 
         if genre.image:
             load_image(genre.image, self._on_image_loaded)
+        else:
+            self.spinner.set_visible(False)
+            self.placeholder.set_visible(True)
 
     def _on_image_loaded(self, texture, error):
         self.spinner.set_visible(False)
         if texture:
             self.picture.set_paintable(texture)
+        else:
+            self.placeholder.set_visible(True)

@@ -42,3 +42,8 @@ install_data(
   join_paths('hicolor', 'scalable', 'actions', 'seek-forward-10-symbolic.svg'),
   install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
 )
+
+install_data(
+  join_paths('hicolor', 'scalable', 'actions', 'image-missing-symbolic.svg'),
+  install_dir: join_paths(get_option('datadir'), 'icons', 'hicolor', 'scalable', 'actions'),
+)
