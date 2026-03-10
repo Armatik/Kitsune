@@ -7,6 +7,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gdk, Gtk, Gio
 
+from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
 
 _nav_css_loaded = False
@@ -18,9 +19,11 @@ def _ensure_nav_css():
         return
     _nav_css_loaded = True
     css = Gtk.CssProvider()
+    _T = ADW_TRANSITION
     css.load_from_string(
         '.nav-tab { background: none;'
-        ' border-radius: 12px; padding: 6px 16px; min-width: 64px; }'
+        ' border-radius: 12px; padding: 6px 16px; min-width: 64px;'
+        ' transition: background ' + _T + '; }'
         ' .nav-tab:hover { background: alpha(currentColor, 0.07); }'
         ' .nav-tab-active { background: alpha(currentColor, 0.1); }'
         ' .nav-tab-active:hover { background: alpha(currentColor, 0.14); }'

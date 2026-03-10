@@ -5,9 +5,9 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gio, GLib, Gtk
+from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
-from kitsune import SITE_URL, API_BASE_URL
+from kitsune import SITE_URL, API_BASE_URL, ADW_TRANSITION
 from kitsune.window import KitsuneWindow
 
 
@@ -29,6 +29,7 @@ class KitsuneApplication(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
+        self._setup_global_css()
 
         about_action = Gio.SimpleAction.new('about', None)
         about_action.connect('activate', self._on_about)
@@ -58,3 +59,23 @@ class KitsuneApplication(Adw.Application):
             [f'AniLiberty API {API_BASE_URL.replace("/v1", "/docs/v1")}'],
         )
         about.present(self.props.active_window)
+
+    def _setup_global_css(self):
+        _T = ADW_TRANSITION
+        css = Gtk.CssProvider()
+        css.load_from_string(
+            'flowboxchild { transition:'
+            ' background ' + _T + ','
+            ' outline-color ' + _T + ','
+            ' outline-width ' + _T + ','
+            ' outline-offset ' + _T + '; }'
+            ' .navigation-sidebar row { transition:'
+            ' background ' + _T + ','
+            ' outline-color ' + _T + ','
+            ' outline-width ' + _T + ','
+            ' outline-offset ' + _T + '; }'
+        )
+        Gtk.StyleContext.add_provider_for_display(
+            Gdk.Display.get_default(), css,
+            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )

@@ -9,6 +9,8 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
+from kitsune import ADW_TRANSITION
+
 _css_loaded = False
 
 
@@ -17,9 +19,11 @@ def _ensure_css():
     if _css_loaded:
         return
     _css_loaded = True
+    _T = ADW_TRANSITION
     css = Gtk.CssProvider()
     css.load_from_string(
-        '.filter-chip { padding: 4px 10px; min-height: 0; min-width: 0; font-size: 13px; }'
+        '.filter-chip { padding: 4px 10px; min-height: 0; min-width: 0; font-size: 13px;'
+        ' transition: background ' + _T + ', color ' + _T + '; }'
         ' .filter-chip:checked { background: @accent_bg_color; color: @accent_fg_color; }'
     )
     Gtk.StyleContext.add_provider_for_display(

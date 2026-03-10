@@ -12,9 +12,9 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
+from kitsune import ADW_TRANSITION, watch_positions
 from kitsune.models import Episode, Release
 from kitsune.player.gst_player import GstPlayer
-from kitsune import watch_positions
 
 log = logging.getLogger('kitsune.ui.player')
 
@@ -28,6 +28,7 @@ def _ensure_player_css():
         return
     _css_loaded = True
     css = Gtk.CssProvider()
+    _T = ADW_TRANSITION
     css.load_from_string(
         '.player-bg { background: black; }'
         ' .player-shade {'
@@ -40,11 +41,13 @@ def _ensure_player_css():
         '   text-shadow: 0 1px 3px alpha(black, 0.8); }'
         ' .player-play-btn { -gtk-icon-size: 32px;'
         '   color: white; min-width: 64px; min-height: 64px; padding: 0;'
-        '   border-radius: 50%; background: alpha(white, 0.1); }'
+        '   border-radius: 50%; background: alpha(white, 0.1);'
+        '   transition: background ' + _T + '; }'
         ' .player-play-btn:hover { background: alpha(white, 0.2); }'
         ' .player-center-btn { -gtk-icon-size: 24px;'
         '   color: white; min-width: 48px; min-height: 48px; padding: 0;'
-        '   border-radius: 50%; background: alpha(white, 0.1); }'
+        '   border-radius: 50%; background: alpha(white, 0.1);'
+        '   transition: background ' + _T + '; }'
         ' .player-center-btn:hover { background: alpha(white, 0.2); }'
         ' .player-shade scale { padding: 0; }'
         ' .player-shade scale trough {'
@@ -59,7 +62,8 @@ def _ensure_player_css():
         '   min-width: 14px; min-height: 14px;'
         '   border-radius: 7px; margin: -5px; }'
         ' .player-shade dropdown button {'
-        '   color: white; background: alpha(white, 0.15); }'
+        '   color: white; background: alpha(white, 0.15);'
+        '   transition: background ' + _T + '; }'
         ' .player-shade dropdown button:hover {'
         '   background: alpha(white, 0.25); }'
         ' .player-shade dropdown button:checked {'
