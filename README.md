@@ -32,6 +32,21 @@
 
 ## Установка
 
+### Установка из репозитория ALT
+
+```sh
+apt-get update
+apt-get install kitsune-adw
+```
+
+### Установка из ALS
+
+```sh
+apt-repo add rpm https://altlinux.space/api/packages/armatik/alt/group/sisyphus.repo noarch classic
+apt-get update
+apt-get install kitsune
+```
+
 ### Сборка из исходников
 
 **Зависимости:**
