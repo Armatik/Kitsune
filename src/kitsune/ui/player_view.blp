@@ -14,15 +14,22 @@ template $KitsunePlayerView: Adw.NavigationPage {
     }
 
     [overlay]
-    Gtk.Box controls_box {
-      orientation: vertical;
+    Gtk.Overlay controls_box {
       hexpand: true;
       vexpand: true;
 
       styles ["player-shade"]
 
-      // Top bar wrapped in WindowHandle for window dragging
+      Gtk.Box {
+        hexpand: true;
+        vexpand: true;
+      }
+
+      // Top bar
+      [overlay]
       Gtk.WindowHandle {
+        valign: start;
+
         Gtk.Box top_bar {
           margin-start: 12;
           margin-end: 12;
@@ -49,9 +56,10 @@ template $KitsunePlayerView: Adw.NavigationPage {
             styles ["circular", "osd"]
           }
 
-          Gtk.Button {
+          Gtk.Button close_btn {
             icon-name: "window-close-symbolic";
             focusable: false;
+            visible: false;
             clicked => $on_close();
 
             styles ["circular", "osd"]
@@ -59,72 +67,70 @@ template $KitsunePlayerView: Adw.NavigationPage {
         }
       }
 
-      // Center area: play controls always centered,
-      // episode buttons at edges via overlay
-      Gtk.Overlay {
-        hexpand: true;
-        vexpand: true;
+      // Center controls — centered relative to entire window
+      [overlay]
+      Gtk.Box center_controls {
+        halign: center;
+        valign: center;
+        spacing: 24;
 
-        Gtk.Box center_controls {
-          halign: center;
-          valign: center;
-          spacing: 24;
-
-          Gtk.Button {
-            icon-name: "seek-backward-10-symbolic";
-            focusable: false;
-            valign: center;
-            clicked => $on_rewind();
-
-            styles ["flat", "player-center-btn"]
-          }
-
-          Gtk.Button play_btn {
-            icon-name: "media-playback-start-symbolic";
-            focusable: false;
-            valign: center;
-            clicked => $on_play_pause();
-
-            styles ["flat", "player-play-btn"]
-          }
-
-          Gtk.Button {
-            icon-name: "seek-forward-10-symbolic";
-            focusable: false;
-            valign: center;
-            clicked => $on_forward();
-
-            styles ["flat", "player-center-btn"]
-          }
-        }
-
-        [overlay]
-        Gtk.Button prev_btn {
-          icon-name: "media-skip-backward-symbolic";
+        Gtk.Button {
+          icon-name: "seek-backward-10-symbolic";
           focusable: false;
-          halign: start;
           valign: center;
-          margin-start: 24;
-          clicked => $on_prev_episode();
+          clicked => $on_rewind();
 
           styles ["flat", "player-center-btn"]
         }
 
-        [overlay]
-        Gtk.Button next_btn {
-          icon-name: "media-skip-forward-symbolic";
+        Gtk.Button play_btn {
+          icon-name: "media-playback-start-symbolic";
           focusable: false;
-          halign: end;
           valign: center;
-          margin-end: 24;
-          clicked => $on_next_episode();
+          clicked => $on_play_pause();
+
+          styles ["flat", "player-play-btn"]
+        }
+
+        Gtk.Button {
+          icon-name: "seek-forward-10-symbolic";
+          focusable: false;
+          valign: center;
+          clicked => $on_forward();
 
           styles ["flat", "player-center-btn"]
         }
       }
 
+      // Episode navigation
+      [overlay]
+      Gtk.Button prev_btn {
+        icon-name: "media-skip-backward-symbolic";
+        focusable: false;
+        halign: start;
+        valign: center;
+        margin-start: 24;
+        clicked => $on_prev_episode();
+
+        styles ["flat", "player-center-btn"]
+      }
+
+      [overlay]
+      Gtk.Button next_btn {
+        icon-name: "media-skip-forward-symbolic";
+        focusable: false;
+        halign: end;
+        valign: center;
+        margin-end: 24;
+        clicked => $on_next_episode();
+
+        styles ["flat", "player-center-btn"]
+      }
+
       // Bottom bar
+      [overlay]
       Gtk.Box bottom_box {
+        valign: end;
         orientation: vertical;
         margin-start: 12;
         margin-end: 12;
@@ -153,6 +159,8 @@ template $KitsunePlayerView: Adw.NavigationPage {
           orientation: horizontal;
           hexpand: true;
           draw-value: false;
+          show-fill-level: true;
+          restrict-to-fill-level: false;
           change-value => $on_seek();
         }
 
