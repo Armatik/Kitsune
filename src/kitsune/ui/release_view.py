@@ -25,7 +25,9 @@ def _ensure_css():
     css = Gtk.CssProvider()
     css.load_from_string(
         '.release-chip { padding: 4px 10px; border-radius: 9999px;'
-        ' background: alpha(currentColor, 0.1); }'
+        ' background: alpha(currentColor, 0.1);'
+        ' transition: background 150ms ease-in-out; }'
+        ' .release-chip:hover { background: alpha(currentColor, 0.18); }'
         ' .poster-fade { background: linear-gradient(to bottom,'
         ' transparent 40%, @window_bg_color 100%); }'
         ' .episode-card { border-radius: 12px; }'
@@ -166,6 +168,9 @@ class ReleaseView(Adw.NavigationPage):
 
     def set_on_episode_play(self, callback):
         self._on_episode_play = callback
+
+    def set_on_genre_clicked(self, callback):
+        self._on_genre_navigate = callback
 
     def _on_showing(self, _page):
         """Refresh episode progress when returning from player."""
@@ -364,7 +369,7 @@ class ReleaseView(Adw.NavigationPage):
                     label=genre.name,
                     css_classes=['pill', 'release-chip'],
                 )
-                btn.connect('clicked', self._on_genre_clicked)
+                btn.connect('clicked', lambda _b, g=genre: self._on_genre_clicked(g))
                 genre_wrap.append(btn)
             self.info_box.append(genre_wrap)
 
@@ -973,13 +978,9 @@ class ReleaseView(Adw.NavigationPage):
 
     # --- Misc ---
 
-    def _on_genre_clicked(self, _button):
-        dialog = Adw.AlertDialog(
-            heading=_('Genre'),
-            body=_('This feature is under development'),
-        )
-        dialog.add_response('ok', _('OK'))
-        dialog.present(self.get_root())
+    def _on_genre_clicked(self, genre):
+        if hasattr(self, '_on_genre_navigate') and self._on_genre_navigate:
+            self._on_genre_navigate(genre)
 
     @staticmethod
     def _meta_row(label, value):

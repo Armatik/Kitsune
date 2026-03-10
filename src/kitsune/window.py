@@ -158,7 +158,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_sidebar_row_selected(self, listbox, row):
-        if not row:
+        if not row or getattr(self, '_suppress_sidebar', False):
             return
         index = row.get_index()
         tabs = ['catalog', 'genres', 'franchises']
@@ -259,7 +259,23 @@ class KitsuneWindow(Adw.ApplicationWindow):
         from kitsune.ui.release_view import ReleaseView
         view = ReleaseView(release=release, client=self._client)
         view.set_on_episode_play(self._play_episode)
+        view.set_on_genre_clicked(self._navigate_to_genre)
         self.nav_view.push(view)
+
+    def _navigate_to_genre(self, genre):
+        self.filter_split.set_show_sidebar(False)
+        self._create_genres_view()
+        self._genres_view.show_genre(genre)
+        self.content_stack.set_visible_child_name('genres')
+        self._update_content_header()
+        self._update_nav_tabs('genres')
+        self._select_sidebar_row(1)
+        self.nav_view.pop()
+
+    def _select_sidebar_row(self, index):
+        self._suppress_sidebar = True
+        self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(index))
+        self._suppress_sidebar = False
 
     def _on_network_error(self):
         self.offline_banner.set_revealed(True)

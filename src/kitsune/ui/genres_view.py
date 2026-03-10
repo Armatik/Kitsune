@@ -69,6 +69,9 @@ class GenresView(Gtk.Box):
         if self._on_navigation_changed:
             self._on_navigation_changed()
 
+    def show_genre(self, genre):
+        self._show_genre_releases(genre)
+
     def _show_genre_releases(self, genre):
         self._current_genre = genre
 
