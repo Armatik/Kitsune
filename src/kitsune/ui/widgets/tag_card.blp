@@ -6,7 +6,7 @@ using Adw 1;
 template $KitsuneTagCard: Gtk.FlowBoxChild {
   Gtk.Box {
     orientation: vertical;
-    spacing: 6;
+    spacing: 4;
     margin-start: 6;
     margin-end: 6;
     margin-top: 6;
@@ -40,12 +40,6 @@ template $KitsuneTagCard: Gtk.FlowBoxChild {
           Gtk.Label icon_label {
             halign: center;
           }
-
-          Gtk.Label count_label {
-            halign: center;
-
-            styles ["dim-label", "caption"]
-          }
         }
       }
     }
@@ -53,11 +47,17 @@ template $KitsuneTagCard: Gtk.FlowBoxChild {
     Gtk.Label title_label {
       wrap: true;
       max-width-chars: 20;
-      lines: 2;
+      lines: 1;
       ellipsize: end;
-      xalign: 0;
+      halign: center;
 
       styles ["heading"]
+    }
+
+    Gtk.Label count_label {
+      halign: center;
+
+      styles ["dim-label", "caption"]
     }
   }
 }

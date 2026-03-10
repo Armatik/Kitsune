@@ -31,11 +31,16 @@ def _ensure_card_css():
     _card_css_loaded = True
     css = Gtk.CssProvider()
     css.load_from_string(
-        '.tag-card-emoji-bg { font-size: 64px;'
-        ' opacity: 0.3; }'
+        '.tag-card-emoji-bg { font-size: 140px;'
+        ' opacity: 0.35; filter: blur(20px);'
+        ' margin: -30px; }'
+        ' .tag-card-bg-emoji { background: alpha(@accent_bg_color, 0.12);'
+        '   border-radius: 12px; }'
         ' .tag-card-icon { font-size: 36px; }'
         ' .tag-card-color-circle { min-width: 36px; min-height: 36px;'
-        '   border-radius: 50%; }'
+        '   border-radius: 50%;'
+        '   border: 1.5px solid alpha(white, 0.25); }'
+        ' .tag-card-rounded { border-radius: 12px; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -57,11 +62,14 @@ class TagCard(Gtk.FlowBoxChild):
         super().__init__(**kwargs)
         _ensure_card_css()
         self.tag = tag
+        self.card_overlay.add_css_class('tag-card-rounded')
 
         self.title_label.set_label(tag['name'])
-
         release_count = len(tag.get('releases', []))
-        self.count_label.set_label(f'{release_count}')
+        if release_count > 0:
+            self.count_label.set_label(f'{release_count}')
+        else:
+            self.count_label.set_visible(False)
 
         if tag['icon_type'] == 'emoji':
             self._setup_emoji(tag['icon_value'])
@@ -71,13 +79,17 @@ class TagCard(Gtk.FlowBoxChild):
     def _setup_emoji(self, emoji: str):
         self.icon_label.set_label(emoji)
         self.icon_label.add_css_class('tag-card-icon')
+        self.card_bg.add_css_class('tag-card-bg-emoji')
 
         bg_label = Gtk.Label(
             label=emoji, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            hexpand=True,
             css_classes=['tag-card-emoji-bg'],
+            can_target=False,
         )
-        self.card_overlay.add_overlay(bg_label)
-        self.card_overlay.reorder_overlay(bg_label, 0)
+        self.card_bg.set_baseline_position(Gtk.BaselinePosition.CENTER)
+        bg_label.set_valign(Gtk.Align.FILL)
+        self.card_bg.append(bg_label)
 
     def _setup_color(self, color_name: str):
         hex_color = COLOR_MAP.get(color_name, '#6e7781')
@@ -99,7 +111,13 @@ class TagCard(Gtk.FlowBoxChild):
 
         bg_css = Gtk.CssProvider()
         bg_css.load_from_string(
-            f'.tag-card-bg-colored {{ background: alpha({hex_color}, 0.25);'
+            f'.tag-card-bg-colored {{'
+            f' background-color: alpha({hex_color}, 0.4);'
+            f' background-image:'
+            f'   radial-gradient(circle at center,'
+            f'     alpha(white, 0.18) 0%,'
+            f'     alpha(white, 0.06) 35%,'
+            f'     transparent 60%);'
             f' border-radius: 12px; }}'
         )
         self.card_bg.add_css_class('tag-card-bg-colored')

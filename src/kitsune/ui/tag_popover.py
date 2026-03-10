@@ -7,16 +7,34 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gdk, Gtk
 
 from kitsune import tags_store
 from kitsune.ui.widgets.tag_card import COLOR_MAP
+
+_popover_css_loaded = False
+
+
+def _ensure_popover_css():
+    global _popover_css_loaded
+    if _popover_css_loaded:
+        return
+    _popover_css_loaded = True
+    css = Gtk.CssProvider()
+    css.load_from_string(
+        '.tag-popover-emoji { font-size: 22px; }'
+    )
+    Gtk.StyleContext.add_provider_for_display(
+        Gdk.Display.get_default(), css,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
 
 
 class TagPopover(Gtk.Popover):
 
     def __init__(self, release_id: int, on_changed=None, **kwargs):
         super().__init__(**kwargs)
+        _ensure_popover_css()
         self._release_id = release_id
         self._on_changed = on_changed
         self.set_has_arrow(True)
@@ -28,11 +46,23 @@ class TagPopover(Gtk.Popover):
             width_request=240,
         )
 
+        # Search + add button row
+        search_row = Gtk.Box(spacing=4)
         self._search = Gtk.SearchEntry(
             placeholder_text=_('Search tags…'),
+            hexpand=True,
         )
         self._search.connect('search-changed', self._on_search_changed)
-        box.append(self._search)
+        search_row.append(self._search)
+
+        add_btn = Gtk.Button(
+            icon_name='list-add-symbolic',
+            css_classes=['suggested-action'],
+            valign=Gtk.Align.CENTER,
+        )
+        add_btn.connect('clicked', self._on_create_clicked)
+        search_row.append(add_btn)
+        box.append(search_row)
 
         self._list = Gtk.ListBox(
             selection_mode=Gtk.SelectionMode.NONE,
@@ -41,18 +71,21 @@ class TagPopover(Gtk.Popover):
         )
         box.append(self._list)
 
-        box.append(Gtk.Separator(margin_top=4))
-
-        create_box = Gtk.Box(spacing=8)
-        create_box.append(Gtk.Label(label='+', css_classes=['accent']))
-        create_box.append(Gtk.Label(label=_('Create tag')))
-        create_btn = Gtk.Button(
-            child=create_box,
-            css_classes=['flat'],
-            margin_top=4,
+        # "Not found" message
+        self._not_found = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4, margin_top=12, margin_bottom=8,
+            visible=False,
         )
-        create_btn.connect('clicked', self._on_create_clicked)
-        box.append(create_btn)
+        self._not_found.append(Gtk.Label(
+            label=_('Tag not found'),
+            css_classes=['dim-label'],
+        ))
+        self._not_found.append(Gtk.Label(
+            label=_('Press + to create it'),
+            css_classes=['dim-label', 'caption'],
+        ))
+        box.append(self._not_found)
 
         self.set_child(box)
         self._populate()
@@ -71,17 +104,21 @@ class TagPopover(Gtk.Popover):
             row._tag = tag
 
             if tag['icon_type'] == 'emoji':
-                row.add_prefix(Gtk.Label(label=tag['icon_value']))
+                row.add_prefix(Gtk.Label(
+                    label=tag['icon_value'],
+                    css_classes=['tag-popover-emoji'],
+                ))
             else:
                 hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
                 circle = Gtk.Box(
-                    width_request=18, height_request=18,
+                    width_request=22, height_request=22,
                     valign=Gtk.Align.CENTER,
                 )
                 css = Gtk.CssProvider()
                 css.load_from_string(
                     f'box {{ background: {hex_c}; border-radius: 50%;'
-                    f' min-width: 18px; min-height: 18px; }}'
+                    f' min-width: 22px; min-height: 22px;'
+                    f' border: 1.5px solid alpha(white, 0.25); }}'
                 )
                 circle.get_style_context().add_provider(
                     css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -99,13 +136,6 @@ class TagPopover(Gtk.Popover):
 
             self._list.append(row)
 
-            if tag.get('builtin'):
-                sep_row = Gtk.ListBoxRow(
-                    selectable=False, activatable=False,
-                    child=Gtk.Separator(),
-                )
-                self._list.append(sep_row)
-
     def _on_tag_toggled(self, check):
         tag_id = check._tag_id
         if check.get_active():
@@ -117,19 +147,25 @@ class TagPopover(Gtk.Popover):
 
     def _on_search_changed(self, entry):
         text = entry.get_text().lower()
+        any_visible = False
         row = self._list.get_first_child()
         while row:
             if hasattr(row, '_tag'):
                 visible = not text or text in row._tag['name'].lower()
                 row.set_visible(visible)
+                if visible:
+                    any_visible = True
             row = row.get_next_sibling()
+        self._not_found.set_visible(bool(text) and not any_visible)
 
     def _on_create_clicked(self, _btn):
         from kitsune.ui.create_tag_dialog import show_create_tag_dialog
+        search_text = self._search.get_text().strip()
         self.popdown()
         show_create_tag_dialog(
             self.get_root(),
             callback=self._on_tag_created,
+            prefill_name=search_text,
         )
 
     def _on_tag_created(self, tag):

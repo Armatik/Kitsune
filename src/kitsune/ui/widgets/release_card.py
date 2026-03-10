@@ -61,14 +61,12 @@ class ReleaseCard(Gtk.FlowBoxChild):
         cls._badge_css_loaded = True
         css = Gtk.CssProvider()
         css.load_from_string(
-            '.tag-badge { min-width: 24px; min-height: 24px;'
-            ' border-radius: 50%; background: alpha(black, 0.6);'
-            ' border: 1.5px solid alpha(white, 0.12); }'
-            ' .tag-badge-plus { background: alpha(@accent_bg_color, 0.3);'
-            ' border-color: alpha(@accent_bg_color, 0.5); }'
-            ' .tag-badge-emoji { font-size: 13px; }'
-            ' .tag-badge-color { min-width: 14px; min-height: 14px;'
-            ' border-radius: 50%; }'
+            '.tag-badge-pill { padding: 5px 8px; border-radius: 9999px;'
+            ' background: alpha(@accent_bg_color, 0.85); }'
+            ' .tag-badge-emoji { font-size: 16px; }'
+            ' .tag-badge-color { min-width: 16px; min-height: 16px;'
+            ' border-radius: 50%;'
+            ' border: 1px solid alpha(white, 0.3); }'
         )
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(), css,
@@ -86,22 +84,25 @@ class ReleaseCard(Gtk.FlowBoxChild):
         visible_tags = tags[:max_visible]
         has_more = len(tags) > max_visible
 
-        for i, tag in enumerate(visible_tags):
-            badge = Gtk.Box(
-                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                css_classes=['tag-badge'],
-            )
-            if i > 0:
-                badge.set_margin_start(-6)
+        pill = Gtk.Box(
+            spacing=4,
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            css_classes=['tag-badge-pill'],
+        )
+
+        for tag in visible_tags:
             if tag['icon_type'] == 'emoji':
-                badge.append(Gtk.Label(
+                pill.append(Gtk.Label(
                     label=tag['icon_value'],
                     css_classes=['tag-badge-emoji'],
                 ))
             else:
                 from kitsune.ui.widgets.tag_card import COLOR_MAP
                 hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-                circle = Gtk.Box(css_classes=['tag-badge-color'])
+                circle = Gtk.Box(
+                    css_classes=['tag-badge-color'],
+                    valign=Gtk.Align.CENTER,
+                )
                 c_css = Gtk.CssProvider()
                 c_css.load_from_string(
                     f'.tag-badge-color {{ background: {hex_c}; }}'
@@ -109,17 +110,22 @@ class ReleaseCard(Gtk.FlowBoxChild):
                 circle.get_style_context().add_provider(
                     c_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
                 )
-                badge.append(circle)
-            self.tag_badges.append(badge)
+                pill.append(circle)
 
         if has_more:
-            plus = Gtk.Box(
-                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                css_classes=['tag-badge', 'tag-badge-plus'],
-                margin_start=-6,
-            )
-            plus.append(Gtk.Label(label='+', css_classes=['accent']))
-            self.tag_badges.append(plus)
+            pill.append(Gtk.Label(
+                label='+',
+                css_classes=['tag-badge-emoji'],
+                valign=Gtk.Align.CENTER,
+            ))
+
+        self.tag_badges.append(pill)
+
+    def refresh_tag_badges(self):
+        while child := self.tag_badges.get_first_child():
+            self.tag_badges.remove(child)
+        self.tag_badges.set_visible(False)
+        self._populate_tag_badges()
 
     def _on_preview_loaded(self, texture, error):
         if texture and not self.picture.get_paintable():
