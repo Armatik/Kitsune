@@ -30,7 +30,8 @@ def _ensure_css():
         ' .release-chip:hover { background: alpha(currentColor, 0.18); }'
         ' .poster-fade { background: linear-gradient(to bottom,'
         ' transparent 40%, @window_bg_color 100%); }'
-        ' .episode-card { border-radius: 12px; }'
+        ' .episode-card { border-radius: 12px;'
+        ' background: alpha(currentColor, 0.08); }'
         ' .episode-overlay { background: linear-gradient(to top,'
         ' alpha(black, 0.7) 0%, transparent 50%); }'
         ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
@@ -551,9 +552,32 @@ class ReleaseView(Adw.NavigationPage):
         overlay.set_child(picture)
 
         if episode.preview:
-            load_image(episode.preview, lambda tex, err, pic=picture:
-                       pic.set_paintable(tex) if tex else None,
+            spinner = Adw.Spinner(
+                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                width_request=32, height_request=32,
+            )
+            overlay.add_overlay(spinner)
+
+            def _on_preview_loaded(tex, err, pic=picture, sp=spinner, ov=overlay):
+                sp.set_visible(False)
+                if tex:
+                    pic.set_paintable(tex)
+                else:
+                    ov.add_overlay(Gtk.Image(
+                        icon_name='image-missing-symbolic',
+                        pixel_size=48, opacity=0.4,
+                        halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                    ))
+
+            load_image(episode.preview, _on_preview_loaded,
                        category='previews')
+        else:
+            placeholder = Gtk.Image(
+                icon_name='image-missing-symbolic',
+                pixel_size=48, opacity=0.4,
+                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            )
+            overlay.add_overlay(placeholder)
 
         gradient = Gtk.Box(
             css_classes=['episode-overlay'],
