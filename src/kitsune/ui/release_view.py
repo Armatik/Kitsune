@@ -121,6 +121,7 @@ class ReleaseView(Adw.NavigationPage):
         self._refresh_fade_anim = None
         self._refresh_timer = 0
         self._watch_data = {}
+        self._watch_filter = 'all'
         _ensure_css()
 
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
@@ -214,13 +215,10 @@ class ReleaseView(Adw.NavigationPage):
         # Filter: All / Watched / Unwatched (wide mode)
         self._filter_toggle = Adw.ToggleGroup()
         self._filter_toggle.add(Adw.Toggle(name='all', label=_('All')))
-        self._filter_toggle.add(Adw.Toggle(
-            name='watched', label=_('Watched'), enabled=False,
-        ))
-        self._filter_toggle.add(Adw.Toggle(
-            name='unwatched', label=_('Unwatched'), enabled=False,
-        ))
+        self._filter_toggle.add(Adw.Toggle(name='watched', label=_('Watched')))
+        self._filter_toggle.add(Adw.Toggle(name='unwatched', label=_('Unwatched')))
         self._filter_toggle.set_active_name('all')
+        self._filter_toggle.connect('notify::active-name', self._on_filter_changed)
         self.episodes_controls.append(self._filter_toggle)
 
         # Filter: MenuButton (compact mode, hidden by default)
@@ -229,14 +227,17 @@ class ReleaseView(Adw.NavigationPage):
             visible=False,
         )
         popover = Gtk.Popover()
-        pop_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
-        pop_list.add_css_class('boxed-list')
-        all_row = Adw.ActionRow(title=_('All'), activatable=True)
-        all_row.add_prefix(Gtk.Image(icon_name='object-select-symbolic'))
-        pop_list.append(all_row)
-        pop_list.append(Adw.ActionRow(title=_('Watched'), sensitive=False))
-        pop_list.append(Adw.ActionRow(title=_('Unwatched'), sensitive=False))
-        popover.set_child(pop_list)
+        self._filter_pop_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        self._filter_pop_list.add_css_class('boxed-list')
+        self._filter_rows = []
+        for name, label in [('all', _('All')), ('watched', _('Watched')), ('unwatched', _('Unwatched'))]:
+            row = Adw.ActionRow(title=label, activatable=True)
+            row._filter_name = name
+            self._filter_rows.append(row)
+            self._filter_pop_list.append(row)
+        self._filter_rows[0].add_prefix(Gtk.Image(icon_name='object-select-symbolic'))
+        self._filter_pop_list.connect('row-activated', self._on_filter_row_activated)
+        popover.set_child(self._filter_pop_list)
         self._filter_menu_btn.set_popover(popover)
         self.episodes_controls.append(self._filter_menu_btn)
 
@@ -308,6 +309,25 @@ class ReleaseView(Adw.NavigationPage):
         self._search_text = entry.get_text().strip().lower()
         self._refresh_episodes()
 
+    def _on_filter_changed(self, toggle_group, _pspec):
+        self._watch_filter = toggle_group.get_active_name()
+        self._refresh_episodes()
+
+    def _on_filter_row_activated(self, listbox, row):
+        name = row._filter_name
+        self._watch_filter = name
+        self._filter_toggle.set_active_name(name)
+        for r in self._filter_rows:
+            child = r.get_first_child()
+            while child:
+                if isinstance(child, Gtk.Image):
+                    r.remove(child)
+                    break
+                child = child.get_next_sibling()
+        row.add_prefix(Gtk.Image(icon_name='object-select-symbolic'))
+        self._filter_menu_btn.get_popover().popdown()
+        self._refresh_episodes()
+
     def _on_sort_clicked(self, _button):
         self._sort_newest_first = not self._sort_newest_first
         if self._sort_newest_first:
@@ -320,6 +340,12 @@ class ReleaseView(Adw.NavigationPage):
 
     def _get_filtered_episodes(self) -> list[Episode]:
         episodes = list(self._release.episodes)
+        if self._watch_filter == 'watched':
+            episodes = [ep for ep in episodes
+                        if self._watch_data.get(ep.ordinal, 0) != 0]
+        elif self._watch_filter == 'unwatched':
+            episodes = [ep for ep in episodes
+                        if self._watch_data.get(ep.ordinal, 0) == 0]
         if self._search_text:
             query = self._search_text
             filtered = []
