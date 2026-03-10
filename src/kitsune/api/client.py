@@ -64,9 +64,10 @@ class AniLibriaClient:
             gbytes = session.send_and_read_finish(result)
             status = msg.get_status()
             if status != Soup.Status.OK:
-                if self._offline:
-                    return  # let timeout show X after spinner
                 state[0] = True
+                GLib.source_remove(timeout_id)
+                if self._offline:
+                    return
                 GLib.source_remove(timeout_id)
                 self._offline = True
                 callback(None, f'HTTP {status.value_nick}')
@@ -75,7 +76,11 @@ class AniLibriaClient:
                 return
             state[0] = True
             GLib.source_remove(timeout_id)
-            data = json.loads(gbytes.get_data())
+            raw = gbytes.get_data()
+            if len(raw) > 10 * 1024 * 1024:
+                callback(None, 'Response too large')
+                return
+            data = json.loads(raw)
             callback(data, None)
             if self._offline:
                 self._offline = False
@@ -86,19 +91,20 @@ class AniLibriaClient:
                 state[0] = True
                 GLib.source_remove(timeout_id)
                 return
-            if self._offline:
-                return  # let timeout show X after spinner
             state[0] = True
+            GLib.source_remove(timeout_id)
+            if self._offline:
+                return
             GLib.source_remove(timeout_id)
             self._offline = True
             callback(None, str(e))
             if self._on_network_error:
                 self._on_network_error()
         except Exception as e:
-            if self._offline:
-                return  # let timeout show X after spinner
             state[0] = True
             GLib.source_remove(timeout_id)
+            if self._offline:
+                return
             self._offline = True
             callback(None, str(e))
             if self._on_network_error:
@@ -197,6 +203,7 @@ class AniLibriaClient:
 
     def get_year_range(self, callback=None, cancellable=None):
         """Fetch min and max years from catalog. callback((min_year, max_year), error)."""
+        import datetime
         result = {}
 
         def on_oldest(data, error):
@@ -204,7 +211,7 @@ class AniLibriaClient:
                 callback(None, error)
                 return
             releases = data.get('data', [])
-            result['min'] = releases[0]['year'] if releases else 2000
+            result['min'] = releases[0].get('year', 2000) if releases else 2000
             self._fetch(
                 '/anime/catalog/releases?page=1&limit=1&f%5Bsorting%5D=YEAR_DESC',
                 on_newest, cancellable,
@@ -215,7 +222,8 @@ class AniLibriaClient:
                 callback(None, error)
                 return
             releases = data.get('data', [])
-            result['max'] = releases[0]['year'] if releases else 2026
+            result['max'] = releases[0].get('year', datetime.date.today().year) \
+                if releases else datetime.date.today().year
             callback((result['min'], result['max']), None)
 
         self._fetch(

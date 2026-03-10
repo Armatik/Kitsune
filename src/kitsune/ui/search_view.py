@@ -79,6 +79,15 @@ class SearchView(Adw.NavigationPage):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
 
+    def do_unmap(self):
+        if self._debounce_id:
+            GLib.source_remove(self._debounce_id)
+            self._debounce_id = 0
+        if self._cancellable:
+            self._cancellable.cancel()
+            self._cancellable = None
+        Adw.NavigationPage.do_unmap(self)
+
     def grab_focus(self):
         self.search_entry.grab_focus()
         return True

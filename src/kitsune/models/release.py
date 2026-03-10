@@ -17,15 +17,24 @@ class SkipTimecode:
         return cls(start=data.get('start', 0), stop=data.get('stop', 0))
 
 
+def _safe_url(path: str | None) -> str | None:
+    """Prepend base URL only if path is a valid relative path."""
+    if not path or not isinstance(path, str):
+        return None
+    if not path.startswith('/') or path.startswith('//'):
+        return None
+    return 'https://anilibria.top' + path
+
+
 def _genre_image_url(data: dict | None) -> str | None:
     if not data:
         return None
     optimized = data.get('optimized')
     if optimized and optimized.get('preview'):
-        return 'https://anilibria.top' + optimized['preview']
+        return _safe_url(optimized['preview'])
     preview = data.get('preview')
     if preview:
-        return 'https://anilibria.top' + preview
+        return _safe_url(preview)
     return None
 
 
@@ -39,8 +48,8 @@ class Genre:
     @classmethod
     def from_dict(cls, data: dict) -> Genre:
         return cls(
-            id=data['id'],
-            name=data['name'],
+            id=data.get('id', 0),
+            name=data.get('name', ''),
             image=_genre_image_url(data.get('image')),
             total_releases=data.get('total_releases', 0),
         )
@@ -66,10 +75,10 @@ def _poster_url(data: dict | None) -> str | None:
         return None
     optimized = data.get('optimized')
     if optimized and optimized.get('src'):
-        return 'https://anilibria.top' + optimized['src']
+        return _safe_url(optimized['src'])
     src = data.get('src')
     if src:
-        return 'https://anilibria.top' + src
+        return _safe_url(src)
     return None
 
 
@@ -78,10 +87,10 @@ def _poster_preview_url(data: dict | None) -> str | None:
         return None
     optimized = data.get('optimized')
     if optimized and optimized.get('preview'):
-        return 'https://anilibria.top' + optimized['preview']
+        return _safe_url(optimized['preview'])
     preview = data.get('preview')
     if preview:
-        return 'https://anilibria.top' + preview
+        return _safe_url(preview)
     return None
 
 
@@ -165,7 +174,7 @@ class Episode:
     @classmethod
     def from_dict(cls, data: dict) -> Episode:
         return cls(
-            id=data['id'],
+            id=data.get('id', ''),
             name=data.get('name'),
             ordinal=data.get('ordinal', 0),
             hls_480=data.get('hls_480'),
@@ -222,7 +231,7 @@ class Release:
         torrents = [Torrent.from_dict(t) for t in data.get('torrents', [])]
 
         return cls(
-            id=data['id'],
+            id=data.get('id', 0),
             name=ReleaseName.from_dict(name_data) if isinstance(name_data, dict) else ReleaseName(main=str(name_data)),
             alias=data.get('alias', ''),
             description=data.get('description'),

@@ -116,6 +116,8 @@ class GenresView(Gtk.Box):
         self._add_pending_batch()
 
     def _add_pending_batch(self):
+        if not self.get_mapped():
+            return GLib.SOURCE_REMOVE
         batch = self._pending_genres[:4]
         self._pending_genres = self._pending_genres[4:]
         for genre in batch:

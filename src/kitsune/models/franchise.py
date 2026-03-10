@@ -10,12 +10,13 @@ from kitsune.models.release import Release
 def _franchise_image_url(data: dict | None) -> str | None:
     if not data:
         return None
+    from kitsune.models.release import _safe_url
     optimized = data.get('optimized')
     if optimized and optimized.get('preview'):
-        return 'https://anilibria.top' + optimized['preview']
+        return _safe_url(optimized['preview'])
     preview = data.get('preview')
     if preview:
-        return 'https://anilibria.top' + preview
+        return _safe_url(preview)
     return None
 
 
@@ -41,7 +42,7 @@ class Franchise:
                 releases.append(Release.from_dict(rel_data))
 
         return cls(
-            id=data['id'],
+            id=data.get('id', ''),
             name=data.get('name', ''),
             name_english=data.get('name_english'),
             image=_franchise_image_url(data.get('image')),

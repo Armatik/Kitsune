@@ -66,7 +66,7 @@ class GenreReleasesView(Gtk.Box):
     def _on_catalog_loaded(self, catalog_response, error):
         self._loading = False
         if error or not catalog_response:
-            self._page -= 1
+            self._page = max(0, self._page - 1)
             self._grid.show_error()
             return
         self._last_page = catalog_response.meta.last_page

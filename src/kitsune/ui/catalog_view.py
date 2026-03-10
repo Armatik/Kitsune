@@ -109,7 +109,7 @@ class CatalogView(Gtk.Box):
         self._loading = False
 
         if error:
-            self._page -= 1
+            self._page = max(0, self._page - 1)
             self._grid.show_error()
             return
 
@@ -118,6 +118,8 @@ class CatalogView(Gtk.Box):
         self._add_pending_batch()
 
     def _add_pending_batch(self):
+        if not self.get_mapped():
+            return GLib.SOURCE_REMOVE
         batch = self._pending_releases[:4]
         self._pending_releases = self._pending_releases[4:]
         for release in batch:

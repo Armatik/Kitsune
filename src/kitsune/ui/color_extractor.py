@@ -17,8 +17,16 @@ from gi.repository import Gdk, GdkPixbuf, GLib, Gio
 
 
 def extract_colors(texture: Gdk.Texture, count: int = 6) -> list[tuple[int, int, int]]:
-    """Extract dominant colors from a Gdk.Texture using median cut."""
+    """Extract dominant colors from a Gdk.Texture using median cut.
+    NOTE: Must be called from the main thread (accesses GDK objects).
+    For background threads, use extract_colors_from_bytes() instead.
+    """
     png_bytes = texture.save_to_png_bytes()
+    return extract_colors_from_bytes(png_bytes, count)
+
+
+def extract_colors_from_bytes(png_bytes, count: int = 6) -> list[tuple[int, int, int]]:
+    """Extract dominant colors from PNG bytes (GLib.Bytes). Thread-safe."""
     stream = Gio.MemoryInputStream.new_from_bytes(png_bytes)
     pixbuf = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
     small = pixbuf.scale_simple(32, 32, GdkPixbuf.InterpType.BILINEAR)
@@ -42,9 +50,9 @@ def extract_colors(texture: Gdk.Texture, count: int = 6) -> list[tuple[int, int,
     return _median_cut(pixels, count)
 
 
-def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 3,
-                            size: int = 64, noise: bool = False) -> Gdk.Texture:
-    """Create a small gradient image with colored blobs. Looks blurred when scaled up."""
+def create_gradient_bytes(colors: list[tuple[int, int, int]], n_points: int = 3,
+                          size: int = 64, noise: bool = False) -> bytes:
+    """Create gradient PNG bytes. Thread-safe (no GDK access)."""
     render_size = 512 if noise else size
     n_points = max(2, min(n_points, len(colors)))
     chosen = random.sample(colors, n_points)
@@ -70,10 +78,15 @@ def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 
 
     buf = io.BytesIO()
     surface.write_to_png(buf)
-    gbytes = GLib.Bytes.new(buf.getvalue())
-    texture = Gdk.Texture.new_from_bytes(gbytes)
+    return buf.getvalue()
 
-    return texture
+
+def create_gradient_texture(colors: list[tuple[int, int, int]], n_points: int = 3,
+                            size: int = 64, noise: bool = False) -> Gdk.Texture:
+    """Create gradient texture. Must be called from the main thread."""
+    png_data = create_gradient_bytes(colors, n_points, size, noise)
+    gbytes = GLib.Bytes.new(png_data)
+    return Gdk.Texture.new_from_bytes(gbytes)
 
 
 def _apply_noise(surface: cairo.ImageSurface, size: int):

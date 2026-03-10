@@ -323,6 +323,7 @@ class ReleaseView(Adw.NavigationPage):
         title_label = Gtk.Label(
             label=self._release.name.main,
             wrap=True, xalign=0, css_classes=['title-1'],
+            use_markup=False,
         )
         self.info_box.append(title_label)
 
@@ -330,6 +331,7 @@ class ReleaseView(Adw.NavigationPage):
             en_label = Gtk.Label(
                 label=self._release.name.english,
                 wrap=True, xalign=0, css_classes=['dim-label'],
+                use_markup=False,
             )
             self.info_box.append(en_label)
 
@@ -774,12 +776,12 @@ class ReleaseView(Adw.NavigationPage):
             self.torrents_list.append(row)
 
     def _on_torrent_download(self, _button, torrent):
-        url = f'https://anilibria.top/api/v1/anime/torrents/{torrent.id}/file'
+        url = f'https://anilibria.top/api/v1/anime/torrents/{int(torrent.id)}/file'
         launcher = Gtk.UriLauncher(uri=url)
         launcher.launch(self.get_root(), None, None, None)
 
     def _on_magnet_clicked(self, _button, torrent):
-        if torrent.magnet:
+        if torrent.magnet and torrent.magnet.startswith('magnet:'):
             launcher = Gtk.UriLauncher(uri=torrent.magnet)
             launcher.launch(self.get_root(), None, None, None)
 
@@ -891,17 +893,25 @@ class ReleaseView(Adw.NavigationPage):
         n_points = self._settings.get_int('accent-color-points')
         glass = self._settings.get_boolean('accent-glass-effect')
 
+        # Convert texture to PNG bytes on the main thread (GDK is not thread-safe)
+        png_bytes = texture.save_to_png_bytes()
+
         import threading
-        from kitsune.ui.color_extractor import extract_colors, create_gradient_texture
+        from kitsune.ui.color_extractor import extract_colors_from_bytes, create_gradient_bytes
 
         def _generate():
-            colors = extract_colors(texture)
-            gradient = create_gradient_texture(colors, n_points=n_points, noise=glass)
-            GLib.idle_add(self._on_gradient_ready, gradient)
+            colors = extract_colors_from_bytes(png_bytes)
+            gradient_data = create_gradient_bytes(colors, n_points=n_points, noise=glass)
+            GLib.idle_add(self._on_gradient_ready, gradient_data)
 
         threading.Thread(target=_generate, daemon=True).start()
 
-    def _on_gradient_ready(self, gradient):
+    def _on_gradient_ready(self, gradient_data):
+        if not self.get_mapped():
+            return GLib.SOURCE_REMOVE
+        # Create GDK texture on the main thread
+        gbytes = GLib.Bytes.new(gradient_data)
+        gradient = Gdk.Texture.new_from_bytes(gbytes)
         self.gradient_bg.set_paintable(gradient)
         self._accent_mode = True
 
@@ -919,13 +929,15 @@ class ReleaseView(Adw.NavigationPage):
         return GLib.SOURCE_REMOVE
 
     def do_unmap(self):
-        if self._fade_anim:
-            self._fade_anim.skip()
-            self._fade_anim = None
-        if self._refresh_fade_anim:
-            self._refresh_fade_anim.skip()
-            self._refresh_fade_anim = None
-        if self._refresh_timer:
-            GLib.source_remove(self._refresh_timer)
-            self._refresh_timer = 0
-        Adw.NavigationPage.do_unmap(self)
+        try:
+            if self._fade_anim:
+                self._fade_anim.skip()
+                self._fade_anim = None
+            if self._refresh_fade_anim:
+                self._refresh_fade_anim.skip()
+                self._refresh_fade_anim = None
+            if self._refresh_timer:
+                GLib.source_remove(self._refresh_timer)
+                self._refresh_timer = 0
+        finally:
+            Adw.NavigationPage.do_unmap(self)

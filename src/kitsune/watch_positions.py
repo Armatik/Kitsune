@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import tempfile
 from pathlib import Path
 
 _POSITIONS_FILE = Path(
@@ -20,7 +21,18 @@ def _load() -> dict:
 
 def _save(data: dict):
     _POSITIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _POSITIONS_FILE.write_text(json.dumps(data))
+    fd, tmp = tempfile.mkstemp(dir=_POSITIONS_FILE.parent)
+    try:
+        os.write(fd, json.dumps(data).encode())
+        os.close(fd)
+        os.replace(tmp, _POSITIONS_FILE)
+    except BaseException:
+        os.close(fd)
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def get_position(release_id: int, ordinal: float) -> float:

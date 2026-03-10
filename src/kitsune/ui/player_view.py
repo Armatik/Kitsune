@@ -533,7 +533,8 @@ class PlayerView(Adw.NavigationPage):
 
     def _on_error(self, _player, message):
         log.error('playback error: %s', message)
-        toast = Adw.Toast(title=_('Playback error: {}').format(message))
+        safe_msg = GLib.markup_escape_text(message, -1)
+        toast = Adw.Toast(title=_('Playback error: {}').format(safe_msg))
         root = self.get_root()
         if hasattr(root, 'add_toast'):
             root.add_toast(toast)
@@ -705,22 +706,24 @@ class PlayerView(Adw.NavigationPage):
 
     def do_unmap(self):
         log.debug('unmap (cleanup)')
-        self._save_watch_position()
-        if self._fullscreen:
-            root = self.get_root()
-            if root:
-                root.unfullscreen()
-        if self._hide_timer:
-            GLib.source_remove(self._hide_timer)
-            self._hide_timer = 0
-        if self._seek_reset_timer:
-            GLib.source_remove(self._seek_reset_timer)
-            self._seek_reset_timer = 0
-        if self._seek_debounce:
-            GLib.source_remove(self._seek_debounce)
-            self._seek_debounce = 0
-        if self._fade_anim:
-            self._fade_anim.skip()
-            self._fade_anim = None
-        self._player.cleanup()
-        Adw.NavigationPage.do_unmap(self)
+        try:
+            self._save_watch_position()
+            if self._fullscreen:
+                root = self.get_root()
+                if root:
+                    root.unfullscreen()
+            if self._hide_timer:
+                GLib.source_remove(self._hide_timer)
+                self._hide_timer = 0
+            if self._seek_reset_timer:
+                GLib.source_remove(self._seek_reset_timer)
+                self._seek_reset_timer = 0
+            if self._seek_debounce:
+                GLib.source_remove(self._seek_debounce)
+                self._seek_debounce = 0
+            if self._fade_anim:
+                self._fade_anim.skip()
+                self._fade_anim = None
+            self._player.cleanup()
+        finally:
+            Adw.NavigationPage.do_unmap(self)

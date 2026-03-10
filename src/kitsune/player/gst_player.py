@@ -32,7 +32,13 @@ class GstPlayer(GObject.Object):
             log.debug('created playbin3')
         else:
             self._playbin = Gst.ElementFactory.make('playbin', 'playbin')
-            log.debug('created playbin (fallback)')
+            if self._playbin:
+                log.debug('created playbin (fallback)')
+            else:
+                raise RuntimeError(
+                    'GStreamer playbin not available. '
+                    'Install gstreamer1.0-plugins-base.'
+                )
 
         self._paintable = None
         self._setup_video_sink()
@@ -68,6 +74,10 @@ class GstPlayer(GObject.Object):
         return self._paintable
 
     def play_uri(self, uri: str):
+        if not uri or not uri.startswith(('https://', 'http://')):
+            log.error('refusing non-HTTP URI: %s', uri)
+            self.emit('error', 'Invalid stream URL')
+            return
         log.debug('play_uri: %s', uri)
         self._playbin.set_state(Gst.State.NULL)
         self._playbin.set_property('uri', uri)
@@ -103,6 +113,7 @@ class GstPlayer(GObject.Object):
             self.play()
 
     def seek(self, position_seconds: float):
+        position_seconds = max(0.0, position_seconds)
         log.debug('seek → %.1fs', position_seconds)
         self._playbin.seek_simple(
             Gst.Format.TIME,
@@ -202,4 +213,7 @@ class GstPlayer(GObject.Object):
     def cleanup(self):
         log.debug('cleanup')
         self.stop()
+        bus = self._playbin.get_bus()
+        if bus:
+            bus.remove_signal_watch()
         self._playbin.set_state(Gst.State.NULL)

@@ -115,6 +115,8 @@ class FranchisesView(Gtk.Box):
         self._add_pending_batch()
 
     def _add_pending_batch(self):
+        if not self.get_mapped():
+            return GLib.SOURCE_REMOVE
         batch = self._pending_franchises[:4]
         self._pending_franchises = self._pending_franchises[4:]
         for franchise in batch:

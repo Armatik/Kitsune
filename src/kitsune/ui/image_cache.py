@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
+from collections import OrderedDict
+from urllib.parse import urlparse
 
 import gi
 
@@ -17,7 +19,9 @@ log = logging.getLogger('kitsune.image_cache')
 
 _session = Soup.Session()
 _base_cache_dir = os.path.join(GLib.get_user_cache_dir(), 'kitsune')
-_memory_cache: dict[str, Gdk.Texture] = {}
+_MAX_MEMORY_CACHE = 300
+_MAX_DOWNLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+_memory_cache: OrderedDict[str, Gdk.Texture] = OrderedDict()
 
 
 def _cache_dir(category: str = 'posters') -> str:
@@ -28,14 +32,15 @@ def _ensure_cache_dir(category: str = 'posters'):
     os.makedirs(_cache_dir(category), exist_ok=True)
 
 
+_ALLOWED_EXTS = {'.jpg', '.jpeg', '.png', '.webp', '.avif'}
+
+
 def _url_to_path(url: str, category: str = 'posters') -> str:
-    ext = '.jpg'
-    if '.avif' in url:
-        ext = '.avif'
-    elif '.png' in url:
-        ext = '.png'
-    elif '.webp' in url:
-        ext = '.webp'
+    parsed = urlparse(url)
+    _, ext = os.path.splitext(parsed.path)
+    ext = ext.lower()
+    if ext not in _ALLOWED_EXTS:
+        ext = '.jpg'
     url_hash = hashlib.sha256(url.encode()).hexdigest()[:16]
     return os.path.join(_cache_dir(category), url_hash + ext)
 
@@ -44,6 +49,7 @@ def load_image(url: str, callback, category: str = 'posters'):
     """Load image from cache or network. callback(texture, error)."""
     if url in _memory_cache:
         log.debug('memory hit: %s [%s]', url, category)
+        _memory_cache.move_to_end(url)
         callback(_memory_cache[url], None)
         return
 
@@ -55,7 +61,7 @@ def load_image(url: str, callback, category: str = 'posters'):
             log.debug('disk hit: %s [%s]', url, category)
             callback(texture, None)
             return
-        except Exception:
+        except (GLib.Error, OSError, ValueError):
             log.debug('disk corrupted, removing: %s', cache_path)
             os.remove(cache_path)
 
@@ -111,14 +117,22 @@ def _on_downloaded(session, result, user_data):
         gbytes = session.send_and_read_finish(result)
         data = gbytes.get_data()
 
+        if len(data) > _MAX_DOWNLOAD_SIZE:
+            log.debug('download too large (%d bytes): %s', len(data), url)
+            callback(None, 'Image too large')
+            return
+
+        texture = Gdk.Texture.new_from_bytes(gbytes)
+
         _ensure_cache_dir(category)
         with open(cache_path, 'wb') as f:
             f.write(data)
 
-        texture = Gdk.Texture.new_from_bytes(gbytes)
         _memory_cache[url] = texture
+        while len(_memory_cache) > _MAX_MEMORY_CACHE:
+            _memory_cache.popitem(last=False)
         log.debug('cached: %s (%d bytes) [%s]', url, len(data), category)
         callback(texture, None)
-    except Exception as e:
+    except (GLib.Error, OSError, ValueError) as e:
         log.debug('download failed: %s — %s', url, e)
         callback(None, str(e))
