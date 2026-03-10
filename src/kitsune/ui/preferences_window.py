@@ -9,7 +9,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gio, Gtk
 
-from kitsune.ui.image_cache import get_cache_size, clear_cache
+from kitsune.ui.image_cache import get_cache_size, get_cache_count, clear_cache
 from kitsune import release_cache, watch_positions
 
 _STYLE_DESCRIPTIONS = {
@@ -33,6 +33,8 @@ class PreferencesWindow(Adw.PreferencesDialog):
     __gtype_name__ = 'KitsunePreferencesWindow'
 
     cache_size_row = Gtk.Template.Child()
+    preview_count_row = Gtk.Template.Child()
+    preview_size_row = Gtk.Template.Child()
     release_count_row = Gtk.Template.Child()
     release_size_row = Gtk.Template.Child()
     watch_count_row = Gtk.Template.Child()
@@ -44,6 +46,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
     glass_effect_row = Gtk.Template.Child()
     color_points_row = Gtk.Template.Child()
     fade_duration_row = Gtk.Template.Child()
+    close_button_row = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -66,7 +69,12 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.color_points_row.connect('notify::value', self._on_color_points_changed)
         self.fade_duration_row.connect('notify::value', self._on_fade_duration_changed)
 
+        self.close_button_row.set_active(
+            self._settings.get_boolean('player-show-close-button'))
+        self.close_button_row.connect('notify::active', self._on_close_button_changed)
+
         self._update_cache_size()
+        self._update_preview_cache()
         self._update_release_cache()
         self._update_watch_progress()
 
@@ -79,8 +87,16 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.accent_group.set_visible(style == 'accent')
 
     def _update_cache_size(self):
-        size = get_cache_size()
-        self.cache_size_row.set_subtitle(_format_size(size))
+        count = get_cache_count('posters')
+        size = get_cache_size('posters')
+        self.cache_size_row.set_subtitle(
+            f'{count} — {_format_size(size)}')
+
+    def _update_preview_cache(self):
+        count = get_cache_count('previews')
+        size = get_cache_size('previews')
+        self.preview_count_row.set_subtitle(str(count))
+        self.preview_size_row.set_subtitle(_format_size(size))
 
     @Gtk.Template.Callback()
     def on_style_changed(self, toggle_group, _pspec):
@@ -101,6 +117,9 @@ class PreferencesWindow(Adw.PreferencesDialog):
     def _on_fade_duration_changed(self, row, _pspec):
         self._settings.set_int('accent-fade-duration', int(row.get_value()))
 
+    def _on_close_button_changed(self, row, _pspec):
+        self._settings.set_boolean('player-show-close-button', row.get_active())
+
     def _update_watch_progress(self):
         count = watch_positions.get_count()
         size = watch_positions.get_size()
@@ -120,8 +139,13 @@ class PreferencesWindow(Adw.PreferencesDialog):
 
     @Gtk.Template.Callback()
     def on_clear_clicked(self, _button):
-        clear_cache()
+        clear_cache('posters')
         self._update_cache_size()
+
+    @Gtk.Template.Callback()
+    def on_clear_preview_clicked(self, _button):
+        clear_cache('previews')
+        self._update_preview_cache()
 
     @Gtk.Template.Callback()
     def on_clear_progress_clicked(self, _button):

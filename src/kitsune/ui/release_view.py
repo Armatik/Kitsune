@@ -492,7 +492,8 @@ class ReleaseView(Adw.NavigationPage):
 
         if episode.preview:
             load_image(episode.preview, lambda tex, err, pic=picture:
-                       pic.set_paintable(tex) if tex else None)
+                       pic.set_paintable(tex) if tex else None,
+                       category='previews')
 
         gradient = Gtk.Box(
             css_classes=['episode-overlay'],

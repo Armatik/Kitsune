@@ -79,6 +79,15 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
         };
       }
     }
+
+    Adw.PreferencesGroup {
+      title: _("Player");
+
+      Adw.SwitchRow close_button_row {
+        title: _("Close Button");
+        subtitle: _("Show window close button in player top bar");
+      }
+    }
   }
 
   Adw.PreferencesPage {
@@ -86,7 +95,7 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
     icon-name: "drive-harddisk-symbolic";
 
     Adw.PreferencesGroup {
-      title: _("Image Cache");
+      title: _("Poster Cache");
       description: _("Cached poster images for offline access");
 
       Adw.ActionRow cache_size_row {
@@ -103,6 +112,34 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
           label: _("Clear");
           valign: center;
           clicked => $on_clear_clicked();
+
+          styles ["destructive-action"]
+        }
+      }
+    }
+
+    Adw.PreferencesGroup {
+      title: _("Episode Previews");
+      description: _("Cached episode thumbnail images");
+
+      Adw.ActionRow preview_count_row {
+        title: _("Cached Previews");
+      }
+
+      Adw.ActionRow preview_size_row {
+        title: _("Storage Size");
+      }
+
+      Adw.ActionRow {
+        title: _("Clear Previews");
+        subtitle: _("Remove all cached episode thumbnails");
+        activatable-widget: clear_preview_btn;
+
+        [suffix]
+        Gtk.Button clear_preview_btn {
+          label: _("Clear");
+          valign: center;
+          clicked => $on_clear_preview_clicked();
 
           styles ["destructive-action"]
         }

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 
 import gi
@@ -12,16 +13,22 @@ gi.require_version('Soup', '3.0')
 
 from gi.repository import Gdk, Gio, GLib, Soup
 
+log = logging.getLogger('kitsune.image_cache')
+
 _session = Soup.Session()
-_cache_dir = os.path.join(GLib.get_user_cache_dir(), 'kitsune', 'posters')
+_base_cache_dir = os.path.join(GLib.get_user_cache_dir(), 'kitsune')
 _memory_cache: dict[str, Gdk.Texture] = {}
 
 
-def _ensure_cache_dir():
-    os.makedirs(_cache_dir, exist_ok=True)
+def _cache_dir(category: str = 'posters') -> str:
+    return os.path.join(_base_cache_dir, category)
 
 
-def _url_to_path(url: str) -> str:
+def _ensure_cache_dir(category: str = 'posters'):
+    os.makedirs(_cache_dir(category), exist_ok=True)
+
+
+def _url_to_path(url: str, category: str = 'posters') -> str:
     ext = '.jpg'
     if '.avif' in url:
         ext = '.avif'
@@ -30,63 +37,88 @@ def _url_to_path(url: str) -> str:
     elif '.webp' in url:
         ext = '.webp'
     url_hash = hashlib.sha256(url.encode()).hexdigest()[:16]
-    return os.path.join(_cache_dir, url_hash + ext)
+    return os.path.join(_cache_dir(category), url_hash + ext)
 
 
-def load_image(url: str, callback):
+def load_image(url: str, callback, category: str = 'posters'):
     """Load image from cache or network. callback(texture, error)."""
     if url in _memory_cache:
+        log.debug('memory hit: %s [%s]', url, category)
         callback(_memory_cache[url], None)
         return
 
-    cache_path = _url_to_path(url)
+    cache_path = _url_to_path(url, category)
     if os.path.exists(cache_path):
         try:
             texture = Gdk.Texture.new_from_filename(cache_path)
             _memory_cache[url] = texture
+            log.debug('disk hit: %s [%s]', url, category)
             callback(texture, None)
             return
         except Exception:
+            log.debug('disk corrupted, removing: %s', cache_path)
             os.remove(cache_path)
 
+    log.debug('download: %s [%s]', url, category)
     msg = Soup.Message.new('GET', url)
     _session.send_and_read_async(
         msg, GLib.PRIORITY_DEFAULT, None,
-        _on_downloaded, (url, cache_path, callback),
+        _on_downloaded, (url, cache_path, callback, category),
     )
 
 
-def get_cache_size() -> int:
+def get_cache_size(category: str = 'posters') -> int:
     """Return total size of disk cache in bytes."""
     total = 0
-    if os.path.isdir(_cache_dir):
-        for entry in os.scandir(_cache_dir):
+    d = _cache_dir(category)
+    if os.path.isdir(d):
+        for entry in os.scandir(d):
             if entry.is_file():
                 total += entry.stat().st_size
     return total
 
 
-def clear_cache():
-    """Remove all cached images from disk and memory."""
-    _memory_cache.clear()
-    if os.path.isdir(_cache_dir):
-        for entry in os.scandir(_cache_dir):
+def get_cache_count(category: str = 'posters') -> int:
+    """Return number of cached files."""
+    d = _cache_dir(category)
+    if not os.path.isdir(d):
+        return 0
+    return sum(1 for e in os.scandir(d) if e.is_file())
+
+
+def clear_cache(category: str = 'posters'):
+    """Remove cached images from disk and memory for given category."""
+    d = _cache_dir(category)
+    removed = 0
+    if os.path.isdir(d):
+        for entry in os.scandir(d):
             if entry.is_file():
                 os.remove(entry.path)
+                removed += 1
+    # Clear memory entries whose disk path matched this category
+    to_remove = [
+        url for url in _memory_cache
+        if _url_to_path(url, category).startswith(d)
+    ]
+    for url in to_remove:
+        del _memory_cache[url]
+    log.debug('cleared %d files from %s', removed, category)
 
 
 def _on_downloaded(session, result, user_data):
-    url, cache_path, callback = user_data
+    url, cache_path, callback, category = user_data
     try:
         gbytes = session.send_and_read_finish(result)
         data = gbytes.get_data()
 
-        _ensure_cache_dir()
+        _ensure_cache_dir(category)
         with open(cache_path, 'wb') as f:
             f.write(data)
 
         texture = Gdk.Texture.new_from_bytes(gbytes)
         _memory_cache[url] = texture
+        log.debug('cached: %s (%d bytes) [%s]', url, len(data), category)
         callback(texture, None)
     except Exception as e:
+        log.debug('download failed: %s — %s', url, e)
         callback(None, str(e))
