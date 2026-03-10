@@ -17,31 +17,121 @@ template $KitsuneWindow: Adw.ApplicationWindow {
       title: "Kitsune";
       tag: "main";
 
-      child: Adw.MultiLayoutView multi {
-        [content]
-        Gtk.Stack content_stack {
-          transition-type: crossfade;
-        }
+      child: Adw.OverlaySplitView filter_split {
+        sidebar-position: end;
+        show-sidebar: false;
+        collapsed: true;
 
-        [filter]
-        Gtk.Button filter_btn {
-          icon-name: "funnel-symbolic";
-          tooltip-text: _("Filters");
-          clicked => $on_filter_clicked();
-        }
+        content: Adw.MultiLayoutView multi {
+          [content]
+          Gtk.Stack content_stack {
+            transition-type: crossfade;
+          }
 
-        Adw.Layout {
-          name: "wide";
+          [filter]
+          Gtk.Button filter_btn {
+            icon-name: "funnel-symbolic";
+            tooltip-text: _("Filters");
+            clicked => $on_filter_clicked();
+          }
 
-          content: Adw.OverlaySplitView {
-            collapsed: false;
+          Adw.Layout {
+            name: "wide";
 
-            sidebar: Adw.ToolbarView {
+            content: Adw.OverlaySplitView {
+              collapsed: false;
+
+              sidebar: Adw.ToolbarView {
+                [top]
+                Adw.HeaderBar {
+                  title-widget: Adw.WindowTitle {
+                    title: "Kitsune";
+                  };
+
+                  [start]
+                  Gtk.Button {
+                    icon-name: "system-search-symbolic";
+                    tooltip-text: _("Search");
+                    clicked => $on_search_clicked();
+                  }
+
+                  [end]
+                  Gtk.MenuButton {
+                    icon-name: "open-menu-symbolic";
+                    menu-model: primary_menu;
+                    tooltip-text: _("Main Menu");
+                    primary: true;
+                  }
+                }
+
+                content: Gtk.ListBox sidebar_list {
+                  selection-mode: single;
+                  row-selected => $on_sidebar_row_selected();
+
+                  styles ["navigation-sidebar"]
+
+                  Adw.ActionRow {
+                    title: _("Catalog");
+                    icon-name: "view-grid-symbolic";
+                  }
+
+                  Adw.ActionRow {
+                    title: _("Genres");
+                    icon-name: "genres-symbolic";
+                  }
+
+                  Adw.ActionRow {
+                    title: _("Franchises");
+                    icon-name: "franchises-symbolic";
+                  }
+                };
+              };
+
+              content: Adw.ToolbarView {
+                [top]
+                Adw.HeaderBar {
+                  title-widget: Adw.WindowTitle wide_content_title {
+                    title: _("Catalog");
+                  };
+
+                  [start]
+                  Gtk.Button back_btn {
+                    icon-name: "go-previous-symbolic";
+                    tooltip-text: _("Back");
+                    visible: false;
+                    clicked => $on_back_clicked();
+                  }
+
+                  [end]
+                  Adw.LayoutSlot {
+                    id: "filter";
+                  }
+                }
+
+                content: Adw.LayoutSlot {
+                  id: "content";
+                };
+              };
+            };
+          }
+
+          Adw.Layout {
+            name: "narrow";
+
+            content: Adw.ToolbarView {
               [top]
               Adw.HeaderBar {
                 title-widget: Adw.WindowTitle {
                   title: "Kitsune";
                 };
+
+                [start]
+                Gtk.Button narrow_back_btn {
+                  icon-name: "go-previous-symbolic";
+                  tooltip-text: _("Back");
+                  visible: false;
+                  clicked => $on_back_clicked();
+                }
 
                 [start]
                 Gtk.Button {
@@ -57,45 +147,6 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                   tooltip-text: _("Main Menu");
                   primary: true;
                 }
-              }
-
-              content: Gtk.ListBox sidebar_list {
-                selection-mode: single;
-                row-selected => $on_sidebar_row_selected();
-
-                styles ["navigation-sidebar"]
-
-                Adw.ActionRow {
-                  title: _("Catalog");
-                  icon-name: "view-grid-symbolic";
-                }
-
-                Adw.ActionRow {
-                  title: _("Genres");
-                  icon-name: "genres-symbolic";
-                }
-
-                Adw.ActionRow {
-                  title: _("Franchises");
-                  icon-name: "franchises-symbolic";
-                }
-              };
-            };
-
-            content: Adw.ToolbarView {
-              [top]
-              Adw.HeaderBar {
-                title-widget: Adw.WindowTitle wide_content_title {
-                  title: _("Catalog");
-                };
-
-                [start]
-                Gtk.Button back_btn {
-                  icon-name: "go-previous-symbolic";
-                  tooltip-text: _("Back");
-                  visible: false;
-                  clicked => $on_back_clicked();
-                }
 
                 [end]
                 Adw.LayoutSlot {
@@ -106,133 +157,90 @@ template $KitsuneWindow: Adw.ApplicationWindow {
               content: Adw.LayoutSlot {
                 id: "content";
               };
+
+              [bottom]
+              Gtk.CenterBox {
+                styles ["toolbar"]
+
+                [center]
+                Gtk.Box {
+                  halign: center;
+                  spacing: 24;
+                  margin-top: 4;
+                  margin-bottom: 4;
+
+                  Gtk.Button narrow_catalog_tab {
+                    clicked => $on_catalog_tab_clicked();
+
+                    styles ["flat", "nav-tab", "nav-tab-active"]
+
+                    Gtk.Box {
+                      orientation: vertical;
+                      spacing: 2;
+                      halign: center;
+
+                      Gtk.Image {
+                        icon-name: "view-grid-symbolic";
+                      }
+
+                      Gtk.Label {
+                        label: _("Catalog");
+
+                        styles ["caption"]
+                      }
+                    }
+                  }
+
+                  Gtk.Button narrow_genres_tab {
+                    clicked => $on_genres_tab_clicked();
+
+                    styles ["flat", "nav-tab"]
+
+                    Gtk.Box {
+                      orientation: vertical;
+                      spacing: 2;
+                      halign: center;
+
+                      Gtk.Image {
+                        icon-name: "genres-symbolic";
+                      }
+
+                      Gtk.Label {
+                        label: _("Genres");
+
+                        styles ["caption"]
+                      }
+                    }
+                  }
+
+                  Gtk.Button narrow_franchises_tab {
+                    clicked => $on_franchises_tab_clicked();
+
+                    styles ["flat", "nav-tab"]
+
+                    Gtk.Box {
+                      orientation: vertical;
+                      spacing: 2;
+                      halign: center;
+
+                      Gtk.Image {
+                        icon-name: "franchises-symbolic";
+                      }
+
+                      Gtk.Label {
+                        label: _("Franchises");
+
+                        styles ["caption"]
+                      }
+                    }
+                  }
+                }
+              }
             };
-          };
-        }
+          }
+        };
 
-        Adw.Layout {
-          name: "narrow";
-
-          content: Adw.ToolbarView {
-            [top]
-            Adw.HeaderBar {
-              title-widget: Adw.WindowTitle {
-                title: "Kitsune";
-              };
-
-              [start]
-              Gtk.Button narrow_back_btn {
-                icon-name: "go-previous-symbolic";
-                tooltip-text: _("Back");
-                visible: false;
-                clicked => $on_back_clicked();
-              }
-
-              [start]
-              Gtk.Button {
-                icon-name: "system-search-symbolic";
-                tooltip-text: _("Search");
-                clicked => $on_search_clicked();
-              }
-
-              [end]
-              Gtk.MenuButton {
-                icon-name: "open-menu-symbolic";
-                menu-model: primary_menu;
-                tooltip-text: _("Main Menu");
-                primary: true;
-              }
-
-              [end]
-              Adw.LayoutSlot {
-                id: "filter";
-              }
-            }
-
-            content: Adw.LayoutSlot {
-              id: "content";
-            };
-
-            [bottom]
-            Gtk.CenterBox {
-              styles ["toolbar"]
-
-              [center]
-              Gtk.Box {
-                halign: center;
-                spacing: 24;
-                margin-top: 4;
-                margin-bottom: 4;
-
-                Gtk.Button narrow_catalog_tab {
-                  clicked => $on_catalog_tab_clicked();
-
-                  styles ["flat", "nav-tab", "nav-tab-active"]
-
-                  Gtk.Box {
-                    orientation: vertical;
-                    spacing: 2;
-                    halign: center;
-
-                    Gtk.Image {
-                      icon-name: "view-grid-symbolic";
-                    }
-
-                    Gtk.Label {
-                      label: _("Catalog");
-
-                      styles ["caption"]
-                    }
-                  }
-                }
-
-                Gtk.Button narrow_genres_tab {
-                  clicked => $on_genres_tab_clicked();
-
-                  styles ["flat", "nav-tab"]
-
-                  Gtk.Box {
-                    orientation: vertical;
-                    spacing: 2;
-                    halign: center;
-
-                    Gtk.Image {
-                      icon-name: "genres-symbolic";
-                    }
-
-                    Gtk.Label {
-                      label: _("Genres");
-
-                      styles ["caption"]
-                    }
-                  }
-                }
-
-                Gtk.Button narrow_franchises_tab {
-                  clicked => $on_franchises_tab_clicked();
-
-                  styles ["flat", "nav-tab"]
-
-                  Gtk.Box {
-                    orientation: vertical;
-                    spacing: 2;
-                    halign: center;
-
-                    Gtk.Image {
-                      icon-name: "franchises-symbolic";
-                    }
-
-                    Gtk.Label {
-                      label: _("Franchises");
-
-                      styles ["caption"]
-                    }
-                  }
-                }
-              }
-            }
-          };
-        }
+        // sidebar set programmatically
       };
     }
     }

@@ -25,6 +25,8 @@ def _ensure_css():
         '.filter-chip { padding: 4px 10px; min-height: 0; min-width: 0; font-size: 13px;'
         ' transition: background ' + _T + ', color ' + _T + '; }'
         ' .filter-chip:checked { background: @accent_bg_color; color: @accent_fg_color; }'
+        ' .filter-panel { background: @window_bg_color;'
+        ' border-left: 1px solid alpha(currentColor, 0.15); }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -89,8 +91,8 @@ def _production_statuses():
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/filter_dialog.ui')
-class FilterDialog(Adw.Dialog):
-    __gtype_name__ = 'KitsuneFilterDialog'
+class FilterPanel(Gtk.Box):
+    __gtype_name__ = 'KitsuneFilterPanel'
 
     content_box = Gtk.Template.Child()
     sorting_btn = Gtk.Template.Child()
@@ -102,10 +104,13 @@ class FilterDialog(Adw.Dialog):
                  year_range: tuple[int, int] | None = None, **kwargs):
         super().__init__(**kwargs)
         _ensure_css()
+        self.add_css_class('filter-panel')
 
         self._genres_data = genres or []
         self._year_min, self._year_max = year_range or (1990, 2026)
         self._on_apply = None
+        self._on_close = None
+        self._auto_apply_id = 0
         self._buttons: dict[str, dict] = {}
         self._selected_sorting: str | None = None
         self._sorting_items = _sorting()
@@ -159,10 +164,26 @@ class FilterDialog(Adw.Dialog):
             if items:
                 self._add_chip_section(cat, title, items)
 
+    def update_genres(self, genres: list):
+        self._genres_data = genres
+        if 'genres' not in self._buttons and genres:
+            self._add_chip_section(
+                'genres', _('Genres'),
+                [(g['id'], g['name']) for g in genres],
+            )
+
+    def update_year_range(self, year_range: tuple[int, int]):
+        self._year_min, self._year_max = year_range
+        self._setup_year_range()
+
     def set_on_apply(self, callback):
         self._on_apply = callback
 
+    def set_on_close(self, callback):
+        self._on_close = callback
+
     def set_filters(self, filters: dict):
+        self._suppress_auto = True
         for cat, btns in self._buttons.items():
             selected = set(filters.get(cat, []))
             for val, btn in btns.items():
@@ -174,6 +195,7 @@ class FilterDialog(Adw.Dialog):
 
         self._selected_sorting = filters.get('sorting')
         self._update_sorting_label()
+        self._suppress_auto = False
         self._update_reset_sensitivity()
 
     def get_filters(self) -> dict:
@@ -235,11 +257,25 @@ class FilterDialog(Adw.Dialog):
             self._buttons[cat][value] = btn
         self.content_box.append(wrap)
 
+    def _schedule_auto_apply(self):
+        if getattr(self, '_suppress_auto', False):
+            return
+        if self._auto_apply_id:
+            GLib.source_remove(self._auto_apply_id)
+        self._auto_apply_id = GLib.timeout_add(1000, self._do_auto_apply)
+
+    def _do_auto_apply(self):
+        self._auto_apply_id = 0
+        if self._on_apply:
+            self._on_apply(self.get_filters())
+        return GLib.SOURCE_REMOVE
+
     def _on_sorting_selected(self, action, variant):
         val = variant.get_string()
         self._selected_sorting = val if val else None
         self._update_sorting_label()
         self._update_reset_sensitivity()
+        self._schedule_auto_apply()
 
     @Gtk.Template.Callback()
     def on_year_changed(self, spin):
@@ -250,13 +286,16 @@ class FilterDialog(Adw.Dialog):
         elif spin == self.year_to and year_to < year_from:
             self.year_from.set_value(year_to)
         self._update_reset_sensitivity()
+        self._schedule_auto_apply()
 
     def _on_any_changed(self, *args):
         self._update_reset_sensitivity()
+        self._schedule_auto_apply()
 
     @Gtk.Template.Callback()
-    def on_cancel(self, _button):
-        self.force_close()
+    def on_close_clicked(self, _button):
+        if self._on_close:
+            self._on_close()
 
     @Gtk.Template.Callback()
     def on_reset(self, _button):
@@ -267,9 +306,9 @@ class FilterDialog(Adw.Dialog):
         self._update_sorting_label()
         self.year_from.set_value(self._year_min)
         self.year_to.set_value(self._year_max)
-
-    @Gtk.Template.Callback()
-    def on_apply_clicked(self, _button):
+        # Apply reset immediately
+        if self._auto_apply_id:
+            GLib.source_remove(self._auto_apply_id)
+            self._auto_apply_id = 0
         if self._on_apply:
             self._on_apply(self.get_filters())
-        self.force_close()

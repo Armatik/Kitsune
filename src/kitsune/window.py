@@ -44,6 +44,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     multi = Gtk.Template.Child()
     content_stack = Gtk.Template.Child()
     filter_btn = Gtk.Template.Child()
+    filter_split = Gtk.Template.Child()
     sidebar_list = Gtk.Template.Child()
     wide_content_title = Gtk.Template.Child()
     back_btn = Gtk.Template.Child()
@@ -127,7 +128,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_filter_clicked(self, _button):
-        self._catalog_view.open_filter_dialog()
+        if not self.filter_split.get_sidebar():
+            panel = self._catalog_view.get_or_create_filter_panel()
+            panel.set_on_close(
+                lambda: self.filter_split.set_show_sidebar(False)
+            )
+            self.filter_split.set_sidebar(panel)
+        self.filter_split.set_show_sidebar(
+            not self.filter_split.get_show_sidebar()
+        )
 
     @Gtk.Template.Callback()
     def on_search_clicked(self, _button):
@@ -189,6 +198,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     # --- Internal Methods ---
 
     def _switch_tab(self, name: str):
+        self.filter_split.set_show_sidebar(False)
         if self._genres_view and self._genres_view.in_releases:
             self._genres_view.go_back()
         if self._franchises_view and self._franchises_view.in_releases:

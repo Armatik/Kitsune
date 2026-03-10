@@ -10,7 +10,6 @@ gi.require_version('Adw', '1')
 from gi.repository import GLib, Gtk
 
 from kitsune.api import AniLibriaClient
-from kitsune.ui.filter_dialog import FilterDialog
 from kitsune.ui.widgets.content_grid import ContentGrid
 from kitsune.ui.widgets.release_card import ReleaseCard
 
@@ -28,6 +27,7 @@ class CatalogView(Gtk.Box):
         self._filters: dict = {}
         self._genres_data: list = []
         self._year_range: tuple[int, int] | None = None
+        self._filter_panel = None
 
         self._grid = ContentGrid()
         self._grid.set_on_scroll_near_end(self._on_scroll_near_end)
@@ -46,15 +46,19 @@ class CatalogView(Gtk.Box):
     def set_on_release_activated(self, callback):
         self._on_release_activated = callback
 
-    def open_filter_dialog(self):
-        if not self._genres_data:
-            self._load_genres()
-        if not self._year_range:
-            self._load_year_range()
-        dialog = FilterDialog(genres=self._genres_data, year_range=self._year_range)
-        dialog.set_filters(self._filters)
-        dialog.set_on_apply(self._on_filters_applied)
-        dialog.present(self.get_root())
+    def get_or_create_filter_panel(self):
+        if not self._filter_panel:
+            from kitsune.ui.filter_dialog import FilterPanel
+            if not self._genres_data:
+                self._load_genres()
+            if not self._year_range:
+                self._load_year_range()
+            self._filter_panel = FilterPanel(
+                genres=self._genres_data, year_range=self._year_range,
+            )
+            self._filter_panel.set_filters(self._filters)
+            self._filter_panel.set_on_apply(self._on_filters_applied)
+        return self._filter_panel
 
     def _load_genres(self):
         self._client.get_genres(callback=self._on_genres_loaded)
@@ -62,6 +66,8 @@ class CatalogView(Gtk.Box):
     def _on_genres_loaded(self, genres, error):
         if genres:
             self._genres_data = [{'id': g.id, 'name': g.name} for g in genres]
+            if self._filter_panel:
+                self._filter_panel.update_genres(self._genres_data)
 
     def _load_year_range(self):
         self._client.get_year_range(callback=self._on_year_range_loaded)
@@ -69,8 +75,12 @@ class CatalogView(Gtk.Box):
     def _on_year_range_loaded(self, year_range, error):
         if year_range:
             self._year_range = year_range
+            if self._filter_panel:
+                self._filter_panel.update_year_range(self._year_range)
 
     def _on_filters_applied(self, filters: dict):
+        if filters == self._filters:
+            return
         self._filters = filters
         self._reset_catalog()
         self._load_next_page()
