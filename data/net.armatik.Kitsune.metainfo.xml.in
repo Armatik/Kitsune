@@ -20,10 +20,11 @@
     <color type="primary" scheme_preference="dark">#A51D2D</color>
   </branding>
 
-  <url type="homepage">https://altlinux.space/armatik/Kitsune</url>
-  <url type="bugtracker">https://altlinux.space/armatik/Kitsune/issues</url>
-  <url type="vcs-browser">https://altlinux.space/armatik/Kitsune</url>
-  <url type="translate">https://altlinux.space/armatik/Kitsune/tree/master/po</url>
+  <url type="homepage">https://altlinux.space/alt-gnome/Kitsune</url>
+  <url type="bugtracker">https://altlinux.space/alt-gnome/Kitsune/issues</url>
+  <url type="vcs-browser">https://altlinux.space/alt-gnome/Kitsune</url>
+  <url type="translate">https://altlinux.space/alt-gnome/Kitsune/tree/master/po</url>
+  <url type="contact">https://t.me/kitsune_linux_chat</url>
 
   <developer id="net.armatik">
     <name>Semen (Armatik) Fomchenkov</name>

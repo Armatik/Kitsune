@@ -7,7 +7,7 @@
 <p align="center">Libadwaita-клиент для просмотра аниме от <a href="https://anilibria.top">AniLiberty</a></p>
 
 <p align="center">
-  <a href="https://altlinux.space/armatik/Kitsune/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg" alt="License"></a>
+  <a href="https://altlinux.space/alt-gnome/Kitsune/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg" alt="License"></a>
 </p>
 
 > Kitsune — неофициальный клиент. Весь контент предоставляется командой [AniLiberty](https://anilibria.top) через их публичный API.
@@ -66,6 +66,12 @@ meson setup _build
 meson compile -C _build
 sudo meson install -C _build --no-rebuild
 ```
+
+## Сообщество
+
+- [Telegram-канал](https://t.me/kitsune_linux) — новости и обновления
+- [Telegram-чат](https://t.me/kitsune_linux_chat) — обсуждение и поддержка
+- [Баг-трекер](https://altlinux.space/alt-gnome/Kitsune/issues) — сообщить об ошибке
 
 ## Участие в разработке
 
