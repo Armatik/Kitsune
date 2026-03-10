@@ -54,6 +54,11 @@
       <summary>Blur unwatched episode previews</summary>
       <description>Apply blur effect to episode preview images that have not been watched yet</description>
     </key>
+    <key name="tags-view-mode" type="s">
+      <default>'cards'</default>
+      <summary>Tags view mode</summary>
+      <description>Display mode for tags tab: cards or list</description>
+    </key>
     <key name="window-width" type="i">
       <default>900</default>
       <summary>Window width</summary>

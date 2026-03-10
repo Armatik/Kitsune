@@ -80,8 +80,6 @@ class TagReleasesView(Gtk.Box):
         self._add_batch()
 
     def _add_batch(self):
-        if not self.get_mapped():
-            return GLib.SOURCE_REMOVE
         batch = self._batch[:4]
         self._batch = self._batch[4:]
         for release in batch:

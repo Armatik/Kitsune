@@ -35,6 +35,35 @@ template $KitsuneWindow: Adw.ApplicationWindow {
             clicked => $on_filter_clicked();
           }
 
+          [mode]
+          Gtk.Button mode_btn {
+            icon-name: "view-list-symbolic";
+            tooltip-text: _("Toggle view");
+            visible: false;
+            clicked => $on_mode_toggled();
+
+            styles ["flat"]
+          }
+
+          [add-tag]
+          Gtk.Button add_tag_btn {
+            label: _("New Tag");
+            visible: false;
+            clicked => $on_add_tag_clicked();
+
+            styles ["suggested-action"]
+          }
+
+          [delete-tag]
+          Gtk.Button delete_tag_btn {
+            icon-name: "user-trash-symbolic";
+            tooltip-text: _("Delete Tag");
+            visible: false;
+            clicked => $on_delete_tag_clicked();
+
+            styles ["flat", "error"]
+          }
+
           Adw.Layout {
             name: "wide";
 
@@ -86,7 +115,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                   }
 
                   Adw.ActionRow {
-                    title: _("Favorites & Tags");
+                    title: _("Favorites &amp; Tags");
                     icon-name: "starred-symbolic";
                   }
                 };
@@ -105,6 +134,21 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                     tooltip-text: _("Back");
                     visible: false;
                     clicked => $on_back_clicked();
+                  }
+
+                  [end]
+                  Adw.LayoutSlot {
+                    id: "delete-tag";
+                  }
+
+                  [end]
+                  Adw.LayoutSlot {
+                    id: "add-tag";
+                  }
+
+                  [end]
+                  Adw.LayoutSlot {
+                    id: "mode";
                   }
 
                   [end]
@@ -151,6 +195,21 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                   menu-model: primary_menu;
                   tooltip-text: _("Main Menu");
                   primary: true;
+                }
+
+                [end]
+                Adw.LayoutSlot {
+                  id: "delete-tag";
+                }
+
+                [end]
+                Adw.LayoutSlot {
+                  id: "add-tag";
+                }
+
+                [end]
+                Adw.LayoutSlot {
+                  id: "mode";
                 }
 
                 [end]

@@ -28,7 +28,7 @@ def _ensure_css():
     css = Gtk.CssProvider()
     css.load_from_string(
         '.tag-add-card { border: 2px dashed alpha(currentColor, 0.15);'
-        '   border-radius: 12px; min-height: 140px; }'
+        '   border-radius: 12px; background: none; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -43,16 +43,11 @@ class TagsView(Gtk.Box):
         self._client = client
         self._on_release_activated = None
         self._on_navigation_changed = None
+        self._on_tags_changed_ext = None
         self._narrow = False
         self._current_tag = None
         self._view_mode = 'cards'
         _ensure_css()
-
-        self._mode_btn = Gtk.ToggleButton(
-            icon_name='view-list-symbolic',
-            tooltip_text=_('List view'),
-        )
-        self._mode_btn.connect('toggled', self._on_mode_toggled)
 
         # Navigation stack: main (cards/list) + releases detail
         self._nav_stack = Gtk.Stack(
@@ -67,12 +62,12 @@ class TagsView(Gtk.Box):
         self._list_scroll = Gtk.ScrolledWindow(
             hscrollbar_policy=Gtk.PolicyType.NEVER, vexpand=True,
         )
-        self._list_box = Gtk.ListBox(
-            selection_mode=Gtk.SelectionMode.NONE,
-            css_classes=['boxed-list'],
-            margin_start=24, margin_end=24, margin_top=12,
+        self._list_container = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=12,
+            margin_start=24, margin_end=24, margin_top=12, margin_bottom=12,
         )
-        self._list_scroll.set_child(self._list_box)
+        self._list_scroll.set_child(self._list_container)
 
         # Mode stack
         self._mode_stack = Gtk.Stack(
@@ -98,8 +93,15 @@ class TagsView(Gtk.Box):
         return self._current_tag['name'] if self._current_tag else ''
 
     @property
-    def mode_button(self) -> Gtk.ToggleButton:
-        return self._mode_btn
+    def current_tag(self) -> dict | None:
+        return self._current_tag
+
+    def toggle_mode(self):
+        if self._view_mode == 'cards':
+            self._view_mode = 'list'
+        else:
+            self._view_mode = 'cards'
+        self._mode_stack.set_visible_child_name(self._view_mode)
 
     def set_narrow(self, narrow: bool):
         self._narrow = narrow
@@ -110,6 +112,9 @@ class TagsView(Gtk.Box):
 
     def set_on_navigation_changed(self, callback):
         self._on_navigation_changed = callback
+
+    def set_on_tags_changed(self, callback):
+        self._on_tags_changed_ext = callback
 
     def go_back(self):
         self._nav_stack.set_visible_child_name('main')
@@ -130,45 +135,71 @@ class TagsView(Gtk.Box):
         for tag in tags:
             self._card_grid.append_child(TagCard(tag))
 
-        # "Add new" card
+        # "Add new" card — same layout as TagCard
         add_child = Gtk.FlowBoxChild()
-        add_box = Gtk.Box(
+        outer = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
-            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-            spacing=4, width_request=180,
+            spacing=6, width_request=180,
             margin_start=6, margin_end=6, margin_top=6, margin_bottom=6,
+        )
+        clamp = Adw.Clamp(maximum_size=180)
+        add_frame = Gtk.Frame(
+            width_request=180, height_request=140,
             css_classes=['tag-add-card'],
         )
-        add_box.append(Gtk.Label(label='+', css_classes=['title-1']))
-        add_box.append(Gtk.Label(
-            label=_('New tag'), css_classes=['dim-label'],
+        add_frame.set_child(Gtk.Label(
+            label='+', css_classes=['title-1'],
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
         ))
-        add_child.set_child(add_box)
+        clamp.set_child(add_frame)
+        outer.append(clamp)
+        outer.append(Gtk.Label(
+            label=_('New tag'), css_classes=['dim-label'],
+            halign=Gtk.Align.CENTER,
+        ))
+        add_child.set_child(outer)
         add_child._is_add_card = True
         self._card_grid.append_child(add_child)
 
     def _populate_list(self, tags: list[dict]):
-        while row := self._list_box.get_first_child():
-            self._list_box.remove(row)
+        while child := self._list_container.get_first_child():
+            self._list_container.remove(child)
 
         for tag in tags:
+            block = Gtk.ListBox(
+                selection_mode=Gtk.SelectionMode.NONE,
+                css_classes=['boxed-list'],
+            )
             row = self._create_list_row(tag)
-            self._list_box.append(row)
+            block.append(row)
+            self._list_container.append(block)
 
     def _create_list_row(self, tag: dict) -> Adw.ExpanderRow:
         from kitsune.ui.widgets.tag_card import COLOR_MAP
         row = Adw.ExpanderRow(title=tag['name'])
 
         if tag['icon_type'] == 'emoji':
-            icon = Gtk.Label(label=tag['icon_value'])
-            icon.set_size_request(24, 24)
+            icon = Gtk.Label(
+                label=tag['icon_value'],
+                valign=Gtk.Align.CENTER,
+            )
+            icon.set_size_request(32, 32)
+            css = Gtk.CssProvider()
+            css.load_from_string('label { font-size: 22px; }')
+            icon.get_style_context().add_provider(
+                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
         else:
             hex_color = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-            icon = Gtk.Box(width_request=24, height_request=24)
+            icon = Gtk.Box(
+                width_request=28, height_request=28,
+                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            )
             css = Gtk.CssProvider()
             css.load_from_string(
                 f'box {{ background: {hex_color}; border-radius: 50%;'
-                f' min-width: 24px; min-height: 24px; }}'
+                f' min-width: 28px; min-height: 28px;'
+                f' border: 1.5px solid alpha(white, 0.25); }}'
             )
             icon.get_style_context().add_provider(
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -181,6 +212,15 @@ class TagsView(Gtk.Box):
             css_classes=['dim-label'],
             valign=Gtk.Align.CENTER,
         ))
+
+        if not tag.get('builtin'):
+            del_btn = Gtk.Button(
+                icon_name='user-trash-symbolic',
+                css_classes=['flat', 'error'],
+                valign=Gtk.Align.CENTER,
+            )
+            del_btn.connect('clicked', lambda _b, t=tag: self._confirm_delete_tag(t))
+            row.add_suffix(del_btn)
 
         row._tag = tag
         row._loaded = False
@@ -276,17 +316,35 @@ class TagsView(Gtk.Box):
             callback=self._on_tag_created,
         )
 
+    def delete_current_tag(self):
+        if self._current_tag:
+            self._confirm_delete_tag(self._current_tag)
+
+    def _confirm_delete_tag(self, tag: dict):
+        dialog = Adw.AlertDialog(
+            heading=_('Delete Tag?'),
+            body=_('Tag "%s" will be removed. This cannot be undone.') % tag['name'],
+        )
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('delete', _('Delete'))
+        dialog.set_response_appearance('delete', Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response('cancel')
+        dialog.set_close_response('cancel')
+
+        def on_response(_dialog, response):
+            if response == 'delete':
+                release_ids = tags_store.get_release_ids_for_tag(tag['id'])
+                tags_store.delete_tag(tag['id'])
+                if self.in_releases and self._current_tag and self._current_tag['id'] == tag['id']:
+                    self.go_back()
+                self._populate()
+                if self._on_tags_changed_ext:
+                    self._on_tags_changed_ext(release_ids)
+
+        dialog.connect('response', on_response)
+        dialog.present(self.get_root())
+
     def _on_tag_created(self, tag: dict | None):
         if tag:
             self._populate()
 
-    def _on_mode_toggled(self, btn):
-        if btn.get_active():
-            self._view_mode = 'list'
-            btn.set_icon_name('view-grid-symbolic')
-            btn.set_tooltip_text(_('Card view'))
-        else:
-            self._view_mode = 'cards'
-            btn.set_icon_name('view-list-symbolic')
-            btn.set_tooltip_text(_('List view'))
-        self._mode_stack.set_visible_child_name(self._view_mode)

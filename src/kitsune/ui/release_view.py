@@ -117,6 +117,9 @@ class ReleaseView(Adw.NavigationPage):
         self._release = release
         self._client = client
         self._on_episode_play = None
+        self._on_genre_navigate = None
+        self._on_tag_navigate = None
+        self._on_tags_changed_ext = None
         self._narrow_mode = False
         self._fade_anim = None
         self._accent_mode = False
@@ -191,6 +194,9 @@ class ReleaseView(Adw.NavigationPage):
 
     def set_on_tag_clicked(self, callback):
         self._on_tag_navigate = callback
+
+    def set_on_tags_changed(self, callback):
+        self._on_tags_changed_ext = callback
 
     def _on_showing(self, _page):
         """Refresh episode progress when returning from player."""
@@ -1120,7 +1126,7 @@ class ReleaseView(Adw.NavigationPage):
     # --- Misc ---
 
     def _on_genre_clicked(self, genre):
-        if hasattr(self, '_on_genre_navigate') and self._on_genre_navigate:
+        if self._on_genre_navigate:
             self._on_genre_navigate(genre)
 
     # --- Tags ---
@@ -1129,6 +1135,9 @@ class ReleaseView(Adw.NavigationPage):
     def on_favorite_clicked(self, _button):
         tags_store.toggle_favorite(self._release.id)
         self._update_favorite_icon()
+        self._update_tag_pills()
+        if self._on_tags_changed_ext:
+            self._on_tags_changed_ext(self._release.id)
 
     def _update_favorite_icon(self):
         is_fav = tags_store.is_favorited(self._release.id)
@@ -1139,6 +1148,8 @@ class ReleaseView(Adw.NavigationPage):
     def _on_tags_changed(self):
         self._update_favorite_icon()
         self._update_tag_pills()
+        if self._on_tags_changed_ext:
+            self._on_tags_changed_ext(self._release.id)
 
     def _update_tag_pills(self):
         if not hasattr(self, '_tag_pills_wrap'):
@@ -1168,11 +1179,15 @@ class ReleaseView(Adw.NavigationPage):
             box.append(Gtk.Label(label=tag['icon_value']))
         else:
             hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-            circle = Gtk.Box(width_request=10, height_request=10)
+            circle = Gtk.Box(
+                width_request=14, height_request=14,
+                valign=Gtk.Align.CENTER,
+            )
             css = Gtk.CssProvider()
             css.load_from_string(
                 f'box {{ background: {hex_c}; border-radius: 50%;'
-                f' min-width: 10px; min-height: 10px; }}'
+                f' min-width: 14px; min-height: 14px;'
+                f' border: 1px solid alpha(white, 0.3); }}'
             )
             circle.get_style_context().add_provider(
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -1188,11 +1203,15 @@ class ReleaseView(Adw.NavigationPage):
             child = Gtk.Label(label=tag['icon_value'])
         else:
             hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-            child = Gtk.Box(width_request=14, height_request=14)
+            child = Gtk.Box(
+                width_request=14, height_request=14,
+                valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
+            )
             css = Gtk.CssProvider()
             css.load_from_string(
                 f'box {{ background: {hex_c}; border-radius: 50%;'
-                f' min-width: 14px; min-height: 14px; }}'
+                f' min-width: 14px; min-height: 14px;'
+                f' border: 1px solid alpha(white, 0.3); }}'
             )
             child.get_style_context().add_provider(
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -1204,7 +1223,7 @@ class ReleaseView(Adw.NavigationPage):
         )
 
     def _on_tag_pill_clicked(self, tag):
-        if hasattr(self, '_on_tag_navigate') and self._on_tag_navigate:
+        if self._on_tag_navigate:
             self._on_tag_navigate(tag)
 
     @staticmethod

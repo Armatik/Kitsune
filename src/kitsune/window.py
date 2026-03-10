@@ -44,6 +44,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
     multi = Gtk.Template.Child()
     content_stack = Gtk.Template.Child()
     filter_btn = Gtk.Template.Child()
+    mode_btn = Gtk.Template.Child()
+    add_tag_btn = Gtk.Template.Child()
+    delete_tag_btn = Gtk.Template.Child()
     filter_split = Gtk.Template.Child()
     sidebar_list = Gtk.Template.Child()
     wide_content_title = Gtk.Template.Child()
@@ -107,7 +110,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             return
         from kitsune.ui.genres_view import GenresView
         old = self.content_stack.get_child_by_name('genres')
-        self.content_stack.remove(old)
+        if old:
+            self.content_stack.remove(old)
         self._genres_view = GenresView(client=self._client)
         self._genres_view.set_on_release_activated(self._show_release_detail)
         self._genres_view.set_on_navigation_changed(self._on_sub_navigation_changed)
@@ -119,7 +123,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             return
         from kitsune.ui.franchises_view import FranchisesView
         old = self.content_stack.get_child_by_name('franchises')
-        self.content_stack.remove(old)
+        if old:
+            self.content_stack.remove(old)
         self._franchises_view = FranchisesView(client=self._client)
         self._franchises_view.set_on_release_activated(self._show_release_detail)
         self._franchises_view.set_on_navigation_changed(self._on_sub_navigation_changed)
@@ -131,11 +136,19 @@ class KitsuneWindow(Adw.ApplicationWindow):
             return
         from kitsune.ui.tags_view import TagsView
         old = self.content_stack.get_child_by_name('tags')
-        self.content_stack.remove(old)
+        if old:
+            self.content_stack.remove(old)
+        saved_mode = self._settings.get_string('tags-view-mode')
         self._tags_view = TagsView(client=self._client)
         self._tags_view.set_on_release_activated(self._show_release_detail)
         self._tags_view.set_on_navigation_changed(self._on_sub_navigation_changed)
+        self._tags_view.set_on_tags_changed(self._on_tags_bulk_changed)
         self._tags_view.set_narrow(self._narrow)
+        self._tags_mode_is_list = saved_mode == 'list'
+        if self._tags_mode_is_list:
+            self._tags_view.toggle_mode()
+            self.mode_btn.set_icon_name('view-grid-symbolic')
+            self.mode_btn.set_tooltip_text(_('Card view'))
         self.content_stack.add_named(self._tags_view, 'tags')
 
     # --- Template Callbacks ---
@@ -198,6 +211,37 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._switch_tab('tags')
 
     @Gtk.Template.Callback()
+    def on_mode_toggled(self, btn):
+        if self._tags_view:
+            self._tags_view.toggle_mode()
+            self._tags_mode_is_list = not self._tags_mode_is_list
+            mode = 'list' if self._tags_mode_is_list else 'cards'
+            self._settings.set_string('tags-view-mode', mode)
+            if self._tags_mode_is_list:
+                btn.set_icon_name('view-grid-symbolic')
+                btn.set_tooltip_text(_('Card view'))
+            else:
+                btn.set_icon_name('view-list-symbolic')
+                btn.set_tooltip_text(_('List view'))
+
+    @Gtk.Template.Callback()
+    def on_add_tag_clicked(self, _button):
+        from kitsune.ui.create_tag_dialog import show_create_tag_dialog
+        show_create_tag_dialog(
+            self,
+            callback=self._on_header_tag_created,
+        )
+
+    def _on_header_tag_created(self, tag):
+        if tag and self._tags_view:
+            self._tags_view.refresh()
+
+    @Gtk.Template.Callback()
+    def on_delete_tag_clicked(self, _button):
+        if self._tags_view and self._tags_view.current_tag:
+            self._tags_view.delete_current_tag()
+
+    @Gtk.Template.Callback()
     def on_narrow_apply(self, _bp):
         self._narrow = True
         self._catalog_view.set_narrow(True)
@@ -235,6 +279,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._create_franchises_view()
         elif name == 'tags':
             self._create_tags_view()
+            if self._tags_view:
+                self._tags_view.refresh()
         self.content_stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)
@@ -274,11 +320,20 @@ class KitsuneWindow(Adw.ApplicationWindow):
             show_back = True
 
         show_filter = (tab == 'catalog')
+        show_tags_controls = (tab == 'tags' and not show_back)
+        show_delete_tag = (
+            tab == 'tags' and show_back
+            and self._tags_view and self._tags_view.current_tag
+            and not self._tags_view.current_tag.get('builtin')
+        )
 
         self.wide_content_title.set_title(title)
         self.back_btn.set_visible(show_back)
         self.narrow_back_btn.set_visible(show_back)
         self.filter_btn.set_visible(show_filter)
+        self.mode_btn.set_visible(show_tags_controls)
+        self.add_tag_btn.set_visible(show_tags_controls)
+        self.delete_tag_btn.set_visible(show_delete_tag)
 
     def _on_sub_navigation_changed(self):
         self._update_content_header()
@@ -294,7 +349,41 @@ class KitsuneWindow(Adw.ApplicationWindow):
         view.set_on_episode_play(self._play_episode)
         view.set_on_genre_clicked(self._navigate_to_genre)
         view.set_on_tag_clicked(self._navigate_to_tag)
+        view.set_on_tags_changed(self._on_release_tags_changed)
         self.nav_view.push(view)
+
+    def _on_release_tags_changed(self, release_id):
+        """Called when tags change on a release detail page."""
+        self._refresh_visible_cards(release_id)
+        if self._tags_view:
+            self._tags_view.refresh()
+
+    def _on_tags_bulk_changed(self, release_ids):
+        """Called when a tag is deleted, affecting multiple releases."""
+        for rid in release_ids:
+            self._refresh_visible_cards(rid)
+
+    def _refresh_visible_cards(self, release_id):
+        """Find and refresh tag badges on visible ReleaseCard widgets."""
+        from kitsune.ui.widgets.release_card import ReleaseCard
+        flowboxes = []
+        if self._catalog_view:
+            flowboxes.append(self._catalog_view.flowbox)
+        # Genre/franchise release sub-views contain ReleaseCards
+        for view in (self._genres_view, self._franchises_view):
+            if view and view._releases_view and hasattr(view._releases_view, '_grid'):
+                flowboxes.append(view._releases_view._grid.flowbox)
+        # Tags release sub-view
+        if self._tags_view and self._tags_view.in_releases:
+            releases = self._tags_view._nav_stack.get_child_by_name('releases')
+            if releases and hasattr(releases, '_grid'):
+                flowboxes.append(releases._grid.flowbox)
+        for flowbox in flowboxes:
+            child = flowbox.get_first_child()
+            while child:
+                if isinstance(child, ReleaseCard) and child.release.id == release_id:
+                    child.refresh_tag_badges()
+                child = child.get_next_sibling()
 
     def _navigate_to_genre(self, genre):
         from kitsune.ui.genre_releases_view import GenreReleasesView
