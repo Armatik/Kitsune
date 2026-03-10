@@ -506,7 +506,7 @@ class PlayerView(Adw.NavigationPage):
                 self._release.id, self._episode.ordinal, pos,
             )
         elif dur > 0 and (dur - pos) <= 60:
-            watch_positions.remove_position(
+            watch_positions.mark_completed(
                 self._release.id, self._episode.ordinal,
             )
 
@@ -522,7 +522,7 @@ class PlayerView(Adw.NavigationPage):
                 self._save_watch_position()
 
     def _on_eos(self, _player):
-        watch_positions.remove_position(
+        watch_positions.mark_completed(
             self._release.id, self._episode.ordinal,
         )
         if self._current_idx >= 0 \
@@ -705,9 +705,8 @@ class PlayerView(Adw.NavigationPage):
         return f'{m}:{s:02d}'
 
     def do_unmap(self):
-        log.debug('unmap (cleanup)')
+        log.debug('unmap')
         try:
-            self._save_watch_position()
             if self._fullscreen:
                 root = self.get_root()
                 if root:
@@ -724,6 +723,5 @@ class PlayerView(Adw.NavigationPage):
             if self._fade_anim:
                 self._fade_anim.skip()
                 self._fade_anim = None
-            self._player.cleanup()
         finally:
             Adw.NavigationPage.do_unmap(self)

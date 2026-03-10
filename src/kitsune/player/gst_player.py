@@ -53,6 +53,7 @@ class GstPlayer(GObject.Object):
         bus.connect('message::buffering', self._on_buffering)
 
         self._position_timer = 0
+        self._cleaned_up = False
 
     def _setup_video_sink(self):
         sink = Gst.ElementFactory.make('gtk4paintablesink', 'gtksink')
@@ -211,9 +212,13 @@ class GstPlayer(GObject.Object):
         self._playbin.set_property('volume', max(0.0, min(1.0, volume)))
 
     def cleanup(self):
+        if self._cleaned_up:
+            return
+        self._cleaned_up = True
         log.debug('cleanup')
-        self.stop()
+        # Remove bus watch FIRST to prevent queued callbacks from restarting
         bus = self._playbin.get_bus()
         if bus:
             bus.remove_signal_watch()
+        self.stop()
         self._playbin.set_state(Gst.State.NULL)

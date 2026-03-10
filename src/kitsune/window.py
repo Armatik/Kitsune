@@ -56,9 +56,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._client.set_on_network_ok(self._on_network_ok)
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
         _ensure_nav_css()
+        self._active_player = None
         self._setup_window_state()
         self._setup_actions()
         self._setup_views()
+        self.nav_view.connect('popped', self._on_nav_popped)
 
     def _setup_window_state(self):
         self.set_default_size(
@@ -68,6 +70,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self.connect('close-request', self._on_close_request)
 
     def _on_close_request(self, _window):
+        self._stop_active_player()
         size = self.get_default_size()
         self._settings.set_int('window-width', size[0])
         self._settings.set_int('window-height', size[1])
@@ -261,7 +264,17 @@ class KitsuneWindow(Adw.ApplicationWindow):
         elif tab == 'franchises' and self._franchises_view:
             self._franchises_view.retry()
 
+    def _on_nav_popped(self, _nav_view, page):
+        self._stop_active_player()
+
+    def _stop_active_player(self):
+        if self._active_player:
+            player = self._active_player
+            self._active_player = None
+            player.cleanup()
+
     def _play_episode(self, release, episode):
         from kitsune.ui.player_view import PlayerView
         view = PlayerView(release=release, episode=episode)
+        self._active_player = view._player
         self.nav_view.push(view)
