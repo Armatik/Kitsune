@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -10,6 +12,8 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from kitsune.api import AniLibriaClient
+
+log = logging.getLogger('kitsune.ui.release')
 from kitsune.models import Release, Episode
 from kitsune.ui.image_cache import load_image
 from kitsune import release_cache, watch_positions
@@ -182,26 +186,89 @@ class ReleaseView(Adw.NavigationPage):
 
     # --- Tabs (ToggleGroup + Carousel) ---
 
+    _TAB_LABELS = {
+        'episodes': _('Episodes'),
+        'related': _('Related'),
+        'team': _('Team'),
+        'torrents': _('Torrents'),
+    }
+
     def _setup_tabs_toggle(self):
         self._tabs_toggle = Adw.ToggleGroup()
+        self._visible_tabs = []
 
-        labels = {
-            'episodes': _('Episodes'),
-            'related': _('Related'),
-            'team': _('Team'),
-            'torrents': _('Torrents'),
+        # Store page widget references before removing
+        self._tab_pages = {}
+        for i, name in enumerate(self._TAB_PAGES):
+            self._tab_pages[name] = self.tabs_carousel.get_nth_page(i)
+
+        has_data = {
+            'episodes': True,
+            'related': False,  # async, added later
+            'team': bool(self._release.members),
+            'torrents': bool(self._release.torrents),
         }
+
+        # Remove pages without data from carousel (in reverse to keep indices stable)
+        for name in reversed(self._TAB_PAGES):
+            if not has_data.get(name):
+                log.debug('tab %s hidden: no data', name)
+                self.tabs_carousel.remove(self._tab_pages[name])
+
         for name in self._TAB_PAGES:
-            toggle = Adw.Toggle(name=name, label=labels[name])
-            self._tabs_toggle.add(toggle)
+            if has_data.get(name):
+                self._visible_tabs.append(name)
+                self._tabs_toggle.add(
+                    Adw.Toggle(name=name, label=self._TAB_LABELS[name])
+                )
+
+        log.debug('visible tabs: %s', self._visible_tabs)
 
         self._tabs_toggle.set_active_name('episodes')
         self._tabs_toggle.connect('notify::active-name', self._on_tab_changed)
         self.tabs_header.append(self._tabs_toggle)
 
+    def _add_tab(self, name):
+        if name in self._visible_tabs:
+            return
+        log.debug('adding tab %s (async data arrived)', name)
+
+        # Find correct insertion position in carousel
+        insert_before = None
+        found = False
+        for tab_name in self._TAB_PAGES:
+            if tab_name == name:
+                found = True
+                continue
+            if found and tab_name in self._visible_tabs:
+                insert_before = tab_name
+                break
+
+        if insert_before:
+            self.tabs_carousel.insert(
+                self._tab_pages[name],
+                self._visible_tabs.index(insert_before),
+            )
+        else:
+            self.tabs_carousel.append(self._tab_pages[name])
+
+        # Insert into visible_tabs at correct position
+        idx = list(self._TAB_PAGES).index(name)
+        insert_at = 0
+        for i, t in enumerate(self._visible_tabs):
+            if list(self._TAB_PAGES).index(t) < idx:
+                insert_at = i + 1
+        self._visible_tabs.insert(insert_at, name)
+
+        self._tabs_toggle.add(
+            Adw.Toggle(name=name, label=self._TAB_LABELS[name])
+        )
+
     def _on_tab_changed(self, toggle_group, _pspec):
         name = toggle_group.get_active_name()
-        idx = self._TAB_PAGES.index(name) if name in self._TAB_PAGES else 0
+        if name not in self._visible_tabs:
+            return
+        idx = self._visible_tabs.index(name)
         page = self.tabs_carousel.get_nth_page(idx)
         self.tabs_carousel.scroll_to(page, True)
 
@@ -453,6 +520,10 @@ class ReleaseView(Adw.NavigationPage):
         self._apply_episodes_view()
         self._populate_team()
         self._populate_torrents()
+        if self._release.members:
+            self._add_tab('team')
+        if self._release.torrents:
+            self._add_tab('torrents')
         self.tabs_carousel.queue_resize()
 
         self._show_refresh_done()
@@ -760,12 +831,11 @@ class ReleaseView(Adw.NavigationPage):
     def _on_franchise_found(self, franchise, error):
         self.related_spinner.set_visible(False)
         if error:
-            self._show_spinner_error(self.related_spinner)
             return
         if not franchise:
-            self.related_empty.set_visible(True)
             return
         self._franchise = franchise
+        self._add_tab('related')
         self._populate_related()
         self.tabs_carousel.queue_resize()
 
