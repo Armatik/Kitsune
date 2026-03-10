@@ -1,9 +1,12 @@
 src/kitsune/application.py
 src/kitsune/window.py
+src/kitsune/ui/create_tag_dialog.py
 src/kitsune/ui/filter_dialog.py
 src/kitsune/ui/player_view.py
 src/kitsune/ui/preferences_window.py
 src/kitsune/ui/release_view.py
+src/kitsune/ui/tag_popover.py
+src/kitsune/ui/tags_view.py
 src/kitsune/ui/widgets/franchise_card.py
 src/kitsune/ui/widgets/genre_card.py
 src/kitsune/ui/filter_dialog.blp

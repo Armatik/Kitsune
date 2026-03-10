@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-08 08:41+0300\n"
+"POT-Creation-Date: 2026-03-11 01:02+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,151 +17,206 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/kitsune/application.py:50
-msgid "GNOME client for watching anime from AniLibria"
-msgstr ""
-
 #: src/kitsune/application.py:52
-msgid "AniLibria Website"
-msgstr ""
-
-#: src/kitsune/application.py:53
-msgid "AniLibria Telegram"
+msgid "Libadwaita client for watching anime from AniLiberty"
 msgstr ""
 
 #: src/kitsune/application.py:54
-msgid "AniLibria VK"
+msgid "Telegram Channel"
+msgstr ""
+
+#: src/kitsune/application.py:55
+msgid "Telegram Chat"
 msgstr ""
 
 #: src/kitsune/application.py:56
+msgid "AniLiberty Website"
+msgstr ""
+
+#: src/kitsune/application.py:57
+msgid "AniLiberty Telegram"
+msgstr ""
+
+#: src/kitsune/application.py:58
+msgid "AniLiberty VK"
+msgstr ""
+
+#: src/kitsune/application.py:60
 msgid "Uses"
 msgstr ""
 
-#: src/kitsune/window.py:129 src/kitsune/ui/search_view.blp:7
-#: src/kitsune/ui/window.blp:49 src/kitsune/ui/window.blp:134
+#: src/kitsune/window.py:151 src/kitsune/window.py:222
+msgid "Card view"
+msgstr ""
+
+#: src/kitsune/window.py:171 src/kitsune/ui/search_view.blp:7
+#: src/kitsune/ui/window.blp:83 src/kitsune/ui/window.blp:188
 msgid "Search"
 msgstr ""
 
-#: src/kitsune/window.py:130 src/kitsune/ui/release_view.py:847
+#: src/kitsune/window.py:172
 msgid "This feature is under development"
 msgstr ""
 
-#: src/kitsune/window.py:132 src/kitsune/ui/release_view.py:849
+#: src/kitsune/window.py:174
 msgid "OK"
 msgstr ""
 
-#: src/kitsune/window.py:214 src/kitsune/ui/window.blp:69
-#: src/kitsune/ui/window.blp:89 src/kitsune/ui/window.blp:182
+#: src/kitsune/window.py:225 src/kitsune/ui/release_view.py:348
+msgid "List view"
+msgstr ""
+
+#: src/kitsune/window.py:305 src/kitsune/ui/window.blp:103
+#: src/kitsune/ui/window.blp:128 src/kitsune/ui/window.blp:251
 msgid "Catalog"
 msgstr ""
 
-#: src/kitsune/window.py:215 src/kitsune/ui/filter_dialog.py:151
-#: src/kitsune/ui/window.blp:74 src/kitsune/ui/window.blp:204
+#: src/kitsune/window.py:306 src/kitsune/ui/filter_dialog.py:160
+#: src/kitsune/ui/filter_dialog.py:171 src/kitsune/ui/window.blp:108
+#: src/kitsune/ui/window.blp:273
 msgid "Genres"
 msgstr ""
 
-#: src/kitsune/window.py:216 src/kitsune/ui/window.blp:79
-#: src/kitsune/ui/window.blp:226
+#: src/kitsune/window.py:307 src/kitsune/ui/window.blp:113
+#: src/kitsune/ui/window.blp:295
 msgid "Franchises"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:33
-msgid "TV"
+#: src/kitsune/window.py:308
+msgid "Favorites & Tags"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:38
-msgid "Movie"
+#: src/kitsune/ui/create_tag_dialog.py:61 src/kitsune/ui/window.blp:50
+msgid "New Tag"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:62 src/kitsune/ui/tags_view.py:328
+msgid "Cancel"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:63
+msgid "Create"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:80
+msgid "Emoji"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:81
+msgid "Color"
+msgstr ""
+
+#. EntryRow with chooser as prefix
+#: src/kitsune/ui/create_tag_dialog.py:171
+#: src/kitsune/ui/create_tag_dialog.py:261
+msgid "Tag name"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:186
+msgid "A tag with this name already exists"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:267
+msgid "Tag name (optional)"
 msgstr ""
 
 #: src/kitsune/ui/filter_dialog.py:39
+msgid "TV"
+msgstr ""
+
+#: src/kitsune/ui/filter_dialog.py:44
+msgid "Movie"
+msgstr ""
+
+#: src/kitsune/ui/filter_dialog.py:45
 msgid "Dorama"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:40
+#: src/kitsune/ui/filter_dialog.py:46
 msgid "Special"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:46
+#: src/kitsune/ui/filter_dialog.py:52
 msgid "Winter"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:47
+#: src/kitsune/ui/filter_dialog.py:53
 msgid "Spring"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:48
+#: src/kitsune/ui/filter_dialog.py:54
 msgid "Summer"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:49
+#: src/kitsune/ui/filter_dialog.py:55
 msgid "Autumn"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:65
+#: src/kitsune/ui/filter_dialog.py:71
 msgid "By default"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:66
+#: src/kitsune/ui/filter_dialog.py:72
 msgid "Recently updated"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:67
+#: src/kitsune/ui/filter_dialog.py:73
 msgid "Year (new ones first)"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:68
+#: src/kitsune/ui/filter_dialog.py:74
 msgid "Year (old ones first)"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:69
+#: src/kitsune/ui/filter_dialog.py:75
 msgid "By rating"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:75 src/kitsune/ui/release_view.py:366
+#: src/kitsune/ui/filter_dialog.py:81 src/kitsune/ui/release_view.py:514
 msgid "Ongoing"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:76
+#: src/kitsune/ui/filter_dialog.py:82
 msgid "Not ongoing"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:82
+#: src/kitsune/ui/filter_dialog.py:88
 msgid "Now dubbing"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:83
+#: src/kitsune/ui/filter_dialog.py:89
 msgid "Dubbing completed"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:143 src/kitsune/ui/release_view.py:353
+#: src/kitsune/ui/filter_dialog.py:152 src/kitsune/ui/release_view.py:501
 msgid "Type"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:144 src/kitsune/ui/release_view.py:357
+#: src/kitsune/ui/filter_dialog.py:153 src/kitsune/ui/release_view.py:505
 msgid "Season"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:145
+#: src/kitsune/ui/filter_dialog.py:154
 msgid "Age Rating"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:146
+#: src/kitsune/ui/filter_dialog.py:155
 msgid "Release status"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:147
+#: src/kitsune/ui/filter_dialog.py:156
 msgid "Dubbing status"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:441 src/kitsune/ui/player_view.blp:202
+#: src/kitsune/ui/player_view.py:494 src/kitsune/ui/player_view.blp:230
 msgid "Skip Intro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:445
+#: src/kitsune/ui/player_view.py:498
 msgid "Skip Outro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:486
+#: src/kitsune/ui/player_view.py:541
 msgid "Playback error: {}"
 msgstr ""
 
@@ -173,152 +228,179 @@ msgstr ""
 msgid "Gradient background from poster accent colors"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:162 src/kitsune/ui/release_view.py:364
+#: src/kitsune/ui/release_view.py:210 src/kitsune/ui/release_view.py:512
 msgid "Episodes"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:163
+#: src/kitsune/ui/release_view.py:211
 msgid "Related"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:164
+#: src/kitsune/ui/release_view.py:212
 msgid "Team"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:165
+#: src/kitsune/ui/release_view.py:213
 msgid "Torrents"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:190 src/kitsune/ui/release_view.py:208
+#: src/kitsune/ui/release_view.py:304 src/kitsune/ui/release_view.py:320
 msgid "All"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:192 src/kitsune/ui/release_view.py:211
+#: src/kitsune/ui/release_view.py:305 src/kitsune/ui/release_view.py:320
+#: src/kitsune/ui/release_view.py:822
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:195 src/kitsune/ui/release_view.py:212
+#: src/kitsune/ui/release_view.py:306 src/kitsune/ui/release_view.py:320
 msgid "Unwatched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:221 src/kitsune/ui/release_view.py:292
+#: src/kitsune/ui/release_view.py:335 src/kitsune/ui/release_view.py:425
 msgid "Newest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:234
-msgid "List view"
-msgstr ""
-
-#: src/kitsune/ui/release_view.py:238
+#: src/kitsune/ui/release_view.py:352
 msgid "Grid view"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:248
+#: src/kitsune/ui/release_view.py:362
 msgid "Mark all as watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:253
+#: src/kitsune/ui/release_view.py:367
 msgid "Unmark all"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:289
+#: src/kitsune/ui/release_view.py:422
 msgid "Oldest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:355
+#: src/kitsune/ui/release_view.py:503
 msgid "Year"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:360
+#: src/kitsune/ui/release_view.py:508
 msgid "Age rating"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:366
+#: src/kitsune/ui/release_view.py:514
 msgid "Completed"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:367
+#: src/kitsune/ui/release_view.py:515
 msgid "Status"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:509 src/kitsune/ui/release_view.py:540
+#: src/kitsune/ui/release_view.py:726 src/kitsune/ui/release_view.py:740
+#: src/kitsune/ui/release_view.py:815
 msgid "Episode {}"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:546
+#: src/kitsune/ui/release_view.py:750
+msgid "Remaining: {} min"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:822 src/kitsune/ui/release_view.py:830
 msgid "min"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:614
+#: src/kitsune/ui/release_view.py:827
+msgid "Remaining: {} min of {} min"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:897
 #, python-format
 msgid "%d seasons"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:615
+#: src/kitsune/ui/release_view.py:898
 msgid "1 season"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:618 src/kitsune/ui/release_view.py:684
+#: src/kitsune/ui/release_view.py:901 src/kitsune/ui/release_view.py:967
 #, python-format
 msgid "%d episodes"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:732
+#: src/kitsune/ui/release_view.py:1015
 #, python-format
 msgid "Episodes: %s"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:747
+#: src/kitsune/ui/release_view.py:1030
 msgid "Hardsub"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:759
+#: src/kitsune/ui/release_view.py:1042
 msgid "Download torrent"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:768
+#: src/kitsune/ui/release_view.py:1051
 msgid "Open magnet link"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:846
-msgid "Genre"
+#: src/kitsune/ui/tag_popover.py:52
+msgid "Search tags…"
 msgstr ""
 
-#: src/kitsune/ui/widgets/franchise_card.py:38
-#: src/kitsune/ui/widgets/genre_card.py:33
+#: src/kitsune/ui/tag_popover.py:81
+msgid "Tag not found"
+msgstr ""
+
+#: src/kitsune/ui/tag_popover.py:85
+msgid "Press + to create it"
+msgstr ""
+
+#: src/kitsune/ui/tags_view.py:157
+msgid "New tag"
+msgstr ""
+
+#: src/kitsune/ui/tags_view.py:238
+msgid "No releases"
+msgstr ""
+
+#: src/kitsune/ui/tags_view.py:325
+msgid "Delete Tag?"
+msgstr ""
+
+#: src/kitsune/ui/tags_view.py:326
+#, python-format
+msgid "Tag \"%s\" will be removed. This cannot be undone."
+msgstr ""
+
+#: src/kitsune/ui/tags_view.py:329
+msgid "Delete"
+msgstr ""
+
+#: src/kitsune/ui/widgets/franchise_card.py:39
+#: src/kitsune/ui/widgets/genre_card.py:34
 msgid "titles"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:7 src/kitsune/ui/window.blp:29
-msgid "Filters"
+#: src/kitsune/ui/filter_dialog.blp:17
+msgid "Close"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:39
+#: src/kitsune/ui/filter_dialog.blp:38
 msgid "Sorting"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:54
+#: src/kitsune/ui/filter_dialog.blp:53
 msgid "Release period"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:65
+#: src/kitsune/ui/filter_dialog.blp:64
 msgid "from"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:74
+#: src/kitsune/ui/filter_dialog.blp:73
 msgid "to"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:95
-msgid "Cancel"
-msgstr ""
-
-#: src/kitsune/ui/filter_dialog.blp:100
+#: src/kitsune/ui/filter_dialog.blp:91
 msgid "Reset"
-msgstr ""
-
-#: src/kitsune/ui/filter_dialog.blp:108
-msgid "Apply"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:8
@@ -373,94 +455,154 @@ msgstr ""
 msgid "Animation duration in milliseconds"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:85
+#: src/kitsune/ui/preferences_window.blp:84
+msgid "Player"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:87
+msgid "Close Button"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:88
+msgid "Show window close button in player top bar"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:94
 msgid "Cache"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:89
-msgid "Image Cache"
+#: src/kitsune/ui/preferences_window.blp:98
+msgid "Poster Cache"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:90
+#: src/kitsune/ui/preferences_window.blp:99
 msgid "Cached poster images for offline access"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:93
+#: src/kitsune/ui/preferences_window.blp:102
 msgid "Cache Size"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:97
+#: src/kitsune/ui/preferences_window.blp:106
 msgid "Clear Cache"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:98
+#: src/kitsune/ui/preferences_window.blp:107
 msgid "Remove all cached images"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:103
-#: src/kitsune/ui/preferences_window.blp:131
-#: src/kitsune/ui/preferences_window.blp:159
+#: src/kitsune/ui/preferences_window.blp:112
+#: src/kitsune/ui/preferences_window.blp:140
+#: src/kitsune/ui/preferences_window.blp:168
+#: src/kitsune/ui/preferences_window.blp:196
+#: src/kitsune/ui/preferences_window.blp:224
 msgid "Clear"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:113
-msgid "Release Cache"
+#: src/kitsune/ui/preferences_window.blp:122
+msgid "Episode Previews"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:114
-msgid "Cached release information for offline access"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:117
-msgid "Cached Releases"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:121
-#: src/kitsune/ui/preferences_window.blp:149
-msgid "Storage Size"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:125
-msgid "Clear Release Cache"
+#: src/kitsune/ui/preferences_window.blp:123
+msgid "Cached episode thumbnail images"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:126
-msgid "Remove all cached release data"
+msgid "Cached Previews"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:141
-msgid "Watch Progress"
+#: src/kitsune/ui/preferences_window.blp:130
+#: src/kitsune/ui/preferences_window.blp:158
+#: src/kitsune/ui/preferences_window.blp:186
+#: src/kitsune/ui/preferences_window.blp:214
+msgid "Storage Size"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:142
-msgid "Saved playback positions for episodes"
+#: src/kitsune/ui/preferences_window.blp:134
+msgid "Clear Previews"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:145
-msgid "Saved Positions"
+#: src/kitsune/ui/preferences_window.blp:135
+msgid "Remove all cached episode thumbnails"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:153
-msgid "Clear Progress"
+#: src/kitsune/ui/preferences_window.blp:150
+msgid "Release Cache"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:151
+msgid "Cached release information for offline access"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:154
+msgid "Cached Releases"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:162
+msgid "Clear Release Cache"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:163
+msgid "Remove all cached release data"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:178
+msgid "Watch Progress"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:179
+msgid "Saved playback positions for episodes"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:182
+msgid "Saved Positions"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:190
+msgid "Clear Progress"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:191
 msgid "Remove all saved playback positions"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:121
+#: src/kitsune/ui/preferences_window.blp:206
+msgid "Tags & Favorites"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:207
+msgid "Your custom tags and favorited releases"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:210
+msgid "Tags"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:218
+msgid "Clear Tags"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:219
+msgid "Remove all tags and favorites"
+msgstr ""
+
+#: src/kitsune/ui/release_view.blp:25
+msgid "Add to favorites"
+msgstr ""
+
+#: src/kitsune/ui/release_view.blp:129
 msgid "Enter name or number…"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:163
+#: src/kitsune/ui/release_view.blp:171
 msgid "No related releases"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:193
+#: src/kitsune/ui/release_view.blp:201
 msgid "No team information"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:214
+#: src/kitsune/ui/release_view.blp:222
 msgid "No torrents available"
 msgstr ""
 
@@ -500,27 +642,47 @@ msgstr ""
 msgid "Scroll to top"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:57 src/kitsune/ui/window.blp:142
+#: src/kitsune/ui/window.blp:34
+msgid "Filters"
+msgstr ""
+
+#: src/kitsune/ui/window.blp:41
+msgid "Toggle view"
+msgstr ""
+
+#: src/kitsune/ui/window.blp:60
+msgid "Delete Tag"
+msgstr ""
+
+#: src/kitsune/ui/window.blp:91 src/kitsune/ui/window.blp:196
 msgid "Main Menu"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:95 src/kitsune/ui/window.blp:126
+#: src/kitsune/ui/window.blp:118
+msgid "Favorites &amp; Tags"
+msgstr ""
+
+#: src/kitsune/ui/window.blp:134 src/kitsune/ui/window.blp:180
 msgid "Back"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:241
+#: src/kitsune/ui/window.blp:317
+msgid "Favorites"
+msgstr ""
+
+#: src/kitsune/ui/window.blp:335
 msgid "No internet connection. App is working in limited mode."
 msgstr ""
 
-#: src/kitsune/ui/window.blp:242
+#: src/kitsune/ui/window.blp:336
 msgid "Retry"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:261
+#: src/kitsune/ui/window.blp:355
 msgid "Preferences"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:262
+#: src/kitsune/ui/window.blp:356
 msgid "About Kitsune"
 msgstr ""
 
@@ -531,24 +693,105 @@ msgstr ""
 
 #: data/net.armatik.Kitsune.desktop.in:4
 #: data/net.armatik.Kitsune.metainfo.xml.in:8
-msgid "Watch anime from AniLibria"
+msgid "Watch anime from AniLiberty"
 msgstr ""
 
 #: data/net.armatik.Kitsune.desktop.in:10
-msgid "anime;video;anilibria;"
+msgid "anime;video;aniliberty;"
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:10
 msgid ""
-"Kitsune is a GNOME client for watching anime translated by the AniLibria "
-"team. Browse the catalog, search for titles, and watch episodes with the "
-"built-in player."
+"Kitsune is a Libadwaita client for watching anime translated by the "
+"AniLiberty team. Browse the catalog, search for titles, and watch episodes "
+"with the built-in player."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:29
-msgid "Semen Fomchenkov"
+#: data/net.armatik.Kitsune.metainfo.xml.in:30
+msgid "Semen (Armatik) Fomchenkov"
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:49
+#: data/net.armatik.Kitsune.metainfo.xml.in:50
+msgid ""
+"Tags and favorites — a new system for organizing your library. Create custom "
+"tags with emoji or colored icons, assign them to any release via the star "
+"button on the release page, and browse tagged collections in the new "
+"\"Favorites &amp; Tags\" tab. Tags are displayed as compact badges on "
+"catalog cards and as interactive pills on release pages. The tag creation "
+"dialog features an Adw.ToggleGroup switcher between emoji and color modes "
+"with inline icon chooser, color ring picker, duplicate name validation, and "
+"auto-generated names for color tags. Tag view supports both card grid and "
+"list modes with persistent mode preference. Tags can be deleted from the "
+"header bar or list view with a confirmation dialog, and changes propagate "
+"instantly to all visible cards."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:51
+msgid ""
+"Episode watch progress tracking — progress bars appear on episode cards and "
+"list rows showing how much of each episode has been watched. Completed "
+"episodes are marked with an accent-colored checkmark. Unwatched episode "
+"previews can be blurred (configurable in preferences). Episodes can be "
+"filtered by watched/unwatched status using toggle buttons. Preview images "
+"show a loading spinner while loading and a placeholder icon when "
+"unavailable. Progress is refreshed automatically when returning from the "
+"player."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:52
+msgid ""
+"Redesigned filter panel — the filter dialog has been replaced with a sliding "
+"side panel (OverlaySplitView) that overlays the entire window. Filters auto-"
+"apply with a 1-second debounce, genres and year ranges update "
+"asynchronously, and redundant catalog reloads on unchanged filters are "
+"suppressed."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:53
+msgid ""
+"Genre navigation from release pages — clicking a genre chip on a release "
+"page now opens that genre's releases as a NavigationPage with a back button, "
+"instead of switching to the Genres tab. Genre chips have hover effects."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:54
+msgid ""
+"Dynamic release page tabs — empty tabs (related releases, team, torrents) "
+"are hidden automatically instead of showing blank placeholders. Tabs appear "
+"dynamically when async data arrives."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:55
+msgid ""
+"Visual improvements — smooth CSS hover transitions (200ms ease-out-quad) "
+"across flowbox items, sidebar rows, navigation tabs, player buttons, and "
+"filter chips. Watch progress bar increased to 4px with accent color for "
+"better visibility. Tag cards with centered titles and emoji background blur "
+"effects."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:56
+msgid ""
+"Player stability — fixed player cleanup on navigation back by removing "
+"unreliable hiding/unmap signals. Cleanup now fires only via explicit back "
+"button, NavigationView pop, and window close. Idempotent cleanup prevents "
+"double-stop issues."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:57
+msgid ""
+"Infrastructure — centralized AniLibria API URLs into a single constants "
+"file. Image download limit increased from 10 MB to 30 MB. Tags statistics "
+"and clear button added to preferences. Repository moved to alt-gnome "
+"organization, project Telegram channel and chat added."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:62
+msgid ""
+"Major update with genres, franchises, tabbed release page, Blueprint UI, "
+"accent colors, offline mode, and full Russian translation."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:67
 msgid "Initial release with catalog, search, and video player."
 msgstr ""
