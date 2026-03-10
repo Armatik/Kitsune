@@ -21,8 +21,13 @@ gettext.install('kitsune', localedir)
 if __name__ == '__main__':
     import logging
     if '--debug' in sys.argv:
-        logging.basicConfig(level=logging.DEBUG, format='%(name)s: %(message)s')
+        # Unbuffered handler so logs survive segfaults
+        handler = logging.StreamHandler(sys.stderr)
+        handler.setFormatter(logging.Formatter('%(name)s: %(message)s'))
+        logging.root.addHandler(handler)
+        logging.root.setLevel(logging.DEBUG)
         sys.argv.remove('--debug')
+        os.environ.setdefault('GST_DEBUG', '2')
     else:
         logging.basicConfig(level=logging.WARNING)
 

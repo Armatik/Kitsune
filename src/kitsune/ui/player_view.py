@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from time import monotonic
 
 import gi
@@ -14,6 +15,8 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from kitsune.models import Episode, Release
 from kitsune.player.gst_player import GstPlayer
 from kitsune import watch_positions
+
+log = logging.getLogger('kitsune.ui.player')
 
 _HIDE_DELAY = 2
 _css_loaded = False
@@ -94,6 +97,7 @@ class PlayerView(Adw.NavigationPage):
     close_btn = Gtk.Template.Child()
 
     def __init__(self, release: Release, episode: Episode, **kwargs):
+        log.debug('init: %s ep %s', release.name.main, episode.ordinal)
         super().__init__(title=release.name.main, **kwargs)
         self._release = release
         self._episode = episode
@@ -291,16 +295,19 @@ class PlayerView(Adw.NavigationPage):
 
     def _start_playback(self):
         if not self.get_mapped():
+            log.debug('_start_playback: not mapped, skip')
             return
         self._buffering = True
         self.play_btn.set_child(self._spinner)
         quality = self._settings.get_string('preferred-quality')
         url = self._episode.get_hls_url(quality)
+        log.debug('start playback: quality=%s url=%s', quality, url)
         if url:
             saved = watch_positions.get_position(
                 self._release.id, self._episode.ordinal,
             )
             if saved > 5:
+                log.debug('restoring position: %.1fs', saved)
                 self._restore_position = saved
                 self._seeking = True
             self._player.play_uri(url)
@@ -447,11 +454,13 @@ class PlayerView(Adw.NavigationPage):
 
     def _on_position_updated(self, _player, position, duration):
         if self._buffering and self._player.is_playing:
+            log.debug('buffering done (position update), pos=%d dur=%d', position, duration)
             self._buffering = False
             self.play_btn.set_icon_name('media-playback-pause-symbolic')
         if self._restore_position is not None and duration > 0:
             pos = self._restore_position
             self._restore_position = None
+            log.debug('restore seek → %.1fs', pos)
             self._do_seek(pos)
             return
         if not self._seeking:
@@ -502,6 +511,7 @@ class PlayerView(Adw.NavigationPage):
             )
 
     def _on_state_changed(self, _player, state):
+        log.debug('ui state: %s (buffering=%s)', state, self._buffering)
         if state == 'playing':
             self._buffering = False
             self.play_btn.set_icon_name('media-playback-pause-symbolic')
@@ -522,12 +532,14 @@ class PlayerView(Adw.NavigationPage):
             self._do_back()
 
     def _on_error(self, _player, message):
+        log.error('playback error: %s', message)
         toast = Adw.Toast(title=_('Playback error: {}').format(message))
         root = self.get_root()
         if hasattr(root, 'add_toast'):
             root.add_toast(toast)
 
     def _on_buffering_signal(self, _player, percent):
+        log.debug('ui buffering: %d%%', percent)
         if percent < 100:
             self._buffering = True
             self.play_btn.set_child(self._spinner)
@@ -541,6 +553,7 @@ class PlayerView(Adw.NavigationPage):
     # --- Episode navigation ---
 
     def _switch_episode(self, episode):
+        log.debug('switch episode → %s', episode.ordinal)
         self._save_watch_position()
         self._episode = episode
         self._current_idx = next(
@@ -563,6 +576,7 @@ class PlayerView(Adw.NavigationPage):
     # --- Callbacks ---
 
     def _do_back(self):
+        log.debug('back (cleanup)')
         self._save_watch_position()
         if self._fullscreen:
             self._toggle_fullscreen()
@@ -590,6 +604,7 @@ class PlayerView(Adw.NavigationPage):
         self._player.toggle_play_pause()
 
     def _do_seek(self, position):
+        log.debug('do_seek → %.1fs', position)
         self._seeking = True
         self._last_known_position = position
         self._player.seek(position)
@@ -650,6 +665,7 @@ class PlayerView(Adw.NavigationPage):
         idx = dropdown.get_selected()
         if idx < len(self._available_qualities):
             quality = self._available_qualities[idx]
+            log.debug('quality changed → %s', quality)
             self._settings.set_string('preferred-quality', quality)
             self._restore_position = self._player.get_position()
             self._buffering = True
@@ -688,6 +704,7 @@ class PlayerView(Adw.NavigationPage):
         return f'{m}:{s:02d}'
 
     def do_unmap(self):
+        log.debug('unmap (cleanup)')
         self._save_watch_position()
         if self._fullscreen:
             root = self.get_root()
