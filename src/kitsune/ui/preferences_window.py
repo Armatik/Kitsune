@@ -10,7 +10,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gio, Gtk
 
 from kitsune.ui.image_cache import get_cache_size, get_cache_count, clear_cache
-from kitsune import release_cache, watch_positions
+from kitsune import release_cache, watch_positions, tags_store
 
 _STYLE_DESCRIPTIONS = {
     'classic': _('Standard layout without background effects'),
@@ -39,6 +39,8 @@ class PreferencesWindow(Adw.PreferencesDialog):
     release_size_row = Gtk.Template.Child()
     watch_count_row = Gtk.Template.Child()
     watch_size_row = Gtk.Template.Child()
+    tags_count_row = Gtk.Template.Child()
+    tags_size_row = Gtk.Template.Child()
     style_toggle = Gtk.Template.Child()
     style_description = Gtk.Template.Child()
     accent_group = Gtk.Template.Child()
@@ -77,6 +79,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._update_preview_cache()
         self._update_release_cache()
         self._update_watch_progress()
+        self._update_tags()
 
     def _update_style_description(self, name: str):
         self.style_description.set_label(
@@ -151,3 +154,14 @@ class PreferencesWindow(Adw.PreferencesDialog):
     def on_clear_progress_clicked(self, _button):
         watch_positions.clear_all()
         self._update_watch_progress()
+
+    def _update_tags(self):
+        count = tags_store.get_count()
+        size = tags_store.get_size()
+        self.tags_count_row.set_subtitle(str(count))
+        self.tags_size_row.set_subtitle(_format_size(size))
+
+    @Gtk.Template.Callback()
+    def on_clear_tags_clicked(self, _button):
+        tags_store.clear_all()
+        self._update_tags()

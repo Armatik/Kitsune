@@ -201,5 +201,33 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
         }
       }
     }
+
+    Adw.PreferencesGroup {
+      title: _("Tags & Favorites");
+      description: _("Your custom tags and favorited releases");
+
+      Adw.ActionRow tags_count_row {
+        title: _("Tags");
+      }
+
+      Adw.ActionRow tags_size_row {
+        title: _("Storage Size");
+      }
+
+      Adw.ActionRow {
+        title: _("Clear Tags");
+        subtitle: _("Remove all tags and favorites");
+        activatable-widget: clear_tags_btn;
+
+        [suffix]
+        Gtk.Button clear_tags_btn {
+          label: _("Clear");
+          valign: center;
+          clicked => $on_clear_tags_clicked();
+
+          styles ["destructive-action"]
+        }
+      }
+    }
   }
 }
