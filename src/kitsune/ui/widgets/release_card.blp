@@ -44,6 +44,15 @@ template $KitsuneReleaseCard: Gtk.FlowBoxChild {
           halign: center;
           valign: center;
         }
+
+        [overlay]
+        Gtk.Box tag_badges {
+          halign: end;
+          valign: start;
+          margin-end: 6;
+          margin-top: 6;
+          visible: false;
+        }
       }
     }
 
