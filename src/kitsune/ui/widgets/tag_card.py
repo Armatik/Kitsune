@@ -1,0 +1,108 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import gi
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+
+from gi.repository import Gdk, Gtk
+
+COLOR_MAP = {
+    'blue': '#3584e4',
+    'teal': '#2190a4',
+    'green': '#3a944a',
+    'yellow': '#c88800',
+    'orange': '#e66100',
+    'red': '#c01c28',
+    'pink': '#d56199',
+    'purple': '#9141ac',
+    'slate': '#6e7781',
+}
+
+_card_css_loaded = False
+
+
+def _ensure_card_css():
+    global _card_css_loaded
+    if _card_css_loaded:
+        return
+    _card_css_loaded = True
+    css = Gtk.CssProvider()
+    css.load_from_string(
+        '.tag-card-emoji-bg { font-size: 64px;'
+        ' opacity: 0.3; }'
+        ' .tag-card-icon { font-size: 36px; }'
+        ' .tag-card-color-circle { min-width: 36px; min-height: 36px;'
+        '   border-radius: 50%; }'
+    )
+    Gtk.StyleContext.add_provider_for_display(
+        Gdk.Display.get_default(), css,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
+
+
+@Gtk.Template(resource_path='/net/armatik/Kitsune/tag_card.ui')
+class TagCard(Gtk.FlowBoxChild):
+    __gtype_name__ = 'KitsuneTagCard'
+
+    card_overlay = Gtk.Template.Child()
+    card_bg = Gtk.Template.Child()
+    icon_label = Gtk.Template.Child()
+    count_label = Gtk.Template.Child()
+    title_label = Gtk.Template.Child()
+
+    def __init__(self, tag: dict, **kwargs):
+        super().__init__(**kwargs)
+        _ensure_card_css()
+        self.tag = tag
+
+        self.title_label.set_label(tag['name'])
+
+        release_count = len(tag.get('releases', []))
+        self.count_label.set_label(f'{release_count}')
+
+        if tag['icon_type'] == 'emoji':
+            self._setup_emoji(tag['icon_value'])
+        else:
+            self._setup_color(tag['icon_value'])
+
+    def _setup_emoji(self, emoji: str):
+        self.icon_label.set_label(emoji)
+        self.icon_label.add_css_class('tag-card-icon')
+
+        bg_label = Gtk.Label(
+            label=emoji, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            css_classes=['tag-card-emoji-bg'],
+        )
+        self.card_overlay.add_overlay(bg_label)
+        self.card_overlay.reorder_overlay(bg_label, 0)
+
+    def _setup_color(self, color_name: str):
+        hex_color = COLOR_MAP.get(color_name, '#6e7781')
+
+        circle = Gtk.Box(
+            halign=Gtk.Align.CENTER,
+            css_classes=['tag-card-color-circle'],
+        )
+        css = Gtk.CssProvider()
+        css.load_from_string(
+            f'.tag-card-color-circle {{ background: {hex_color}; }}'
+        )
+        circle.get_style_context().add_provider(
+            css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+        self.icon_label.set_visible(False)
+        parent = self.icon_label.get_parent()
+        parent.prepend(circle)
+
+        bg_css = Gtk.CssProvider()
+        bg_css.load_from_string(
+            f'.tag-card-bg-colored {{ background: alpha({hex_color}, 0.25);'
+            f' border-radius: 12px; }}'
+        )
+        self.card_bg.add_css_class('tag-card-bg-colored')
+        self.card_bg.get_style_context().add_provider(
+            bg_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )

@@ -11,5 +11,6 @@
     <file preprocess="xml-stripblanks">release_card.ui</file>
     <file preprocess="xml-stripblanks">genre_card.ui</file>
     <file preprocess="xml-stripblanks">franchise_card.ui</file>
+    <file preprocess="xml-stripblanks">tag_card.ui</file>
   </gresource>
 </gresources>
