@@ -20,7 +20,7 @@ log = logging.getLogger('kitsune.image_cache')
 _session = Soup.Session()
 _base_cache_dir = os.path.join(GLib.get_user_cache_dir(), 'kitsune')
 _MAX_MEMORY_CACHE = 300
-_MAX_DOWNLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
+_MAX_DOWNLOAD_SIZE = 30 * 1024 * 1024  # 30 MB
 _memory_cache: OrderedDict[str, Gdk.Texture] = OrderedDict()
 
 

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from kitsune import SITE_URL
+
 
 @dataclass
 class SkipTimecode:
@@ -23,7 +25,7 @@ def _safe_url(path: str | None) -> str | None:
         return None
     if not path.startswith('/') or path.startswith('//'):
         return None
-    return 'https://anilibria.top' + path
+    return SITE_URL + path
 
 
 def _genre_image_url(data: dict | None) -> str | None:

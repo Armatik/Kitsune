@@ -10,10 +10,8 @@ gi.require_version('Soup', '3.0')
 
 from gi.repository import GLib, Gio, Soup
 
+from kitsune import API_BASE_URL
 from kitsune.models import CatalogResponse, Franchise, Genre, Release
-
-
-BASE_URL = 'https://anilibria.top/api/v1'
 _REQUEST_TIMEOUT_MS = 10000
 _OFFLINE_TIMEOUT_MS = 2000
 
@@ -34,7 +32,7 @@ class AniLibriaClient:
         self._on_network_ok = callback
 
     def _fetch(self, path: str, callback, cancellable: Gio.Cancellable | None = None):
-        uri = f'{BASE_URL}{path}'
+        uri = f'{API_BASE_URL}{path}'
         msg = Soup.Message.new('GET', uri)
 
         timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS

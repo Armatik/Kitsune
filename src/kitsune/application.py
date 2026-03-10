@@ -7,6 +7,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gio, GLib, Gtk
 
+from kitsune import SITE_URL, API_BASE_URL
 from kitsune.window import KitsuneWindow
 
 
@@ -49,11 +50,11 @@ class KitsuneApplication(Adw.Application):
             issue_url='https://altlinux.space/armatik/Kitsune/issues',
             comments=_('Libadwaita client for watching anime from AniLiberty'),
         )
-        about.add_link(_('AniLiberty Website'), 'https://anilibria.top')
+        about.add_link(_('AniLiberty Website'), SITE_URL)
         about.add_link(_('AniLiberty Telegram'), 'https://t.me/anilibria')
         about.add_link(_('AniLiberty VK'), 'https://vk.com/anilibria')
         about.add_acknowledgement_section(
             _('Uses'),
-            ['AniLiberty API https://anilibria.top/api/docs/v1'],
+            [f'AniLiberty API {API_BASE_URL.replace("/v1", "/docs/v1")}'],
         )
         about.present(self.props.active_window)

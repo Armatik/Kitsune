@@ -776,7 +776,8 @@ class ReleaseView(Adw.NavigationPage):
             self.torrents_list.append(row)
 
     def _on_torrent_download(self, _button, torrent):
-        url = f'https://anilibria.top/api/v1/anime/torrents/{int(torrent.id)}/file'
+        from kitsune import API_BASE_URL
+        url = f'{API_BASE_URL}/anime/torrents/{int(torrent.id)}/file'
         launcher = Gtk.UriLauncher(uri=url)
         launcher.launch(self.get_root(), None, None, None)
 
