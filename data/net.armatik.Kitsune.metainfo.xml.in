@@ -45,6 +45,18 @@
   </supports>
 
   <releases>
+    <release version="0.6.0" date="2026-03-11">
+      <description>
+        <p>Tags and favorites — a new system for organizing your library. Create custom tags with emoji or colored icons, assign them to any release via the star button on the release page, and browse tagged collections in the new "Favorites &amp; Tags" tab. Tags are displayed as compact badges on catalog cards and as interactive pills on release pages. The tag creation dialog features an Adw.ToggleGroup switcher between emoji and color modes with inline icon chooser, color ring picker, duplicate name validation, and auto-generated names for color tags. Tag view supports both card grid and list modes with persistent mode preference. Tags can be deleted from the header bar or list view with a confirmation dialog, and changes propagate instantly to all visible cards.</p>
+        <p>Episode watch progress tracking — progress bars appear on episode cards and list rows showing how much of each episode has been watched. Completed episodes are marked with an accent-colored checkmark. Unwatched episode previews can be blurred (configurable in preferences). Episodes can be filtered by watched/unwatched status using toggle buttons. Preview images show a loading spinner while loading and a placeholder icon when unavailable. Progress is refreshed automatically when returning from the player.</p>
+        <p>Redesigned filter panel — the filter dialog has been replaced with a sliding side panel (OverlaySplitView) that overlays the entire window. Filters auto-apply with a 1-second debounce, genres and year ranges update asynchronously, and redundant catalog reloads on unchanged filters are suppressed.</p>
+        <p>Genre navigation from release pages — clicking a genre chip on a release page now opens that genre's releases as a NavigationPage with a back button, instead of switching to the Genres tab. Genre chips have hover effects.</p>
+        <p>Dynamic release page tabs — empty tabs (related releases, team, torrents) are hidden automatically instead of showing blank placeholders. Tabs appear dynamically when async data arrives.</p>
+        <p>Visual improvements — smooth CSS hover transitions (200ms ease-out-quad) across flowbox items, sidebar rows, navigation tabs, player buttons, and filter chips. Watch progress bar increased to 4px with accent color for better visibility. Tag cards with centered titles and emoji background blur effects.</p>
+        <p>Player stability — fixed player cleanup on navigation back by removing unreliable hiding/unmap signals. Cleanup now fires only via explicit back button, NavigationView pop, and window close. Idempotent cleanup prevents double-stop issues.</p>
+        <p>Infrastructure — centralized AniLibria API URLs into a single constants file. Image download limit increased from 10 MB to 30 MB. Tags statistics and clear button added to preferences. Repository moved to alt-gnome organization, project Telegram channel and chat added.</p>
+      </description>
+    </release>
     <release version="0.5.0" date="2026-03-08">
       <description>
         <p>Major update with genres, franchises, tabbed release page, Blueprint UI, accent colors, offline mode, and full Russian translation.</p>
