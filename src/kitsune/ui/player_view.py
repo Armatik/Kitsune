@@ -36,19 +36,31 @@ def _ensure_player_css():
         ' .player-text { color: white;'
         '   text-shadow: 0 1px 3px alpha(black, 0.8); }'
         ' .player-play-btn { -gtk-icon-size: 32px;'
-        '   color: white; min-width: 64px; min-height: 64px; padding: 0; }'
+        '   color: white; min-width: 64px; min-height: 64px; padding: 0;'
+        '   border-radius: 50%; background: alpha(white, 0.1); }'
+        ' .player-play-btn:hover { background: alpha(white, 0.2); }'
         ' .player-center-btn { -gtk-icon-size: 24px;'
-        '   color: white; min-width: 48px; min-height: 48px; padding: 0; }'
+        '   color: white; min-width: 48px; min-height: 48px; padding: 0;'
+        '   border-radius: 50%; background: alpha(white, 0.1); }'
+        ' .player-center-btn:hover { background: alpha(white, 0.2); }'
         ' .player-shade scale { padding: 0; }'
         ' .player-shade scale trough {'
         '   background: alpha(white, 0.3); min-height: 4px;'
         '   margin: 0; padding: 0; }'
         ' .player-shade scale highlight {'
         '   background: white; min-height: 4px; }'
+        ' .player-shade scale fill {'
+        '   background: alpha(white, 0.5); min-height: 4px; }'
         ' .player-shade scale slider {'
         '   background: white; border: none;'
         '   min-width: 14px; min-height: 14px;'
         '   border-radius: 7px; margin: -5px; }'
+        ' .player-shade dropdown button {'
+        '   color: white; background: alpha(white, 0.15); }'
+        ' .player-shade dropdown button:hover {'
+        '   background: alpha(white, 0.25); }'
+        ' .player-shade dropdown button:checked {'
+        '   background: alpha(white, 0.3); }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -79,6 +91,7 @@ class PlayerView(Adw.NavigationPage):
     quality_dropdown = Gtk.Template.Child()
     seek_label = Gtk.Template.Child()
     skip_btn = Gtk.Template.Child()
+    close_btn = Gtk.Template.Child()
 
     def __init__(self, release: Release, episode: Episode, **kwargs):
         super().__init__(title=release.name.main, **kwargs)
@@ -102,6 +115,7 @@ class PlayerView(Adw.NavigationPage):
         self._seek_accum = 0
         self._seek_base = 0
         self._seek_debounce = 0
+        self._last_known_position = 0
         self._restore_position = None
         self._buffering = False
         self._spinner = Adw.Spinner()
@@ -122,6 +136,8 @@ class PlayerView(Adw.NavigationPage):
         self._setup_nav_buttons()
         self._setup_input()
         self._connect_signals()
+        self.close_btn.set_visible(
+            self._settings.get_boolean('player-show-close-button'))
         # Show spinner until stream is ready
         self._buffering = True
         self.play_btn.set_child(self._spinner)
@@ -190,6 +206,10 @@ class PlayerView(Adw.NavigationPage):
             self._settings.set_double('volume', vol)
         return False
 
+    def _on_seek_scroll(self, _ctrl, _dx, dy):
+        self._accumulate_seek(-dy * 5)
+        return True
+
     def _on_volume_scroll(self, _ctrl, _dx, dy):
         delta = -dy * 0.05
         vol = max(0.0, min(1.0, self._player.get_volume() + delta))
@@ -242,6 +262,21 @@ class PlayerView(Adw.NavigationPage):
         self.main_overlay.add_controller(key_ctrl)
         self.main_overlay.set_focusable(True)
         self.connect('realize', lambda _w: self.main_overlay.grab_focus())
+
+        # Scroll on bottom bar to seek (volume area has its own handler)
+        seek_scroll = Gtk.EventControllerScroll(
+            flags=Gtk.EventControllerScrollFlags.VERTICAL,
+        )
+        seek_scroll.connect('scroll', self._on_seek_scroll)
+        self.bottom_box.add_controller(seek_scroll)
+
+        # Scroll on progress scale (CAPTURE to intercept before Scale)
+        progress_scroll = Gtk.EventControllerScroll(
+            flags=Gtk.EventControllerScrollFlags.VERTICAL,
+        )
+        progress_scroll.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        progress_scroll.connect('scroll', self._on_seek_scroll)
+        self.progress.add_controller(progress_scroll)
 
     def _connect_signals(self):
         self._player.connect('position-updated', self._on_position_updated)
@@ -426,8 +461,12 @@ class PlayerView(Adw.NavigationPage):
                     self._last_duration = duration
                 self.progress.set_value(position)
         if not self._seeking and not self._seek_debounce:
+            self._last_known_position = position
             self.position_label.set_label(self._fmt_time(position))
         self.duration_label.set_label(self._fmt_time(duration))
+        buffered = self._player.get_buffered_end()
+        if buffered > 0:
+            self.progress.set_fill_level(buffered)
         self._update_skip_button(position)
         # Save position every ~30s (60 ticks * 500ms)
         self._save_counter += 1
@@ -513,6 +552,7 @@ class PlayerView(Adw.NavigationPage):
         self._skip_target = None
         self.skip_btn.set_visible(False)
         self.progress.set_value(0)
+        self.progress.set_fill_level(0)
         self.position_label.set_label('0:00')
         self.duration_label.set_label('0:00')
         self._setup_title()
@@ -551,6 +591,7 @@ class PlayerView(Adw.NavigationPage):
 
     def _do_seek(self, position):
         self._seeking = True
+        self._last_known_position = position
         self._player.seek(position)
         if self._seek_reset_timer:
             GLib.source_remove(self._seek_reset_timer)
@@ -563,7 +604,7 @@ class PlayerView(Adw.NavigationPage):
 
     def _accumulate_seek(self, offset):
         if self._seek_debounce == 0:
-            self._seek_base = self._player.get_position()
+            self._seek_base = self._last_known_position
             self._seek_accum = 0
         self._seek_accum += offset
         self._seeking = True

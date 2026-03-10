@@ -153,6 +153,21 @@ class GstPlayer(GObject.Object):
         }
         self.emit('state-changed', state_names.get(new, 'unknown'))
 
+    def get_buffered_end(self) -> float:
+        try:
+            query = Gst.Query.new_buffering(Gst.Format.TIME)
+            if not self._playbin.query(query):
+                return -1
+            n = query.get_n_buffering_ranges()
+            max_end = 0
+            for i in range(n):
+                ok, start, stop = query.parse_nth_buffering_range(i)
+                if stop > max_end:
+                    max_end = stop
+            return max_end / Gst.SECOND if max_end > 0 else -1
+        except Exception:
+            return -1
+
     def get_volume(self) -> float:
         return self._playbin.get_property('volume')
 
