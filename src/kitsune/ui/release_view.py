@@ -32,9 +32,9 @@ def _ensure_css():
         ' .episode-overlay { background: linear-gradient(to top,'
         ' alpha(black, 0.7) 0%, transparent 50%); }'
         ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
-        ' .episode-progress { min-height: 3px; border-radius: 0; }'
-        ' .episode-progress trough { min-height: 3px; background: alpha(white, 0.3); }'
-        ' .episode-progress progress { min-height: 3px; background: @accent_color; }'
+        ' .episode-progress { min-height: 4px; border-radius: 0; }'
+        ' .episode-progress trough { min-height: 4px; background: alpha(white, 0.3); }'
+        ' .episode-progress progress { min-height: 4px; background: @accent_bg_color; }'
         ' .episode-blur { filter: blur(8px); }'
         ' .episode-check { background: alpha(black, 0.6); border-radius: 50%;'
         '   min-width: 24px; min-height: 24px; padding: 2px;'
@@ -42,8 +42,8 @@ def _ensure_css():
         ' .episode-separator { min-height: 1px;'
         '   background-color: rgba(200, 200, 200, 0.6); padding: 0; margin: 0; }'
         ' .list-progress { margin-top: 4px; }'
-        ' .list-progress trough { min-height: 3px; }'
-        ' .list-progress progress { min-height: 3px; background: @accent_color; }'
+        ' .list-progress trough { min-height: 4px; }'
+        ' .list-progress progress { min-height: 4px; background: @accent_bg_color; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
