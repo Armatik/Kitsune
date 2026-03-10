@@ -1,0 +1,292 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import gi
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+
+from gi.repository import Adw, Gdk, Gtk
+
+from kitsune.api import AniLibriaClient
+from kitsune.models import Release
+from kitsune import release_cache, tags_store
+from kitsune.ui.tag_releases_view import TagReleasesView
+from kitsune.ui.widgets.content_grid import ContentGrid
+from kitsune.ui.widgets.tag_card import TagCard
+from kitsune.ui.image_cache import load_image
+
+_css_loaded = False
+
+
+def _ensure_css():
+    global _css_loaded
+    if _css_loaded:
+        return
+    _css_loaded = True
+    css = Gtk.CssProvider()
+    css.load_from_string(
+        '.tag-add-card { border: 2px dashed alpha(currentColor, 0.15);'
+        '   border-radius: 12px; min-height: 140px; }'
+    )
+    Gtk.StyleContext.add_provider_for_display(
+        Gdk.Display.get_default(), css,
+        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
+
+
+class TagsView(Gtk.Box):
+
+    def __init__(self, client: AniLibriaClient, **kwargs):
+        super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
+        self._client = client
+        self._on_release_activated = None
+        self._on_navigation_changed = None
+        self._narrow = False
+        self._current_tag = None
+        self._view_mode = 'cards'
+        _ensure_css()
+
+        self._mode_btn = Gtk.ToggleButton(
+            icon_name='view-list-symbolic',
+            tooltip_text=_('List view'),
+        )
+        self._mode_btn.connect('toggled', self._on_mode_toggled)
+
+        # Navigation stack: main (cards/list) + releases detail
+        self._nav_stack = Gtk.Stack(
+            transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT,
+        )
+
+        # Card grid mode
+        self._card_grid = ContentGrid()
+        self._card_grid.set_on_child_activated(self._on_card_activated)
+
+        # List mode
+        self._list_scroll = Gtk.ScrolledWindow(
+            hscrollbar_policy=Gtk.PolicyType.NEVER, vexpand=True,
+        )
+        self._list_box = Gtk.ListBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            css_classes=['boxed-list'],
+            margin_start=24, margin_end=24, margin_top=12,
+        )
+        self._list_scroll.set_child(self._list_box)
+
+        # Mode stack
+        self._mode_stack = Gtk.Stack(
+            transition_type=Gtk.StackTransitionType.CROSSFADE,
+        )
+        self._mode_stack.add_named(self._card_grid, 'cards')
+        self._mode_stack.add_named(self._list_scroll, 'list')
+
+        self._nav_stack.add_named(self._mode_stack, 'main')
+
+        self._releases_placeholder = Gtk.Box()
+        self._nav_stack.add_named(self._releases_placeholder, 'releases')
+
+        self.append(self._nav_stack)
+        self._populate()
+
+    @property
+    def in_releases(self) -> bool:
+        return self._nav_stack.get_visible_child_name() == 'releases'
+
+    @property
+    def current_tag_name(self) -> str:
+        return self._current_tag['name'] if self._current_tag else ''
+
+    @property
+    def mode_button(self) -> Gtk.ToggleButton:
+        return self._mode_btn
+
+    def set_narrow(self, narrow: bool):
+        self._narrow = narrow
+        self._card_grid.set_narrow(narrow)
+
+    def set_on_release_activated(self, callback):
+        self._on_release_activated = callback
+
+    def set_on_navigation_changed(self, callback):
+        self._on_navigation_changed = callback
+
+    def go_back(self):
+        self._nav_stack.set_visible_child_name('main')
+        self._current_tag = None
+        if self._on_navigation_changed:
+            self._on_navigation_changed()
+
+    def refresh(self):
+        self._populate()
+
+    def _populate(self):
+        tags = tags_store.get_all_tags()
+        self._populate_cards(tags)
+        self._populate_list(tags)
+
+    def _populate_cards(self, tags: list[dict]):
+        self._card_grid.clear()
+        for tag in tags:
+            self._card_grid.append_child(TagCard(tag))
+
+        # "Add new" card
+        add_child = Gtk.FlowBoxChild()
+        add_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+            spacing=4, width_request=180,
+            margin_start=6, margin_end=6, margin_top=6, margin_bottom=6,
+            css_classes=['tag-add-card'],
+        )
+        add_box.append(Gtk.Label(label='+', css_classes=['title-1']))
+        add_box.append(Gtk.Label(
+            label=_('New tag'), css_classes=['dim-label'],
+        ))
+        add_child.set_child(add_box)
+        add_child._is_add_card = True
+        self._card_grid.append_child(add_child)
+
+    def _populate_list(self, tags: list[dict]):
+        while row := self._list_box.get_first_child():
+            self._list_box.remove(row)
+
+        for tag in tags:
+            row = self._create_list_row(tag)
+            self._list_box.append(row)
+
+    def _create_list_row(self, tag: dict) -> Adw.ExpanderRow:
+        from kitsune.ui.widgets.tag_card import COLOR_MAP
+        row = Adw.ExpanderRow(title=tag['name'])
+
+        if tag['icon_type'] == 'emoji':
+            icon = Gtk.Label(label=tag['icon_value'])
+            icon.set_size_request(24, 24)
+        else:
+            hex_color = COLOR_MAP.get(tag['icon_value'], '#6e7781')
+            icon = Gtk.Box(width_request=24, height_request=24)
+            css = Gtk.CssProvider()
+            css.load_from_string(
+                f'box {{ background: {hex_color}; border-radius: 50%;'
+                f' min-width: 24px; min-height: 24px; }}'
+            )
+            icon.get_style_context().add_provider(
+                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+        row.add_prefix(icon)
+
+        count = len(tag.get('releases', []))
+        row.add_suffix(Gtk.Label(
+            label=str(count),
+            css_classes=['dim-label'],
+            valign=Gtk.Align.CENTER,
+        ))
+
+        row._tag = tag
+        row._loaded = False
+        row.connect('notify::expanded', self._on_row_expanded)
+
+        return row
+
+    def _on_row_expanded(self, row, _pspec):
+        if not row.get_expanded() or row._loaded:
+            return
+        row._loaded = True
+
+        release_ids = tags_store.get_release_ids_for_tag(row._tag['id'])
+        if not release_ids:
+            row.add_row(Adw.ActionRow(title=_('No releases')))
+            return
+
+        scroll = Gtk.ScrolledWindow(
+            hscrollbar_policy=Gtk.PolicyType.AUTOMATIC,
+            vscrollbar_policy=Gtk.PolicyType.NEVER,
+            height_request=220,
+        )
+        strip = Gtk.Box(
+            spacing=12, margin_start=12, margin_end=12,
+            margin_top=8, margin_bottom=8,
+        )
+
+        for rid in release_ids:
+            cached = release_cache.get(rid)
+            if cached:
+                release = Release.from_dict(cached)
+                card_box = self._create_mini_card(release)
+                strip.append(card_box)
+
+        scroll.set_child(strip)
+        row.add_row(scroll)
+
+    def _create_mini_card(self, release: Release) -> Gtk.Box:
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4, width_request=120,
+        )
+        pic = Gtk.Picture(
+            width_request=120, height_request=170,
+            content_fit=Gtk.ContentFit.COVER,
+            css_classes=['card'],
+        )
+        if release.poster:
+            load_image(release.poster, lambda tex, err, p=pic:
+                       p.set_paintable(tex) if tex else None)
+        box.append(pic)
+        box.append(Gtk.Label(
+            label=release.name.main, xalign=0,
+            max_width_chars=14, ellipsize=3,
+            css_classes=['caption'],
+        ))
+        gesture = Gtk.GestureClick()
+        gesture.connect('released', lambda _g, _n, _x, _y, r=release:
+                        self._on_release_activated(r)
+                        if self._on_release_activated else None)
+        box.add_controller(gesture)
+        return box
+
+    def _on_card_activated(self, child):
+        if hasattr(child, '_is_add_card') and child._is_add_card:
+            self._show_create_dialog()
+            return
+        if isinstance(child, TagCard):
+            self._show_tag_releases(child.tag)
+
+    def _show_tag_releases(self, tag: dict):
+        self._current_tag = tag
+
+        old = self._nav_stack.get_child_by_name('releases')
+        if old:
+            self._nav_stack.remove(old)
+
+        releases_view = TagReleasesView(
+            tag=tag, client=self._client,
+        )
+        releases_view.set_on_release_activated(self._on_release_activated)
+        releases_view.set_narrow(self._narrow)
+        self._nav_stack.add_named(releases_view, 'releases')
+        self._nav_stack.set_visible_child_name('releases')
+
+        if self._on_navigation_changed:
+            self._on_navigation_changed()
+
+    def _show_create_dialog(self):
+        from kitsune.ui.create_tag_dialog import show_create_tag_dialog
+        show_create_tag_dialog(
+            self.get_root(),
+            callback=self._on_tag_created,
+        )
+
+    def _on_tag_created(self, tag: dict | None):
+        if tag:
+            self._populate()
+
+    def _on_mode_toggled(self, btn):
+        if btn.get_active():
+            self._view_mode = 'list'
+            btn.set_icon_name('view-grid-symbolic')
+            btn.set_tooltip_text(_('Card view'))
+        else:
+            self._view_mode = 'cards'
+            btn.set_icon_name('view-list-symbolic')
+            btn.set_tooltip_text(_('List view'))
+        self._mode_stack.set_visible_child_name(self._view_mode)

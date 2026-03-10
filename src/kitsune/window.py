@@ -52,6 +52,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     narrow_catalog_tab = Gtk.Template.Child()
     narrow_genres_tab = Gtk.Template.Child()
     narrow_franchises_tab = Gtk.Template.Child()
+    narrow_tags_tab = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -88,12 +89,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._narrow = False
         self._genres_view = None
         self._franchises_view = None
+        self._tags_view = None
 
         self._catalog_view = CatalogView(client=self._client)
         self._catalog_view.set_on_release_activated(self._show_release_detail)
         self.content_stack.add_named(self._catalog_view, 'catalog')
 
-        for name in ('genres', 'franchises'):
+        for name in ('genres', 'franchises', 'tags'):
             box = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
             box.append(Adw.Spinner(width_request=48, height_request=48))
             self.content_stack.add_named(box, name)
@@ -123,6 +125,18 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._franchises_view.set_on_navigation_changed(self._on_sub_navigation_changed)
         self._franchises_view.set_narrow(self._narrow)
         self.content_stack.add_named(self._franchises_view, 'franchises')
+
+    def _create_tags_view(self):
+        if self._tags_view:
+            return
+        from kitsune.ui.tags_view import TagsView
+        old = self.content_stack.get_child_by_name('tags')
+        self.content_stack.remove(old)
+        self._tags_view = TagsView(client=self._client)
+        self._tags_view.set_on_release_activated(self._show_release_detail)
+        self._tags_view.set_on_navigation_changed(self._on_sub_navigation_changed)
+        self._tags_view.set_narrow(self._narrow)
+        self.content_stack.add_named(self._tags_view, 'tags')
 
     # --- Template Callbacks ---
 
@@ -154,6 +168,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._genres_view.go_back()
         elif tab == 'franchises' and self._franchises_view:
             self._franchises_view.go_back()
+        elif tab == 'tags' and self._tags_view:
+            self._tags_view.go_back()
         self._update_content_header()
 
     @Gtk.Template.Callback()
@@ -161,7 +177,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if not row:
             return
         index = row.get_index()
-        tabs = ['catalog', 'genres', 'franchises']
+        tabs = ['catalog', 'genres', 'franchises', 'tags']
         if 0 <= index < len(tabs):
             self._switch_tab(tabs[index])
 
@@ -178,6 +194,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._switch_tab('franchises')
 
     @Gtk.Template.Callback()
+    def on_tags_tab_clicked(self, _button):
+        self._switch_tab('tags')
+
+    @Gtk.Template.Callback()
     def on_narrow_apply(self, _bp):
         self._narrow = True
         self._catalog_view.set_narrow(True)
@@ -185,6 +205,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._genres_view.set_narrow(True)
         if self._franchises_view:
             self._franchises_view.set_narrow(True)
+        if self._tags_view:
+            self._tags_view.set_narrow(True)
 
     @Gtk.Template.Callback()
     def on_narrow_unapply(self, _bp):
@@ -194,6 +216,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._genres_view.set_narrow(False)
         if self._franchises_view:
             self._franchises_view.set_narrow(False)
+        if self._tags_view:
+            self._tags_view.set_narrow(False)
 
     # --- Internal Methods ---
 
@@ -203,10 +227,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._genres_view.go_back()
         if self._franchises_view and self._franchises_view.in_releases:
             self._franchises_view.go_back()
+        if self._tags_view and self._tags_view.in_releases:
+            self._tags_view.go_back()
         if name == 'genres':
             self._create_genres_view()
         elif name == 'franchises':
             self._create_franchises_view()
+        elif name == 'tags':
+            self._create_tags_view()
         self.content_stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)
@@ -216,6 +244,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             'catalog': self.narrow_catalog_tab,
             'genres': self.narrow_genres_tab,
             'franchises': self.narrow_franchises_tab,
+            'tags': self.narrow_tags_tab,
         }
         for name, btn in tabs.items():
             if name == active:
@@ -230,6 +259,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             'catalog': _('Catalog'),
             'genres': _('Genres'),
             'franchises': _('Franchises'),
+            'tags': _('Favorites & Tags'),
         }
         title = titles.get(tab, '')
 
@@ -238,6 +268,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
             show_back = True
         elif tab == 'franchises' and self._franchises_view and self._franchises_view.in_releases:
             title = self._franchises_view.current_franchise_name
+            show_back = True
+        elif tab == 'tags' and self._tags_view and self._tags_view.in_releases:
+            title = self._tags_view.current_tag_name
             show_back = True
 
         show_filter = (tab == 'catalog')
@@ -260,6 +293,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         view = ReleaseView(release=release, client=self._client)
         view.set_on_episode_play(self._play_episode)
         view.set_on_genre_clicked(self._navigate_to_genre)
+        view.set_on_tag_clicked(self._navigate_to_tag)
         self.nav_view.push(view)
 
     def _navigate_to_genre(self, genre):
@@ -270,6 +304,22 @@ class KitsuneWindow(Adw.ApplicationWindow):
         releases_view.set_on_release_activated(self._show_release_detail)
         page = Adw.NavigationPage(
             title=genre.name,
+            child=Adw.ToolbarView(
+                top_bar_style=Adw.ToolbarStyle.FLAT,
+                content=releases_view,
+            ),
+        )
+        page.get_child().add_top_bar(Adw.HeaderBar())
+        self.nav_view.push(page)
+
+    def _navigate_to_tag(self, tag):
+        from kitsune.ui.tag_releases_view import TagReleasesView
+        releases_view = TagReleasesView(
+            tag=tag, client=self._client,
+        )
+        releases_view.set_on_release_activated(self._show_release_detail)
+        page = Adw.NavigationPage(
+            title=tag['name'],
             child=Adw.ToolbarView(
                 top_bar_style=Adw.ToolbarStyle.FLAT,
                 content=releases_view,
@@ -293,6 +343,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._genres_view.retry()
         elif tab == 'franchises' and self._franchises_view:
             self._franchises_view.retry()
+        elif tab == 'tags' and self._tags_view:
+            self._tags_view.refresh()
 
     def _on_nav_popped(self, _nav_view, page):
         self._stop_active_player()

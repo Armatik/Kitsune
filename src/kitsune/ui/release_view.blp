@@ -18,6 +18,13 @@ template $KitsuneReleaseView: Adw.NavigationPage {
       [top]
       Adw.HeaderBar header_bar {
         show-title: false;
+
+        [end]
+        Adw.SplitButton tag_split_btn {
+          icon-name: "non-starred-symbolic";
+          tooltip-text: _("Add to favorites");
+          clicked => $on_favorite_clicked();
+        }
       }
 
       content: Adw.BreakpointBin {

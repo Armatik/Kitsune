@@ -1,0 +1,140 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from __future__ import annotations
+
+import gi
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+
+from gi.repository import Adw, Gtk
+
+from kitsune import tags_store
+from kitsune.ui.widgets.tag_card import COLOR_MAP
+
+
+class TagPopover(Gtk.Popover):
+
+    def __init__(self, release_id: int, on_changed=None, **kwargs):
+        super().__init__(**kwargs)
+        self._release_id = release_id
+        self._on_changed = on_changed
+        self.set_has_arrow(True)
+
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4, margin_top=8, margin_bottom=8,
+            margin_start=8, margin_end=8,
+            width_request=240,
+        )
+
+        self._search = Gtk.SearchEntry(
+            placeholder_text=_('Search tags…'),
+        )
+        self._search.connect('search-changed', self._on_search_changed)
+        box.append(self._search)
+
+        self._list = Gtk.ListBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            css_classes=['boxed-list'],
+            margin_top=4,
+        )
+        box.append(self._list)
+
+        box.append(Gtk.Separator(margin_top=4))
+
+        create_box = Gtk.Box(spacing=8)
+        create_box.append(Gtk.Label(label='+', css_classes=['accent']))
+        create_box.append(Gtk.Label(label=_('Create tag')))
+        create_btn = Gtk.Button(
+            child=create_box,
+            css_classes=['flat'],
+            margin_top=4,
+        )
+        create_btn.connect('clicked', self._on_create_clicked)
+        box.append(create_btn)
+
+        self.set_child(box)
+        self._populate()
+
+    def _populate(self):
+        while row := self._list.get_first_child():
+            self._list.remove(row)
+
+        tags = tags_store.get_all_tags()
+        release_tag_ids = {
+            t['id'] for t in tags_store.get_tags_for_release(self._release_id)
+        }
+
+        for tag in tags:
+            row = Adw.ActionRow(title=tag['name'])
+            row._tag = tag
+
+            if tag['icon_type'] == 'emoji':
+                row.add_prefix(Gtk.Label(label=tag['icon_value']))
+            else:
+                hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
+                circle = Gtk.Box(
+                    width_request=18, height_request=18,
+                    valign=Gtk.Align.CENTER,
+                )
+                css = Gtk.CssProvider()
+                css.load_from_string(
+                    f'box {{ background: {hex_c}; border-radius: 50%;'
+                    f' min-width: 18px; min-height: 18px; }}'
+                )
+                circle.get_style_context().add_provider(
+                    css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                )
+                row.add_prefix(circle)
+
+            check = Gtk.CheckButton(
+                active=tag['id'] in release_tag_ids,
+                valign=Gtk.Align.CENTER,
+            )
+            check._tag_id = tag['id']
+            check.connect('toggled', self._on_tag_toggled)
+            row.add_suffix(check)
+            row.set_activatable_widget(check)
+
+            self._list.append(row)
+
+            if tag.get('builtin'):
+                sep_row = Gtk.ListBoxRow(
+                    selectable=False, activatable=False,
+                    child=Gtk.Separator(),
+                )
+                self._list.append(sep_row)
+
+    def _on_tag_toggled(self, check):
+        tag_id = check._tag_id
+        if check.get_active():
+            tags_store.add_release(tag_id, self._release_id)
+        else:
+            tags_store.remove_release(tag_id, self._release_id)
+        if self._on_changed:
+            self._on_changed()
+
+    def _on_search_changed(self, entry):
+        text = entry.get_text().lower()
+        row = self._list.get_first_child()
+        while row:
+            if hasattr(row, '_tag'):
+                visible = not text or text in row._tag['name'].lower()
+                row.set_visible(visible)
+            row = row.get_next_sibling()
+
+    def _on_create_clicked(self, _btn):
+        from kitsune.ui.create_tag_dialog import show_create_tag_dialog
+        self.popdown()
+        show_create_tag_dialog(
+            self.get_root(),
+            callback=self._on_tag_created,
+        )
+
+    def _on_tag_created(self, tag):
+        if tag:
+            tags_store.add_release(tag['id'], self._release_id)
+            self._populate()
+            if self._on_changed:
+                self._on_changed()

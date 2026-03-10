@@ -84,6 +84,11 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                     title: _("Franchises");
                     icon-name: "franchises-symbolic";
                   }
+
+                  Adw.ActionRow {
+                    title: _("Favorites & Tags");
+                    icon-name: "starred-symbolic";
+                  }
                 };
               };
 
@@ -229,6 +234,28 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
                       Gtk.Label {
                         label: _("Franchises");
+
+                        styles ["caption"]
+                      }
+                    }
+                  }
+
+                  Gtk.Button narrow_tags_tab {
+                    clicked => $on_tags_tab_clicked();
+
+                    styles ["flat", "nav-tab"]
+
+                    Gtk.Box {
+                      orientation: vertical;
+                      spacing: 2;
+                      halign: center;
+
+                      Gtk.Image {
+                        icon-name: "starred-symbolic";
+                      }
+
+                      Gtk.Label {
+                        label: _("Favorites");
 
                         styles ["caption"]
                       }

@@ -16,7 +16,7 @@ from kitsune.api import AniLibriaClient
 log = logging.getLogger('kitsune.ui.release')
 from kitsune.models import Release, Episode
 from kitsune.ui.image_cache import load_image
-from kitsune import release_cache, watch_positions
+from kitsune import release_cache, watch_positions, tags_store
 
 _css_loaded = False
 
@@ -108,6 +108,8 @@ class ReleaseView(Adw.NavigationPage):
     torrents_empty = Gtk.Template.Child()
     torrents_list = Gtk.Template.Child()
 
+    tag_split_btn = Gtk.Template.Child()
+
     _TAB_PAGES = ('episodes', 'related', 'team', 'torrents')
 
     def __init__(self, release: Release, client: AniLibriaClient, **kwargs):
@@ -166,6 +168,15 @@ class ReleaseView(Adw.NavigationPage):
         self._header_status.append(self._header_spinner)
         self.header_bar.pack_end(self._header_status)
 
+        # Tag SplitButton popover
+        from kitsune.ui.tag_popover import TagPopover
+        self._tag_popover = TagPopover(
+            release_id=self._release.id,
+            on_changed=self._on_tags_changed,
+        )
+        self.tag_split_btn.set_popover(self._tag_popover)
+        self._update_favorite_icon()
+
         # Always refresh from API
         self._start_refresh()
 
@@ -177,6 +188,9 @@ class ReleaseView(Adw.NavigationPage):
 
     def set_on_genre_clicked(self, callback):
         self._on_genre_navigate = callback
+
+    def set_on_tag_clicked(self, callback):
+        self._on_tag_navigate = callback
 
     def _on_showing(self, _page):
         """Refresh episode progress when returning from player."""
@@ -466,6 +480,13 @@ class ReleaseView(Adw.NavigationPage):
                 btn.connect('clicked', lambda _b, g=genre: self._on_genre_clicked(g))
                 genre_wrap.append(btn)
             self.info_box.append(genre_wrap)
+
+        # Tag pills
+        self._tag_pills_wrap = Adw.WrapBox(
+            line_spacing=6, child_spacing=6, margin_top=4,
+        )
+        self._update_tag_pills()
+        self.info_box.append(self._tag_pills_wrap)
 
         meta_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL, spacing=4, margin_top=12,
@@ -1101,6 +1122,90 @@ class ReleaseView(Adw.NavigationPage):
     def _on_genre_clicked(self, genre):
         if hasattr(self, '_on_genre_navigate') and self._on_genre_navigate:
             self._on_genre_navigate(genre)
+
+    # --- Tags ---
+
+    @Gtk.Template.Callback()
+    def on_favorite_clicked(self, _button):
+        tags_store.toggle_favorite(self._release.id)
+        self._update_favorite_icon()
+
+    def _update_favorite_icon(self):
+        is_fav = tags_store.is_favorited(self._release.id)
+        self.tag_split_btn.set_icon_name(
+            'starred-symbolic' if is_fav else 'non-starred-symbolic'
+        )
+
+    def _on_tags_changed(self):
+        self._update_favorite_icon()
+        self._update_tag_pills()
+
+    def _update_tag_pills(self):
+        if not hasattr(self, '_tag_pills_wrap'):
+            return
+        while child := self._tag_pills_wrap.get_first_child():
+            self._tag_pills_wrap.remove(child)
+
+        release_tags = tags_store.get_tags_for_release(self._release.id)
+        if not release_tags:
+            self._tag_pills_wrap.set_visible(False)
+            return
+        self._tag_pills_wrap.set_visible(True)
+
+        compact = len(release_tags) > 4 or self._narrow_mode
+        for tag in release_tags:
+            if compact:
+                btn = self._create_compact_tag_pill(tag)
+            else:
+                btn = self._create_full_tag_pill(tag)
+            btn.connect('clicked', lambda _b, t=tag: self._on_tag_pill_clicked(t))
+            self._tag_pills_wrap.append(btn)
+
+    def _create_full_tag_pill(self, tag: dict) -> Gtk.Button:
+        from kitsune.ui.widgets.tag_card import COLOR_MAP
+        box = Gtk.Box(spacing=5, halign=Gtk.Align.CENTER)
+        if tag['icon_type'] == 'emoji':
+            box.append(Gtk.Label(label=tag['icon_value']))
+        else:
+            hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
+            circle = Gtk.Box(width_request=10, height_request=10)
+            css = Gtk.CssProvider()
+            css.load_from_string(
+                f'box {{ background: {hex_c}; border-radius: 50%;'
+                f' min-width: 10px; min-height: 10px; }}'
+            )
+            circle.get_style_context().add_provider(
+                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+            box.append(circle)
+        box.append(Gtk.Label(label=tag['name']))
+        return Gtk.Button(child=box, css_classes=['pill', 'release-chip'])
+
+    def _create_compact_tag_pill(self, tag: dict) -> Gtk.Button:
+        from kitsune.ui.widgets.tag_card import COLOR_MAP
+        size = 26 if self._narrow_mode else 28
+        if tag['icon_type'] == 'emoji':
+            child = Gtk.Label(label=tag['icon_value'])
+        else:
+            hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
+            child = Gtk.Box(width_request=14, height_request=14)
+            css = Gtk.CssProvider()
+            css.load_from_string(
+                f'box {{ background: {hex_c}; border-radius: 50%;'
+                f' min-width: 14px; min-height: 14px; }}'
+            )
+            child.get_style_context().add_provider(
+                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+        return Gtk.Button(
+            child=child, css_classes=['pill', 'release-chip', 'circular'],
+            tooltip_text=tag['name'],
+            width_request=size, height_request=size,
+        )
+
+    def _on_tag_pill_clicked(self, tag):
+        if hasattr(self, '_on_tag_navigate') and self._on_tag_navigate:
+            self._on_tag_navigate(tag)
 
     @staticmethod
     def _meta_row(label, value):
