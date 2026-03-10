@@ -50,12 +50,38 @@ def save_position(release_id: int, ordinal: float, position: float):
     _save(data)
 
 
+def mark_completed(release_id: int, ordinal: float):
+    """Mark episode as fully watched (stores -1 as position)."""
+    data = _load()
+    key = f'{release_id}_{ordinal}'
+    data[key] = -1
+    _save(data)
+
+
 def remove_position(release_id: int, ordinal: float):
     data = _load()
     key = f'{release_id}_{ordinal}'
     if key in data:
         del data[key]
         _save(data)
+
+
+def get_all_for_release(release_id: int) -> dict[float, float]:
+    """Return {ordinal: position} for all episodes of a release.
+
+    position > 0 means partially watched, -1 means completed.
+    """
+    data = _load()
+    prefix = f'{release_id}_'
+    result = {}
+    for key, value in data.items():
+        if key.startswith(prefix):
+            try:
+                ordinal = float(key[len(prefix):])
+                result[ordinal] = value
+            except (ValueError, TypeError):
+                continue
+    return result
 
 
 def get_count() -> int:

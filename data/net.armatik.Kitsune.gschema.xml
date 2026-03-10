@@ -49,6 +49,11 @@
       <summary>Episodes view mode</summary>
       <description>How to display episodes: list or grid</description>
     </key>
+    <key name="blur-unwatched-episodes" type="b">
+      <default>true</default>
+      <summary>Blur unwatched episode previews</summary>
+      <description>Apply blur effect to episode preview images that have not been watched yet</description>
+    </key>
     <key name="window-width" type="i">
       <default>900</default>
       <summary>Window width</summary>

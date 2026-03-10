@@ -16,7 +16,11 @@ class SkipTimecode:
     def from_dict(cls, data: dict | None) -> SkipTimecode | None:
         if not data:
             return None
-        return cls(start=data.get('start', 0), stop=data.get('stop', 0))
+        start = data.get('start')
+        stop = data.get('stop')
+        if start is None or stop is None:
+            return None
+        return cls(start=start, stop=stop)
 
 
 def _safe_url(path: str | None) -> str | None:

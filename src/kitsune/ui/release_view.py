@@ -12,7 +12,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from kitsune.api import AniLibriaClient
 from kitsune.models import Release, Episode
 from kitsune.ui.image_cache import load_image
-from kitsune import release_cache
+from kitsune import release_cache, watch_positions
 
 _css_loaded = False
 
@@ -32,6 +32,18 @@ def _ensure_css():
         ' .episode-overlay { background: linear-gradient(to top,'
         ' alpha(black, 0.7) 0%, transparent 50%); }'
         ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
+        ' .episode-progress { min-height: 3px; border-radius: 0; }'
+        ' .episode-progress trough { min-height: 3px; background: alpha(white, 0.3); }'
+        ' .episode-progress progress { min-height: 3px; background: @accent_color; }'
+        ' .episode-blur { filter: blur(8px); }'
+        ' .episode-check { background: alpha(black, 0.6); border-radius: 50%;'
+        '   min-width: 24px; min-height: 24px; padding: 2px;'
+        '   color: @accent_color; text-shadow: none; }'
+        ' .episode-separator { min-height: 1px;'
+        '   background-color: rgba(200, 200, 200, 0.6); padding: 0; margin: 0; }'
+        ' .list-progress { margin-top: 4px; }'
+        ' .list-progress trough { min-height: 3px; }'
+        ' .list-progress progress { min-height: 3px; background: @accent_color; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -105,6 +117,7 @@ class ReleaseView(Adw.NavigationPage):
         self._search_text = ''
         self._refresh_fade_anim = None
         self._refresh_timer = 0
+        self._watch_data = {}
         _ensure_css()
 
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
@@ -149,9 +162,16 @@ class ReleaseView(Adw.NavigationPage):
         self._start_refresh()
 
         self.connect('realize', self._on_realize)
+        self.connect('showing', self._on_showing)
 
     def set_on_episode_play(self, callback):
         self._on_episode_play = callback
+
+    def _on_showing(self, _page):
+        """Refresh episode progress when returning from player."""
+        self._refresh_episodes()
+        if self._episodes_view == 'grid':
+            self._refresh_episodes_grid()
 
     # --- Tabs (ToggleGroup + Carousel) ---
 
@@ -439,23 +459,48 @@ class ReleaseView(Adw.NavigationPage):
         self._refresh_fade_anim.play()
         return GLib.SOURCE_REMOVE
 
+    def _load_watch_data(self):
+        self._watch_data = watch_positions.get_all_for_release(self._release.id)
+
     def _populate_episodes(self):
         while child := self.episodes_list.get_first_child():
             self.episodes_list.remove(child)
 
+        self._load_watch_data()
+
         for episode in self._get_filtered_episodes():
+            pos = self._watch_data.get(episode.ordinal, 0)
+
             row = Adw.ActionRow(
                 title=self._episode_title(episode),
                 subtitle=self._episode_subtitle(episode),
                 activatable=True,
                 use_markup=False,
             )
+            if pos == -1:
+                check = Gtk.Image(
+                    icon_name='object-select-symbolic',
+                    css_classes=['accent'],
+                    valign=Gtk.Align.CENTER,
+                )
+                row.add_suffix(check)
+            elif pos > 0 and episode.duration and episode.duration > 0:
+                fraction = min(1.0, max(0.0, pos / episode.duration))
+                prog = Gtk.ProgressBar(
+                    fraction=fraction,
+                    valign=Gtk.Align.CENTER,
+                    css_classes=['list-progress'],
+                )
+                prog.set_size_request(60, -1)
+                row.add_suffix(prog)
+
             play_btn = Gtk.Button(
                 icon_name='media-playback-start-symbolic',
                 valign=Gtk.Align.CENTER, css_classes=['flat'],
             )
             play_btn.connect('clicked', self._on_play_clicked, episode)
             row.add_suffix(play_btn)
+
             row.connect('activated', lambda _r, ep=episode: self._play_episode(ep))
             self.episodes_list.append(row)
 
@@ -464,6 +509,8 @@ class ReleaseView(Adw.NavigationPage):
     def _populate_episodes_grid(self):
         while child := self.episodes_grid.get_first_child():
             self.episodes_grid.remove(child)
+
+        self._load_watch_data()
 
         for episode in self._get_filtered_episodes():
             card = self._build_episode_card(episode)
@@ -474,6 +521,7 @@ class ReleaseView(Adw.NavigationPage):
 
     def _build_episode_card(self, episode: Episode) -> Gtk.Widget:
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        pos = self._watch_data.get(episode.ordinal, 0)
 
         clamp = Adw.Clamp(maximum_size=self._EP_CARD_W)
 
@@ -485,10 +533,15 @@ class ReleaseView(Adw.NavigationPage):
         overlay.set_overflow(Gtk.Overflow.HIDDEN)
         overlay.set_cursor(Gdk.Cursor.new_from_name('pointer'))
 
+        pic_classes = []
+        if pos == 0 and self._settings.get_boolean('blur-unwatched-episodes'):
+            pic_classes.append('episode-blur')
+
         picture = Gtk.Picture(
             content_fit=Gtk.ContentFit.COVER,
             width_request=self._EP_CARD_W,
             height_request=self._EP_CARD_H,
+            css_classes=pic_classes,
         )
         overlay.set_child(picture)
 
@@ -503,27 +556,93 @@ class ReleaseView(Adw.NavigationPage):
         )
         overlay.add_overlay(gradient)
 
+        ordinal = int(episode.ordinal) if episode.ordinal == int(episode.ordinal) else episode.ordinal
+
         label_box = Gtk.Box(
             spacing=4, margin_start=10, margin_end=10,
             margin_bottom=8, valign=Gtk.Align.END,
         )
-        ordinal = int(episode.ordinal) if episode.ordinal == int(episode.ordinal) else episode.ordinal
-        ep_label = Gtk.Label(
-            label=_('Episode {}').format(ordinal),
-            xalign=0, hexpand=True,
-            css_classes=['caption-heading', 'ep-overlay-text'],
-        )
-        label_box.append(ep_label)
 
-        if episode.duration:
+        # Episode number (+ optional name as subtitle)
+        if episode.name:
+            title_col = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                hexpand=True, spacing=1,
+            )
+            ep_label = Gtk.Label(
+                label=_('Episode {}').format(ordinal),
+                xalign=0,
+                css_classes=['heading', 'ep-overlay-text'],
+            )
+            name_label = Gtk.Label(
+                label=episode.name,
+                xalign=0, ellipsize=3,  # PANGO_ELLIPSIZE_END
+                css_classes=['caption', 'ep-overlay-text'],
+            )
+            title_col.append(ep_label)
+            title_col.append(name_label)
+            label_box.append(title_col)
+        else:
+            ep_label = Gtk.Label(
+                label=_('Episode {}').format(ordinal),
+                xalign=0, hexpand=True,
+                css_classes=['heading', 'ep-overlay-text'],
+            )
+            label_box.append(ep_label)
+
+        if pos > 0 and episode.duration:
+            remaining = max(0, episode.duration - pos)
+            rem_min = int(remaining) // 60
+            rem_label = Gtk.Label(
+                label=_('Remaining: {} min').format(rem_min),
+                valign=Gtk.Align.END,
+                css_classes=['caption', 'ep-overlay-text'],
+            )
+            label_box.append(rem_label)
+        elif episode.duration:
             mins = episode.duration // 60
             secs = episode.duration % 60
             dur_label = Gtk.Label(
                 label=f'{mins}:{secs:02d}',
+                valign=Gtk.Align.END,
                 css_classes=['caption', 'ep-overlay-text'],
             )
             label_box.append(dur_label)
         overlay.add_overlay(label_box)
+
+        # Progress bar at bottom with 1px separator
+        if pos != 0 and episode.duration and episode.duration > 0:
+            fraction = 1.0 if pos == -1 else min(1.0, max(0.0, pos / episode.duration))
+            progress_box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                valign=Gtk.Align.END,
+                hexpand=True,
+            )
+            separator = Gtk.Box(
+                css_classes=['episode-separator'],
+                hexpand=True,
+            )
+            progress_box.append(separator)
+            progress_bar = Gtk.ProgressBar(
+                fraction=fraction,
+                css_classes=['episode-progress'],
+            )
+            progress_box.append(progress_bar)
+            overlay.add_overlay(progress_box)
+
+        # Checkmark for completed
+        if pos == -1:
+            check_box = Gtk.Box(
+                halign=Gtk.Align.END, valign=Gtk.Align.START,
+                margin_top=6, margin_end=6,
+            )
+            check_icon = Gtk.Image(
+                icon_name='object-select-symbolic',
+                pixel_size=16,
+                css_classes=['episode-check'],
+            )
+            check_box.append(check_icon)
+            overlay.add_overlay(check_box)
 
         gesture = Gtk.GestureClick()
         gesture.connect('released',
@@ -544,7 +663,16 @@ class ReleaseView(Adw.NavigationPage):
 
     def _episode_subtitle(self, episode: Episode) -> str:
         parts = []
-        if episode.duration:
+        pos = self._watch_data.get(episode.ordinal, 0)
+        if pos == -1 and episode.duration:
+            mins = episode.duration // 60
+            parts.append(_('Watched') + f' ({mins} ' + _('min') + ')')
+        elif pos > 0 and episode.duration:
+            remaining = max(0, episode.duration - pos)
+            rem_min = int(remaining) // 60
+            total_min = episode.duration // 60
+            parts.append(_('Remaining: {} min of {} min').format(rem_min, total_min))
+        elif episode.duration:
             mins = episode.duration // 60
             parts.append(f'{mins} ' + _('min'))
         qualities = []
