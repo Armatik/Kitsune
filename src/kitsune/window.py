@@ -116,6 +116,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._build_sidebar()
         self._build_bottom_bar()
 
+        self._settings.connect(
+            'changed::navbar-desktop', self._on_navbar_settings_changed)
+        self._settings.connect(
+            'changed::navbar-mobile', self._on_navbar_settings_changed)
+        self._settings.connect(
+            'changed::navbar-sync', self._on_navbar_settings_changed)
+
     def _build_sidebar(self):
         """Populate sidebar from GSettings."""
         while True:
@@ -232,6 +239,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _on_sheet_row_activated(self, _listbox, row):
         self.narrow_sheet.set_open(False)
         self._switch_tab(row._tab_id)
+
+    def _on_navbar_settings_changed(self, _settings, _key):
+        """Rebuild navigation when settings change."""
+        self._build_sidebar()
+        self._build_bottom_bar()
+        tab_ids = get_visible_tabs(self._settings, is_narrow=self._narrow)
+        if tab_ids:
+            self._switch_tab(tab_ids[0])
 
     def _create_genres_view(self):
         if self._genres_view:
