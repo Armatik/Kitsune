@@ -201,16 +201,24 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._narrow_tab_buttons[tab_id] = btn
 
         # Show drag handle only if there are overflow tabs
-        self.narrow_drag_handle.set_visible(len(tab_ids) > 3)
+        has_overflow = len(tab_ids) > 3
+        self.narrow_drag_handle.set_visible(has_overflow)
 
-        # Add custom drag handle pill to top of sheet
-        sheet_handle = Gtk.Box(halign=Gtk.Align.CENTER,
-                               margin_top=8, margin_bottom=4)
-        pill = Gtk.Box(width_request=32, height_request=4,
-                       valign=Gtk.Align.CENTER)
-        pill.add_css_class('drag-handle-pill')
-        sheet_handle.append(pill)
-        self.narrow_sheet_box.append(sheet_handle)
+        # Drag handle pill at top of sheet content
+        if has_overflow:
+            sheet_handle = Gtk.Box(halign=Gtk.Align.CENTER,
+                                   margin_top=8, margin_bottom=4)
+            pill = Gtk.Box(width_request=32, height_request=4,
+                           valign=Gtk.Align.CENTER)
+            pill.add_css_class('drag-handle-pill')
+            sheet_handle.append(pill)
+            gesture = Gtk.GestureClick.new()
+            gesture.connect(
+                'released',
+                lambda *_: self.narrow_sheet.set_open(False),
+            )
+            sheet_handle.add_controller(gesture)
+            self.narrow_sheet_box.append(sheet_handle)
 
         # Sheet content: grid or list style
         sheet_style = self._settings.get_string('navbar-sheet-style')
@@ -219,14 +227,20 @@ class KitsuneWindow(Adw.ApplicationWindow):
         else:
             self._build_sheet_list(tab_ids, _TAB_LABELS)
 
-        # Make drag handle open the sheet
+        # Click on drag handle opens the sheet
         if self._drag_handle_gesture:
-            self.narrow_drag_handle.remove_controller(self._drag_handle_gesture)
-        self._drag_handle_gesture = Gtk.GestureClick.new()
-        self._drag_handle_gesture.connect(
-            'released', lambda *_: self.narrow_sheet.set_open(True),
-        )
-        self.narrow_drag_handle.add_controller(self._drag_handle_gesture)
+            self.narrow_drag_handle.remove_controller(
+                self._drag_handle_gesture)
+        if has_overflow:
+            self._drag_handle_gesture = Gtk.GestureClick.new()
+            self._drag_handle_gesture.connect(
+                'released',
+                lambda *_: self.narrow_sheet.set_open(True),
+            )
+            self.narrow_drag_handle.add_controller(
+                self._drag_handle_gesture)
+        else:
+            self._drag_handle_gesture = None
 
     def _build_sheet_list(self, tab_ids, labels):
         """Build sheet content as a list of rows."""
