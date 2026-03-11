@@ -30,8 +30,8 @@ def _ensure_nav_css():
         ' .nav-tab-active:hover { background: alpha(currentColor, 0.14); }'
         ' .drag-handle-pill { background: alpha(currentColor, 0.25);'
         ' border-radius: 2px; }'
-        ' .sheet-grid-item { padding: 12px 8px;'
-        ' border-radius: 12px; min-height: 64px; }'
+        ' .sheet-grid-item { padding: 8px 6px;'
+        ' border-radius: 12px; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -203,6 +203,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # Show drag handle only if there are overflow tabs
         self.narrow_drag_handle.set_visible(len(tab_ids) > 3)
 
+        # Add custom drag handle pill to top of sheet
+        sheet_handle = Gtk.Box(halign=Gtk.Align.CENTER,
+                               margin_top=8, margin_bottom=4)
+        pill = Gtk.Box(width_request=32, height_request=4,
+                       valign=Gtk.Align.CENTER)
+        pill.add_css_class('drag-handle-pill')
+        sheet_handle.append(pill)
+        self.narrow_sheet_box.append(sheet_handle)
+
         # Sheet content: grid or list style
         sheet_style = self._settings.get_string('navbar-sheet-style')
         if sheet_style == 'grid':
@@ -263,9 +272,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 spacing=4, halign=Gtk.Align.CENTER,
                 valign=Gtk.Align.CENTER,
             )
-            box.append(Gtk.Image(
-                icon_name=tab['icon'], pixel_size=32,
-            ))
+            box.append(Gtk.Image(icon_name=tab['icon']))
             lbl = Gtk.Label(label=labels.get(tab_id, tab['label']))
             lbl.add_css_class('caption')
             box.append(lbl)
