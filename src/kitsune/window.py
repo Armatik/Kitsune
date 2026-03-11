@@ -9,6 +9,7 @@ from gi.repository import Adw, Gdk, Gtk, Gio
 
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
+from kitsune.navbar import get_tab, get_visible_tabs
 
 _nav_css_loaded = False
 
@@ -93,6 +94,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._genres_view = None
         self._franchises_view = None
         self._tags_view = None
+        self._sidebar_tab_ids = []
 
         self._catalog_view = CatalogView(client=self._client)
         self._catalog_view.set_on_release_activated(self._show_release_detail)
@@ -102,6 +104,36 @@ class KitsuneWindow(Adw.ApplicationWindow):
             box = Gtk.Box(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
             box.append(Adw.Spinner(width_request=48, height_request=48))
             self.content_stack.add_named(box, name)
+
+        self._build_sidebar()
+
+    def _build_sidebar(self):
+        """Populate sidebar from GSettings."""
+        while True:
+            row = self.sidebar_list.get_row_at_index(0)
+            if row is None:
+                break
+            self.sidebar_list.remove(row)
+
+        tab_ids = get_visible_tabs(self._settings, is_narrow=False)
+        self._sidebar_tab_ids = tab_ids
+
+        _TAB_LABELS = {
+            'catalog': _('Catalog'),
+            'genres': _('Genres'),
+            'franchises': _('Franchises'),
+            'tags': _('Favorites & Tags'),
+        }
+
+        for tab_id in tab_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            row = Adw.ActionRow(
+                title=_TAB_LABELS.get(tab_id, tab['label']),
+                icon_name=tab['icon'],
+            )
+            self.sidebar_list.append(row)
 
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
 
@@ -190,9 +222,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if not row:
             return
         index = row.get_index()
-        tabs = ['catalog', 'genres', 'franchises', 'tags']
-        if 0 <= index < len(tabs):
-            self._switch_tab(tabs[index])
+        if 0 <= index < len(self._sidebar_tab_ids):
+            self._switch_tab(self._sidebar_tab_ids[index])
 
     @Gtk.Template.Callback()
     def on_catalog_tab_clicked(self, _button):
