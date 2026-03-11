@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune 0.5.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 01:02+0300\n"
+"POT-Creation-Date: 2026-03-11 03:00+0300\n"
 "PO-Revision-Date: 2026-03-08 08:30+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
@@ -717,6 +717,16 @@ msgstr "Семён (Armatik) Фомченков"
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:50
 msgid ""
+"Bugfix: renamed action icons with app_id prefix (net.armatik.Kitsune.*) to "
+"prevent file conflicts with other applications when installed to the shared "
+"icon directory."
+msgstr ""
+"Исправление: иконки действий переименованы с префиксом app_id "
+"(net.armatik.Kitsune.*) для предотвращения файловых конфликтов с другими "
+"приложениями при установке в общий каталог иконок."
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:55
+msgid ""
 "Tags and favorites — a new system for organizing your library. Create custom "
 "tags with emoji or colored icons, assign them to any release via the star "
 "button on the release page, and browse tagged collections in the new "
@@ -729,8 +739,8 @@ msgid ""
 "header bar or list view with a confirmation dialog, and changes propagate "
 "instantly to all visible cards."
 msgstr ""
-"Теги и избранное — новая система организации библиотеки. Создавайте теги "
-"с эмодзи или цветными иконками, назначайте их любому релизу через кнопку-"
+"Теги и избранное — новая система организации библиотеки. Создавайте теги с "
+"эмодзи или цветными иконками, назначайте их любому релизу через кнопку-"
 "звезду на странице релиза и просматривайте коллекции по тегам на новой "
 "вкладке «Избранное и теги». Теги отображаются как компактные бейджи на "
 "карточках каталога и как интерактивные пилюли на страницах релизов. Диалог "
@@ -740,7 +750,7 @@ msgstr ""
 "сохраняется между сессиями. Теги можно удалять из заголовка или списка с "
 "диалогом подтверждения, изменения мгновенно обновляются на всех карточках."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:51
+#: data/net.armatik.Kitsune.metainfo.xml.in:56
 msgid ""
 "Episode watch progress tracking — progress bars appear on episode cards and "
 "list rows showing how much of each episode has been watched. Completed "
@@ -758,7 +768,7 @@ msgstr ""
 "просмотра. Превью показывают спиннер при загрузке и иконку-заглушку при "
 "недоступности. Прогресс обновляется автоматически при возврате из плеера."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:52
+#: data/net.armatik.Kitsune.metainfo.xml.in:57
 msgid ""
 "Redesigned filter panel — the filter dialog has been replaced with a sliding "
 "side panel (OverlaySplitView) that overlays the entire window. Filters auto-"
@@ -768,20 +778,20 @@ msgid ""
 msgstr ""
 "Обновлённая панель фильтров — диалог фильтров заменён на выдвижную боковую "
 "панель, перекрывающую всё окно. Фильтры применяются автоматически с "
-"задержкой в 1 секунду, жанры и диапазон годов обновляются асинхронно, "
-"лишние перезагрузки каталога при неизменённых фильтрах подавляются."
+"задержкой в 1 секунду, жанры и диапазон годов обновляются асинхронно, лишние "
+"перезагрузки каталога при неизменённых фильтрах подавляются."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:53
+#: data/net.armatik.Kitsune.metainfo.xml.in:58
 msgid ""
 "Genre navigation from release pages — clicking a genre chip on a release "
 "page now opens that genre's releases as a NavigationPage with a back button, "
 "instead of switching to the Genres tab. Genre chips have hover effects."
 msgstr ""
-"Навигация по жанрам со страницы релиза — клик на жанр открывает релизы "
-"этого жанра как отдельную страницу с кнопкой «назад», вместо переключения "
-"на вкладку жанров. Чипы жанров с эффектом наведения."
+"Навигация по жанрам со страницы релиза — клик на жанр открывает релизы этого "
+"жанра как отдельную страницу с кнопкой «назад», вместо переключения на "
+"вкладку жанров. Чипы жанров с эффектом наведения."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:54
+#: data/net.armatik.Kitsune.metainfo.xml.in:59
 msgid ""
 "Dynamic release page tabs — empty tabs (related releases, team, torrents) "
 "are hidden automatically instead of showing blank placeholders. Tabs appear "
@@ -791,7 +801,7 @@ msgstr ""
 "команда, торренты) скрываются автоматически. Вкладки появляются динамически "
 "при получении данных."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:55
+#: data/net.armatik.Kitsune.metainfo.xml.in:60
 msgid ""
 "Visual improvements — smooth CSS hover transitions (200ms ease-out-quad) "
 "across flowbox items, sidebar rows, navigation tabs, player buttons, and "
@@ -800,34 +810,34 @@ msgid ""
 "effects."
 msgstr ""
 "Визуальные улучшения — плавные CSS-анимации наведения (200мс) на элементах "
-"каталога, боковой панели, вкладках, кнопках плеера и чипах фильтров. "
-"Полоса прогресса увеличена до 4px с акцентным цветом. Карточки тегов с "
+"каталога, боковой панели, вкладках, кнопках плеера и чипах фильтров. Полоса "
+"прогресса увеличена до 4px с акцентным цветом. Карточки тегов с "
 "центрированными заголовками и размытым эмодзи-фоном."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:56
+#: data/net.armatik.Kitsune.metainfo.xml.in:61
 msgid ""
 "Player stability — fixed player cleanup on navigation back by removing "
 "unreliable hiding/unmap signals. Cleanup now fires only via explicit back "
 "button, NavigationView pop, and window close. Idempotent cleanup prevents "
 "double-stop issues."
 msgstr ""
-"Стабильность плеера — исправлена очистка плеера при навигации назад. "
-"Очистка происходит только через кнопку «назад», сигнал NavigationView и "
-"закрытие окна. Идемпотентная очистка предотвращает двойную остановку."
+"Стабильность плеера — исправлена очистка плеера при навигации назад. Очистка "
+"происходит только через кнопку «назад», сигнал NavigationView и закрытие "
+"окна. Идемпотентная очистка предотвращает двойную остановку."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:57
+#: data/net.armatik.Kitsune.metainfo.xml.in:62
 msgid ""
 "Infrastructure — centralized AniLibria API URLs into a single constants "
 "file. Image download limit increased from 10 MB to 30 MB. Tags statistics "
 "and clear button added to preferences. Repository moved to alt-gnome "
 "organization, project Telegram channel and chat added."
 msgstr ""
-"Инфраструктура — URL-адреса API централизованы в один файл констант. "
-"Лимит загрузки изображений увеличен с 10 МБ до 30 МБ. Статистика тегов и "
-"кнопка очистки добавлены в настройки. Репозиторий перенесён в организацию "
-"alt-gnome, добавлены Telegram-канал и чат проекта."
+"Инфраструктура — URL-адреса API централизованы в один файл констант. Лимит "
+"загрузки изображений увеличен с 10 МБ до 30 МБ. Статистика тегов и кнопка "
+"очистки добавлены в настройки. Репозиторий перенесён в организацию alt-"
+"gnome, добавлены Telegram-канал и чат проекта."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:62
+#: data/net.armatik.Kitsune.metainfo.xml.in:67
 msgid ""
 "Major update with genres, franchises, tabbed release page, Blueprint UI, "
 "accent colors, offline mode, and full Russian translation."
@@ -835,7 +845,7 @@ msgstr ""
 "Крупное обновление: жанры, франшизы, страница релиза с вкладками, Blueprint "
 "UI, акцентные цвета, офлайн-режим и полный перевод на русский язык."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:67
+#: data/net.armatik.Kitsune.metainfo.xml.in:72
 msgid "Initial release with catalog, search, and video player."
 msgstr "Первый выпуск с каталогом, поиском и видеоплеером."
 

@@ -45,6 +45,11 @@
   </supports>
 
   <releases>
+    <release version="0.6.1" date="2026-03-11">
+      <description>
+        <p>Bugfix: renamed action icons with app_id prefix (net.armatik.Kitsune.*) to prevent file conflicts with other applications when installed to the shared icon directory.</p>
+      </description>
+    </release>
     <release version="0.6.0" date="2026-03-11">
       <description>
         <p>Tags and favorites — a new system for organizing your library. Create custom tags with emoji or colored icons, assign them to any release via the star button on the release page, and browse tagged collections in the new "Favorites &amp; Tags" tab. Tags are displayed as compact badges on catalog cards and as interactive pills on release pages. The tag creation dialog features an Adw.ToggleGroup switcher between emoji and color modes with inline icon chooser, color ring picker, duplicate name validation, and auto-generated names for color tags. Tag view supports both card grid and list modes with persistent mode preference. Tags can be deleted from the header bar or list view with a confirmation dialog, and changes propagate instantly to all visible cards.</p>

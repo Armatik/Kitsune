@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-11 01:02+0300\n"
+"POT-Creation-Date: 2026-03-11 03:00+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -713,6 +713,13 @@ msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:50
 msgid ""
+"Bugfix: renamed action icons with app_id prefix (net.armatik.Kitsune.*) to "
+"prevent file conflicts with other applications when installed to the shared "
+"icon directory."
+msgstr ""
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:55
+msgid ""
 "Tags and favorites — a new system for organizing your library. Create custom "
 "tags with emoji or colored icons, assign them to any release via the star "
 "button on the release page, and browse tagged collections in the new "
@@ -726,7 +733,7 @@ msgid ""
 "instantly to all visible cards."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:51
+#: data/net.armatik.Kitsune.metainfo.xml.in:56
 msgid ""
 "Episode watch progress tracking — progress bars appear on episode cards and "
 "list rows showing how much of each episode has been watched. Completed "
@@ -738,7 +745,7 @@ msgid ""
 "player."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:52
+#: data/net.armatik.Kitsune.metainfo.xml.in:57
 msgid ""
 "Redesigned filter panel — the filter dialog has been replaced with a sliding "
 "side panel (OverlaySplitView) that overlays the entire window. Filters auto-"
@@ -747,21 +754,21 @@ msgid ""
 "suppressed."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:53
+#: data/net.armatik.Kitsune.metainfo.xml.in:58
 msgid ""
 "Genre navigation from release pages — clicking a genre chip on a release "
 "page now opens that genre's releases as a NavigationPage with a back button, "
 "instead of switching to the Genres tab. Genre chips have hover effects."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:54
+#: data/net.armatik.Kitsune.metainfo.xml.in:59
 msgid ""
 "Dynamic release page tabs — empty tabs (related releases, team, torrents) "
 "are hidden automatically instead of showing blank placeholders. Tabs appear "
 "dynamically when async data arrives."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:55
+#: data/net.armatik.Kitsune.metainfo.xml.in:60
 msgid ""
 "Visual improvements — smooth CSS hover transitions (200ms ease-out-quad) "
 "across flowbox items, sidebar rows, navigation tabs, player buttons, and "
@@ -770,7 +777,7 @@ msgid ""
 "effects."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:56
+#: data/net.armatik.Kitsune.metainfo.xml.in:61
 msgid ""
 "Player stability — fixed player cleanup on navigation back by removing "
 "unreliable hiding/unmap signals. Cleanup now fires only via explicit back "
@@ -778,7 +785,7 @@ msgid ""
 "double-stop issues."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:57
+#: data/net.armatik.Kitsune.metainfo.xml.in:62
 msgid ""
 "Infrastructure — centralized AniLibria API URLs into a single constants "
 "file. Image download limit increased from 10 MB to 30 MB. Tags statistics "
@@ -786,12 +793,12 @@ msgid ""
 "organization, project Telegram channel and chat added."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:62
+#: data/net.armatik.Kitsune.metainfo.xml.in:67
 msgid ""
 "Major update with genres, franchises, tabbed release page, Blueprint UI, "
 "accent colors, offline mode, and full Russian translation."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:67
+#: data/net.armatik.Kitsune.metainfo.xml.in:72
 msgid "Initial release with catalog, search, and video player."
 msgstr ""
