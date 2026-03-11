@@ -30,6 +30,8 @@ def _ensure_nav_css():
         ' .nav-tab-active:hover { background: alpha(currentColor, 0.14); }'
         ' .drag-handle-pill { background: alpha(currentColor, 0.25);'
         ' border-radius: 2px; }'
+        ' .sheet-grid-item { padding: 12px 8px;'
+        ' border-radius: 12px; min-height: 64px; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -59,7 +61,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     narrow_bottom_bar = Gtk.Template.Child()
     narrow_drag_handle = Gtk.Template.Child()
     narrow_tabs_box = Gtk.Template.Child()
-    narrow_sheet_list = Gtk.Template.Child()
+    narrow_sheet_box = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -110,18 +112,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
         self._narrow_tab_buttons = {}
         self._narrow_tab_ids = []
-        self._sheet_row_handler = None
         self._drag_handle_gesture = None
 
         self._build_sidebar()
         self._build_bottom_bar()
 
-        self._settings.connect(
-            'changed::navbar-desktop', self._on_navbar_settings_changed)
-        self._settings.connect(
-            'changed::navbar-mobile', self._on_navbar_settings_changed)
-        self._settings.connect(
-            'changed::navbar-sync', self._on_navbar_settings_changed)
+        for key in ('navbar-desktop', 'navbar-mobile',
+                    'navbar-sync', 'navbar-sheet-style'):
+            self._settings.connect(
+                f'changed::{key}', self._on_navbar_settings_changed)
 
     def _build_sidebar(self):
         """Populate sidebar from GSettings."""
@@ -162,15 +161,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self.narrow_tabs_box.remove(child)
             child = next_child
 
-        # Clear existing sheet rows
-        if self._sheet_row_handler:
-            self.narrow_sheet_list.disconnect(self._sheet_row_handler)
-            self._sheet_row_handler = None
-        while True:
-            row = self.narrow_sheet_list.get_row_at_index(0)
-            if row is None:
-                break
-            self.narrow_sheet_list.remove(row)
+        # Clear sheet box
+        child = self.narrow_sheet_box.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.narrow_sheet_box.remove(child)
+            child = next_child
 
         tab_ids = get_visible_tabs(self._settings, is_narrow=True)
         self._narrow_tab_ids = tab_ids
@@ -207,22 +203,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # Show drag handle only if there are overflow tabs
         self.narrow_drag_handle.set_visible(len(tab_ids) > 3)
 
-        # Sheet: all tabs as rows
-        for tab_id in tab_ids:
-            tab = get_tab(tab_id)
-            if not tab:
-                continue
-            row = Adw.ActionRow(
-                title=_TAB_LABELS.get(tab_id, tab['label']),
-                icon_name=tab['icon'],
-                activatable=True,
-            )
-            row._tab_id = tab_id
-            self.narrow_sheet_list.append(row)
-
-        self._sheet_row_handler = self.narrow_sheet_list.connect(
-            'row-activated', self._on_sheet_row_activated,
-        )
+        # Sheet content: grid or list style
+        sheet_style = self._settings.get_string('navbar-sheet-style')
+        if sheet_style == 'grid':
+            self._build_sheet_grid(tab_ids, _TAB_LABELS)
+        else:
+            self._build_sheet_list(tab_ids, _TAB_LABELS)
 
         # Make drag handle open the sheet
         if self._drag_handle_gesture:
@@ -233,12 +219,71 @@ class KitsuneWindow(Adw.ApplicationWindow):
         )
         self.narrow_drag_handle.add_controller(self._drag_handle_gesture)
 
+    def _build_sheet_list(self, tab_ids, labels):
+        """Build sheet content as a list of rows."""
+        listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        listbox.add_css_class('navigation-sidebar')
+        for tab_id in tab_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            row = Adw.ActionRow(
+                title=labels.get(tab_id, tab['label']),
+                icon_name=tab['icon'],
+                activatable=True,
+            )
+            row._tab_id = tab_id
+            listbox.append(row)
+        listbox.connect('row-activated', self._on_sheet_row_activated)
+        self.narrow_sheet_box.append(listbox)
+
+    def _build_sheet_grid(self, tab_ids, labels):
+        """Build sheet content as a grid of icon buttons."""
+        flow = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            homogeneous=True,
+            max_children_per_line=4,
+            min_children_per_line=3,
+            row_spacing=8,
+            column_spacing=8,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+        )
+        for tab_id in tab_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            btn = Gtk.Button()
+            btn.add_css_class('flat')
+            btn.add_css_class('sheet-grid-item')
+            box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                spacing=4, halign=Gtk.Align.CENTER,
+                valign=Gtk.Align.CENTER,
+            )
+            box.append(Gtk.Image(
+                icon_name=tab['icon'], pixel_size=32,
+            ))
+            lbl = Gtk.Label(label=labels.get(tab_id, tab['label']))
+            lbl.add_css_class('caption')
+            box.append(lbl)
+            btn.set_child(box)
+            btn.connect('clicked', self._on_sheet_grid_clicked, tab_id)
+            flow.append(btn)
+        self.narrow_sheet_box.append(flow)
+
     def _on_narrow_tab_clicked(self, _button, tab_id):
         self._switch_tab(tab_id)
 
     def _on_sheet_row_activated(self, _listbox, row):
         self.narrow_sheet.set_open(False)
         self._switch_tab(row._tab_id)
+
+    def _on_sheet_grid_clicked(self, _button, tab_id):
+        self.narrow_sheet.set_open(False)
+        self._switch_tab(tab_id)
 
     def _on_navbar_settings_changed(self, _settings, _key):
         """Rebuild navigation when settings change."""

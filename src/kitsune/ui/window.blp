@@ -148,7 +148,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
             name: "narrow";
 
             content: Adw.BottomSheet narrow_sheet {
-              show-drag-handle: false;
+              show-drag-handle: true;
 
               content: Adw.ToolbarView {
                 [top]
@@ -234,10 +234,8 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                 }
               };
 
-              sheet: Gtk.ListBox narrow_sheet_list {
-                selection-mode: none;
-
-                styles ["navigation-sidebar"]
+              sheet: Gtk.Box narrow_sheet_box {
+                orientation: vertical;
               };
             };
           }

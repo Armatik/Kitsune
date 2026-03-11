@@ -69,6 +69,11 @@
       <summary>Mobile navigation tabs</summary>
       <description>JSON array of tab IDs defining order and visibility in narrow layout</description>
     </key>
+    <key name="navbar-sheet-style" type="s">
+      <default>'grid'</default>
+      <summary>Bottom sheet style</summary>
+      <description>Display style for the navigation bottom sheet: grid (icons) or list (rows)</description>
+    </key>
     <key name="navbar-sync" type="b">
       <default>true</default>
       <summary>Sync mobile navigation with desktop</summary>

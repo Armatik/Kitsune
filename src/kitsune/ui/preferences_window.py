@@ -53,6 +53,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
     fade_duration_row = Gtk.Template.Child()
     close_button_row = Gtk.Template.Child()
     navbar_sync_row = Gtk.Template.Child()
+    navbar_sheet_style_row = Gtk.Template.Child()
     navbar_desktop_group = Gtk.Template.Child()
     navbar_desktop_list = Gtk.Template.Child()
     navbar_mobile_group = Gtk.Template.Child()
@@ -184,11 +185,21 @@ class PreferencesWindow(Adw.PreferencesDialog):
         'tags': _('Favorites & Tags'),
     }
 
+    _SHEET_STYLES = ['grid', 'list']
+
     def _setup_navbar_prefs(self):
         self.navbar_sync_row.set_active(
             self._settings.get_boolean('navbar-sync'))
         self.navbar_sync_row.connect(
             'notify::active', self._on_navbar_sync_changed)
+
+        # Sheet style combo
+        current_style = self._settings.get_string('navbar-sheet-style')
+        idx = self._SHEET_STYLES.index(current_style) \
+            if current_style in self._SHEET_STYLES else 0
+        self.navbar_sheet_style_row.set_selected(idx)
+        self.navbar_sheet_style_row.connect(
+            'notify::selected', self._on_sheet_style_changed)
 
         self._rebuild_navbar_list('navbar-desktop', self.navbar_desktop_list)
         self._rebuild_navbar_list('navbar-mobile', self.navbar_mobile_list)
@@ -201,6 +212,12 @@ class PreferencesWindow(Adw.PreferencesDialog):
     def _on_navbar_sync_changed(self, row, _pspec):
         self._settings.set_boolean('navbar-sync', row.get_active())
         self._update_mobile_sensitivity()
+
+    def _on_sheet_style_changed(self, row, _pspec):
+        idx = row.get_selected()
+        if 0 <= idx < len(self._SHEET_STYLES):
+            self._settings.set_string(
+                'navbar-sheet-style', self._SHEET_STYLES[idx])
 
     def _rebuild_navbar_list(self, settings_key, listbox):
         """Build a tab list with visibility toggles and move buttons."""

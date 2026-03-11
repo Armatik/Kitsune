@@ -95,11 +95,20 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
     icon-name: "view-grid-symbolic";
 
     Adw.PreferencesGroup {
-      title: _("Synchronization");
+      title: _("General");
 
       Adw.SwitchRow navbar_sync_row {
         title: _("Sync mobile with desktop");
         subtitle: _("Mobile navigation uses the same tab order as desktop");
+      }
+
+      Adw.ComboRow navbar_sheet_style_row {
+        title: _("Expanded menu style");
+        subtitle: _("How to display tabs in the bottom sheet");
+
+        model: Gtk.StringList {
+          strings [_("Grid"), _("List")]
+        };
       }
     }
 
