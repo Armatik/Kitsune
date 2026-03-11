@@ -91,6 +91,42 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
   }
 
   Adw.PreferencesPage {
+    title: _("Navigation");
+    icon-name: "view-grid-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Synchronization");
+
+      Adw.SwitchRow navbar_sync_row {
+        title: _("Sync mobile with desktop");
+        subtitle: _("Mobile navigation uses the same tab order as desktop");
+      }
+    }
+
+    Adw.PreferencesGroup navbar_desktop_group {
+      title: _("Desktop Tabs");
+      description: _("Visible tabs and their order in the sidebar");
+
+      Gtk.ListBox navbar_desktop_list {
+        selection-mode: none;
+
+        styles ["boxed-list"]
+      }
+    }
+
+    Adw.PreferencesGroup navbar_mobile_group {
+      title: _("Mobile Tabs");
+      description: _("Visible tabs and their order in the bottom bar");
+
+      Gtk.ListBox navbar_mobile_list {
+        selection-mode: none;
+
+        styles ["boxed-list"]
+      }
+    }
+  }
+
+  Adw.PreferencesPage {
     title: _("Cache");
     icon-name: "drive-harddisk-symbolic";
 

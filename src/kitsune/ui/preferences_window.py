@@ -11,6 +11,9 @@ from gi.repository import Adw, Gio, Gtk
 
 from kitsune.ui.image_cache import get_cache_size, get_cache_count, clear_cache
 from kitsune import release_cache, watch_positions, tags_store
+from kitsune.navbar import (
+    ALL_TAB_IDS, get_tab, ensure_complete, parse_tab_order, serialize_tab_order,
+)
 
 _STYLE_DESCRIPTIONS = {
     'classic': _('Standard layout without background effects'),
@@ -49,6 +52,11 @@ class PreferencesWindow(Adw.PreferencesDialog):
     color_points_row = Gtk.Template.Child()
     fade_duration_row = Gtk.Template.Child()
     close_button_row = Gtk.Template.Child()
+    navbar_sync_row = Gtk.Template.Child()
+    navbar_desktop_group = Gtk.Template.Child()
+    navbar_desktop_list = Gtk.Template.Child()
+    navbar_mobile_group = Gtk.Template.Child()
+    navbar_mobile_list = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -80,6 +88,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._update_release_cache()
         self._update_watch_progress()
         self._update_tags()
+        self._setup_navbar_prefs()
 
     def _update_style_description(self, name: str):
         self.style_description.set_label(
@@ -165,3 +174,74 @@ class PreferencesWindow(Adw.PreferencesDialog):
     def on_clear_tags_clicked(self, _button):
         tags_store.clear_all()
         self._update_tags()
+
+    # --- Navigation Preferences ---
+
+    _NAV_TAB_LABELS = {
+        'catalog': _('Catalog'),
+        'genres': _('Genres'),
+        'franchises': _('Franchises'),
+        'tags': _('Favorites & Tags'),
+    }
+
+    def _setup_navbar_prefs(self):
+        self.navbar_sync_row.set_active(
+            self._settings.get_boolean('navbar-sync'))
+        self.navbar_sync_row.connect(
+            'notify::active', self._on_navbar_sync_changed)
+
+        self._rebuild_navbar_list('navbar-desktop', self.navbar_desktop_list)
+        self._rebuild_navbar_list('navbar-mobile', self.navbar_mobile_list)
+        self._update_mobile_sensitivity()
+
+    def _update_mobile_sensitivity(self):
+        is_sync = self.navbar_sync_row.get_active()
+        self.navbar_mobile_group.set_sensitive(not is_sync)
+
+    def _on_navbar_sync_changed(self, row, _pspec):
+        self._settings.set_boolean('navbar-sync', row.get_active())
+        self._update_mobile_sensitivity()
+
+    def _rebuild_navbar_list(self, settings_key, listbox):
+        """Build a tab list with visibility toggles."""
+        while True:
+            row = listbox.get_row_at_index(0)
+            if row is None:
+                break
+            listbox.remove(row)
+
+        visible_ids = parse_tab_order(
+            self._settings.get_string(settings_key))
+        all_ids = ensure_complete(visible_ids)
+        visible_set = set(visible_ids)
+
+        # Store switch refs: {settings_key: [(tab_id, switch), ...]}
+        if not hasattr(self, '_navbar_switches'):
+            self._navbar_switches = {}
+        self._navbar_switches[settings_key] = []
+
+        for tab_id in all_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+
+            row = Adw.ActionRow(
+                title=self._NAV_TAB_LABELS.get(tab_id, tab['label']),
+                icon_name=tab['icon'],
+            )
+
+            switch = Gtk.Switch(valign=Gtk.Align.CENTER,
+                                active=tab_id in visible_set)
+            switch.connect('notify::active',
+                           self._on_tab_visibility_changed,
+                           settings_key)
+            row.add_suffix(switch)
+            listbox.append(row)
+            self._navbar_switches[settings_key].append((tab_id, switch))
+
+    def _on_tab_visibility_changed(self, switch, _pspec, settings_key):
+        entries = self._navbar_switches.get(settings_key, [])
+        visible = [tid for tid, sw in entries if sw.get_active()]
+        if not visible:
+            visible = [ALL_TAB_IDS[0]]
+        self._settings.set_string(settings_key, serialize_tab_order(visible))
