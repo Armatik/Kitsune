@@ -9,41 +9,46 @@ configure_file(
 
 blueprint_compiler = find_program('blueprint-compiler')
 
+ui_blueprints = [
+  'window',
+  'preferences_window',
+  'search_view',
+  'release_view',
+  'filter_dialog',
+  'player_view',
+]
+
+widget_blueprints = [
+  'content_grid',
+  'release_card',
+  'genre_card',
+  'franchise_card',
+  'tag_card',
+]
+
+ui_blp_inputs = []
+ui_blp_outputs = []
+foreach name : ui_blueprints
+  ui_blp_inputs += files('kitsune/ui' / name + '.blp')
+  ui_blp_outputs += name + '.ui'
+endforeach
+
+widget_blp_inputs = []
+widget_blp_outputs = []
+foreach name : widget_blueprints
+  widget_blp_inputs += files('kitsune/ui/widgets' / name + '.blp')
+  widget_blp_outputs += name + '.ui'
+endforeach
+
 blueprints_ui = custom_target('blueprints-ui',
-  input: files(
-    'kitsune/ui/window.blp',
-    'kitsune/ui/preferences_window.blp',
-    'kitsune/ui/search_view.blp',
-    'kitsune/ui/release_view.blp',
-    'kitsune/ui/filter_dialog.blp',
-    'kitsune/ui/player_view.blp',
-  ),
-  output: [
-    'window.ui',
-    'preferences_window.ui',
-    'search_view.ui',
-    'release_view.ui',
-    'filter_dialog.ui',
-    'player_view.ui',
-  ],
+  input: ui_blp_inputs,
+  output: ui_blp_outputs,
   command: [blueprint_compiler, 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@/kitsune/ui', '@INPUT@'],
 )
 
 blueprints_widgets = custom_target('blueprints-widgets',
-  input: files(
-    'kitsune/ui/widgets/content_grid.blp',
-    'kitsune/ui/widgets/release_card.blp',
-    'kitsune/ui/widgets/genre_card.blp',
-    'kitsune/ui/widgets/franchise_card.blp',
-    'kitsune/ui/widgets/tag_card.blp',
-  ),
-  output: [
-    'content_grid.ui',
-    'release_card.ui',
-    'genre_card.ui',
-    'franchise_card.ui',
-    'tag_card.ui',
-  ],
+  input: widget_blp_inputs,
+  output: widget_blp_outputs,
   command: [blueprint_compiler, 'batch-compile', '@OUTDIR@', '@CURRENT_SOURCE_DIR@/kitsune/ui/widgets', '@INPUT@'],
 )
 
@@ -56,19 +61,15 @@ gnome.compile_resources(
   install_dir: pkgdatadir,
 )
 
+blp_exclude = []
+foreach name : ui_blueprints
+  blp_exclude += 'ui' / name + '.blp'
+endforeach
+foreach name : widget_blueprints
+  blp_exclude += 'ui/widgets' / name + '.blp'
+endforeach
+
 install_subdir('kitsune', install_dir: pkgdatadir,
   exclude_directories: ['__pycache__'],
-  exclude_files: [
-    'ui/window.blp',
-    'ui/preferences_window.blp',
-    'ui/search_view.blp',
-    'ui/release_view.blp',
-    'ui/filter_dialog.blp',
-    'ui/player_view.blp',
-    'ui/widgets/content_grid.blp',
-    'ui/widgets/release_card.blp',
-    'ui/widgets/genre_card.blp',
-    'ui/widgets/franchise_card.blp',
-    'ui/widgets/tag_card.blp',
-  ],
+  exclude_files: blp_exclude,
 )

@@ -24,6 +24,7 @@ conf.set('LOCALEDIR', join_paths(get_option('prefix'), get_option('localedir')))
 subdir('src')
 subdir('data')
 subdir('po')
+subdir('tests')
 
 gnome.post_install(
   glib_compile_schemas: true,
