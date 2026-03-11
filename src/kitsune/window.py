@@ -23,7 +23,7 @@ def _ensure_nav_css():
     _T = ADW_TRANSITION
     css.load_from_string(
         '.nav-tab { background: none;'
-        ' border-radius: 12px; padding: 6px 16px; min-width: 64px;'
+        ' border-radius: 12px; padding: 6px 8px;'
         ' transition: background ' + _T + '; }'
         ' .nav-tab:hover { background: alpha(currentColor, 0.07); }'
         ' .nav-tab-active { background: alpha(currentColor, 0.1); }'

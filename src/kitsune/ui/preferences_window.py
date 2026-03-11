@@ -203,7 +203,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._update_mobile_sensitivity()
 
     def _rebuild_navbar_list(self, settings_key, listbox):
-        """Build a tab list with visibility toggles."""
+        """Build a tab list with visibility toggles and move buttons."""
         while True:
             row = listbox.get_row_at_index(0)
             if row is None:
@@ -214,34 +214,94 @@ class PreferencesWindow(Adw.PreferencesDialog):
             self._settings.get_string(settings_key))
         all_ids = ensure_complete(visible_ids)
         visible_set = set(visible_ids)
+        num_visible = len(visible_ids)
 
-        # Store switch refs: {settings_key: [(tab_id, switch), ...]}
-        if not hasattr(self, '_navbar_switches'):
-            self._navbar_switches = {}
-        self._navbar_switches[settings_key] = []
+        # Store refs: {settings_key: [(tab_id, switch, up_btn, down_btn)]}
+        if not hasattr(self, '_navbar_entries'):
+            self._navbar_entries = {}
+        self._navbar_entries[settings_key] = []
 
-        for tab_id in all_ids:
+        for i, tab_id in enumerate(all_ids):
             tab = get_tab(tab_id)
             if not tab:
                 continue
+
+            is_visible = tab_id in visible_set
+            vis_idx = visible_ids.index(tab_id) if is_visible else -1
 
             row = Adw.ActionRow(
                 title=self._NAV_TAB_LABELS.get(tab_id, tab['label']),
                 icon_name=tab['icon'],
             )
 
-            switch = Gtk.Switch(valign=Gtk.Align.CENTER,
-                                active=tab_id in visible_set)
+            # Move up button (only for visible tabs, not first)
+            up_btn = Gtk.Button(
+                icon_name='go-up-symbolic',
+                valign=Gtk.Align.CENTER,
+                sensitive=is_visible and vis_idx > 0,
+            )
+            up_btn.add_css_class('flat')
+            up_btn.connect('clicked', self._on_move_tab, settings_key,
+                           listbox, tab_id, -1)
+            row.add_suffix(up_btn)
+
+            # Move down button (only for visible tabs, not last)
+            down_btn = Gtk.Button(
+                icon_name='go-down-symbolic',
+                valign=Gtk.Align.CENTER,
+                sensitive=is_visible and vis_idx < num_visible - 1,
+            )
+            down_btn.add_css_class('flat')
+            down_btn.connect('clicked', self._on_move_tab, settings_key,
+                             listbox, tab_id, 1)
+            row.add_suffix(down_btn)
+
+            # Visibility switch
+            switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=is_visible)
             switch.connect('notify::active',
                            self._on_tab_visibility_changed,
-                           settings_key)
+                           settings_key, listbox)
             row.add_suffix(switch)
             listbox.append(row)
-            self._navbar_switches[settings_key].append((tab_id, switch))
+            self._navbar_entries[settings_key].append(
+                (tab_id, switch, up_btn, down_btn))
 
-    def _on_tab_visibility_changed(self, switch, _pspec, settings_key):
-        entries = self._navbar_switches.get(settings_key, [])
-        visible = [tid for tid, sw in entries if sw.get_active()]
+        # Also keep old key for compat
+        if not hasattr(self, '_navbar_switches'):
+            self._navbar_switches = {}
+        self._navbar_switches[settings_key] = [
+            (tid, sw) for tid, sw, _, _ in self._navbar_entries[settings_key]
+        ]
+
+    def _on_tab_visibility_changed(self, switch, _pspec,
+                                   settings_key, listbox):
+        entries = self._navbar_entries.get(settings_key, [])
+        visible = [tid for tid, sw, _, _ in entries if sw.get_active()]
         if not visible:
             visible = [ALL_TAB_IDS[0]]
+            # Re-enable the first switch if user turned off all
+            if entries:
+                entries[0][1].set_active(True)
+                return
         self._settings.set_string(settings_key, serialize_tab_order(visible))
+        # Rebuild to update move button sensitivity
+        self._rebuild_navbar_list(settings_key, listbox)
+
+    def _on_move_tab(self, _btn, settings_key, listbox, tab_id, direction):
+        """Move a visible tab up (-1) or down (+1)."""
+        entries = self._navbar_entries.get(settings_key, [])
+        visible_ids = [tid for tid, sw, _, _ in entries if sw.get_active()]
+
+        if tab_id not in visible_ids:
+            return
+        idx = visible_ids.index(tab_id)
+        new_idx = idx + direction
+        if new_idx < 0 or new_idx >= len(visible_ids):
+            return
+
+        visible_ids[idx], visible_ids[new_idx] = (
+            visible_ids[new_idx], visible_ids[idx])
+
+        self._settings.set_string(settings_key,
+                                  serialize_tab_order(visible_ids))
+        self._rebuild_navbar_list(settings_key, listbox)
