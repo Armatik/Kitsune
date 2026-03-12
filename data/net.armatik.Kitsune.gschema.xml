@@ -59,6 +59,26 @@
       <summary>Tags view mode</summary>
       <description>Display mode for tags tab: cards or list</description>
     </key>
+    <key name="navbar-desktop" type="s">
+      <default>'["catalog","genres","franchises","tags"]'</default>
+      <summary>Desktop navigation tabs</summary>
+      <description>JSON array of tab IDs defining order and visibility in wide layout</description>
+    </key>
+    <key name="navbar-mobile" type="s">
+      <default>'["catalog","genres","franchises","tags"]'</default>
+      <summary>Mobile navigation tabs</summary>
+      <description>JSON array of tab IDs defining order and visibility in narrow layout</description>
+    </key>
+    <key name="navbar-sheet-style" type="s">
+      <default>'grid'</default>
+      <summary>Bottom sheet style</summary>
+      <description>Display style for the navigation bottom sheet: grid (icons) or list (rows)</description>
+    </key>
+    <key name="navbar-sync" type="b">
+      <default>true</default>
+      <summary>Sync mobile navigation with desktop</summary>
+      <description>When true, mobile navigation uses the desktop tab order</description>
+    </key>
     <key name="window-width" type="i">
       <default>900</default>
       <summary>Window width</summary>

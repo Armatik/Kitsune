@@ -9,6 +9,7 @@ from gi.repository import Adw, Gdk, Gtk, Gio
 
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
+from kitsune.navbar import get_tab, get_visible_tabs
 
 _nav_css_loaded = False
 
@@ -22,11 +23,18 @@ def _ensure_nav_css():
     _T = ADW_TRANSITION
     css.load_from_string(
         '.nav-tab { background: none;'
-        ' border-radius: 12px; padding: 6px 16px; min-width: 64px;'
+        ' border-radius: 12px; padding: 6px 8px;'
         ' transition: background ' + _T + '; }'
         ' .nav-tab:hover { background: alpha(currentColor, 0.07); }'
         ' .nav-tab-active { background: alpha(currentColor, 0.1); }'
         ' .nav-tab-active:hover { background: alpha(currentColor, 0.14); }'
+        ' .drag-handle-pill { background: alpha(currentColor, 0.25);'
+        ' border-radius: 2px; }'
+        ' .sheet-grid-item { padding: 8px 6px;'
+        ' border-radius: 12px; }'
+        ' .sheet-grid flowboxchild { background: none; }'
+        ' .sheet-grid flowboxchild:hover { background: none; }'
+        ' .sheet-grid flowboxchild:active { background: none; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -52,10 +60,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
     wide_content_title = Gtk.Template.Child()
     back_btn = Gtk.Template.Child()
     narrow_back_btn = Gtk.Template.Child()
-    narrow_catalog_tab = Gtk.Template.Child()
-    narrow_genres_tab = Gtk.Template.Child()
-    narrow_franchises_tab = Gtk.Template.Child()
-    narrow_tags_tab = Gtk.Template.Child()
+    narrow_sheet = Gtk.Template.Child()
+    narrow_bottom_bar = Gtk.Template.Child()
+    narrow_drag_handle = Gtk.Template.Child()
+    narrow_tabs_box = Gtk.Template.Child()
+    narrow_sheet_box = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -93,6 +102,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._genres_view = None
         self._franchises_view = None
         self._tags_view = None
+        self._sidebar_tab_ids = []
 
         self._catalog_view = CatalogView(client=self._client)
         self._catalog_view.set_on_release_activated(self._show_release_detail)
@@ -103,7 +113,210 @@ class KitsuneWindow(Adw.ApplicationWindow):
             box.append(Adw.Spinner(width_request=48, height_request=48))
             self.content_stack.add_named(box, name)
 
+        self._narrow_tab_buttons = {}
+        self._narrow_tab_ids = []
+        self._drag_handle_gesture = None
+
+        self._build_sidebar()
+        self._build_bottom_bar()
+
+        for key in ('navbar-desktop', 'navbar-mobile',
+                    'navbar-sync', 'navbar-sheet-style'):
+            self._settings.connect(
+                f'changed::{key}', self._on_navbar_settings_changed)
+
+    def _build_sidebar(self):
+        """Populate sidebar from GSettings."""
+        while True:
+            row = self.sidebar_list.get_row_at_index(0)
+            if row is None:
+                break
+            self.sidebar_list.remove(row)
+
+        tab_ids = get_visible_tabs(self._settings, is_narrow=False)
+        self._sidebar_tab_ids = tab_ids
+
+        _TAB_LABELS = {
+            'catalog': _('Catalog'),
+            'genres': _('Genres'),
+            'franchises': _('Franchises'),
+            'tags': _('Favorites & Tags'),
+        }
+
+        for tab_id in tab_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            row = Adw.ActionRow(
+                title=_TAB_LABELS.get(tab_id, tab['label']),
+                icon_name=tab['icon'],
+            )
+            self.sidebar_list.append(row)
+
         self.sidebar_list.select_row(self.sidebar_list.get_row_at_index(0))
+
+    def _build_bottom_bar(self):
+        """Populate narrow bottom bar tabs and sheet from GSettings."""
+        # Clear existing tab buttons
+        child = self.narrow_tabs_box.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.narrow_tabs_box.remove(child)
+            child = next_child
+
+        # Clear sheet box
+        child = self.narrow_sheet_box.get_first_child()
+        while child:
+            next_child = child.get_next_sibling()
+            self.narrow_sheet_box.remove(child)
+            child = next_child
+
+        tab_ids = get_visible_tabs(self._settings, is_narrow=True)
+        self._narrow_tab_ids = tab_ids
+        self._narrow_tab_buttons = {}
+
+        _TAB_LABELS = {
+            'catalog': _('Catalog'),
+            'genres': _('Genres'),
+            'franchises': _('Franchises'),
+            'tags': _('Favorites'),
+        }
+
+        # Bottom bar: first 3 tabs as buttons
+        for tab_id in tab_ids[:3]:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            btn = Gtk.Button()
+            btn.add_css_class('flat')
+            btn.add_css_class('nav-tab')
+            box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                spacing=2, halign=Gtk.Align.CENTER,
+            )
+            box.append(Gtk.Image(icon_name=tab['icon']))
+            label = Gtk.Label(label=_TAB_LABELS.get(tab_id, tab['label']))
+            label.add_css_class('caption')
+            box.append(label)
+            btn.set_child(box)
+            btn.connect('clicked', self._on_narrow_tab_clicked, tab_id)
+            self.narrow_tabs_box.append(btn)
+            self._narrow_tab_buttons[tab_id] = btn
+
+        # Show drag handle only if there are overflow tabs
+        has_overflow = len(tab_ids) > 3
+        self.narrow_drag_handle.set_visible(has_overflow)
+
+        # Drag handle pill at top of sheet content
+        if has_overflow:
+            sheet_handle = Gtk.Box(halign=Gtk.Align.CENTER,
+                                   margin_top=8, margin_bottom=4)
+            pill = Gtk.Box(width_request=32, height_request=4,
+                           valign=Gtk.Align.CENTER)
+            pill.add_css_class('drag-handle-pill')
+            sheet_handle.append(pill)
+            gesture = Gtk.GestureClick.new()
+            gesture.connect(
+                'released',
+                lambda *_: self.narrow_sheet.set_open(False),
+            )
+            sheet_handle.add_controller(gesture)
+            self.narrow_sheet_box.append(sheet_handle)
+
+        # Sheet content: grid or list style
+        sheet_style = self._settings.get_string('navbar-sheet-style')
+        if sheet_style == 'grid':
+            self._build_sheet_grid(tab_ids, _TAB_LABELS)
+        else:
+            self._build_sheet_list(tab_ids, _TAB_LABELS)
+
+        # Click on drag handle opens the sheet
+        if self._drag_handle_gesture:
+            self.narrow_drag_handle.remove_controller(
+                self._drag_handle_gesture)
+        if has_overflow:
+            self._drag_handle_gesture = Gtk.GestureClick.new()
+            self._drag_handle_gesture.connect(
+                'released',
+                lambda *_: self.narrow_sheet.set_open(True),
+            )
+            self.narrow_drag_handle.add_controller(
+                self._drag_handle_gesture)
+        else:
+            self._drag_handle_gesture = None
+
+    def _build_sheet_list(self, tab_ids, labels):
+        """Build sheet content as a list of rows."""
+        listbox = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        listbox.add_css_class('navigation-sidebar')
+        for tab_id in tab_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            row = Adw.ActionRow(
+                title=labels.get(tab_id, tab['label']),
+                icon_name=tab['icon'],
+                activatable=True,
+            )
+            row._tab_id = tab_id
+            listbox.append(row)
+        listbox.connect('row-activated', self._on_sheet_row_activated)
+        self.narrow_sheet_box.append(listbox)
+
+    def _build_sheet_grid(self, tab_ids, labels):
+        """Build sheet content as a grid of icon buttons."""
+        flow = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            homogeneous=True,
+            max_children_per_line=4,
+            min_children_per_line=3,
+            row_spacing=8,
+            column_spacing=8,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+        )
+        flow.add_css_class('sheet-grid')
+        for tab_id in tab_ids:
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+            btn = Gtk.Button()
+            btn.add_css_class('flat')
+            btn.add_css_class('sheet-grid-item')
+            box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                spacing=4, halign=Gtk.Align.CENTER,
+                valign=Gtk.Align.CENTER,
+            )
+            box.append(Gtk.Image(icon_name=tab['icon']))
+            lbl = Gtk.Label(label=labels.get(tab_id, tab['label']))
+            lbl.add_css_class('caption')
+            box.append(lbl)
+            btn.set_child(box)
+            btn.connect('clicked', self._on_sheet_grid_clicked, tab_id)
+            flow.append(btn)
+        self.narrow_sheet_box.append(flow)
+
+    def _on_narrow_tab_clicked(self, _button, tab_id):
+        self._switch_tab(tab_id)
+
+    def _on_sheet_row_activated(self, _listbox, row):
+        self.narrow_sheet.set_open(False)
+        self._switch_tab(row._tab_id)
+
+    def _on_sheet_grid_clicked(self, _button, tab_id):
+        self.narrow_sheet.set_open(False)
+        self._switch_tab(tab_id)
+
+    def _on_navbar_settings_changed(self, _settings, _key):
+        """Rebuild navigation when settings change."""
+        self._build_sidebar()
+        self._build_bottom_bar()
+        tab_ids = get_visible_tabs(self._settings, is_narrow=self._narrow)
+        if tab_ids:
+            self._switch_tab(tab_ids[0])
 
     def _create_genres_view(self):
         if self._genres_view:
@@ -190,25 +403,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if not row:
             return
         index = row.get_index()
-        tabs = ['catalog', 'genres', 'franchises', 'tags']
-        if 0 <= index < len(tabs):
-            self._switch_tab(tabs[index])
-
-    @Gtk.Template.Callback()
-    def on_catalog_tab_clicked(self, _button):
-        self._switch_tab('catalog')
-
-    @Gtk.Template.Callback()
-    def on_genres_tab_clicked(self, _button):
-        self._switch_tab('genres')
-
-    @Gtk.Template.Callback()
-    def on_franchises_tab_clicked(self, _button):
-        self._switch_tab('franchises')
-
-    @Gtk.Template.Callback()
-    def on_tags_tab_clicked(self, _button):
-        self._switch_tab('tags')
+        if 0 <= index < len(self._sidebar_tab_ids):
+            self._switch_tab(self._sidebar_tab_ids[index])
 
     @Gtk.Template.Callback()
     def on_mode_toggled(self, btn):
@@ -286,14 +482,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._update_nav_tabs(name)
 
     def _update_nav_tabs(self, active: str):
-        tabs = {
-            'catalog': self.narrow_catalog_tab,
-            'genres': self.narrow_genres_tab,
-            'franchises': self.narrow_franchises_tab,
-            'tags': self.narrow_tags_tab,
-        }
-        for name, btn in tabs.items():
-            if name == active:
+        for tab_id, btn in self._narrow_tab_buttons.items():
+            if tab_id == active:
                 btn.add_css_class('nav-tab-active')
             else:
                 btn.remove_css_class('nav-tab-active')

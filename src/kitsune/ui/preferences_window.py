@@ -11,6 +11,9 @@ from gi.repository import Adw, Gio, Gtk
 
 from kitsune.ui.image_cache import get_cache_size, get_cache_count, clear_cache
 from kitsune import release_cache, watch_positions, tags_store
+from kitsune.navbar import (
+    ALL_TAB_IDS, get_tab, ensure_complete, parse_tab_order, serialize_tab_order,
+)
 
 _STYLE_DESCRIPTIONS = {
     'classic': _('Standard layout without background effects'),
@@ -49,6 +52,12 @@ class PreferencesWindow(Adw.PreferencesDialog):
     color_points_row = Gtk.Template.Child()
     fade_duration_row = Gtk.Template.Child()
     close_button_row = Gtk.Template.Child()
+    navbar_sync_row = Gtk.Template.Child()
+    navbar_sheet_style_row = Gtk.Template.Child()
+    navbar_desktop_group = Gtk.Template.Child()
+    navbar_desktop_list = Gtk.Template.Child()
+    navbar_mobile_group = Gtk.Template.Child()
+    navbar_mobile_list = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -80,6 +89,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._update_release_cache()
         self._update_watch_progress()
         self._update_tags()
+        self._setup_navbar_prefs()
 
     def _update_style_description(self, name: str):
         self.style_description.set_label(
@@ -165,3 +175,150 @@ class PreferencesWindow(Adw.PreferencesDialog):
     def on_clear_tags_clicked(self, _button):
         tags_store.clear_all()
         self._update_tags()
+
+    # --- Navigation Preferences ---
+
+    _NAV_TAB_LABELS = {
+        'catalog': _('Catalog'),
+        'genres': _('Genres'),
+        'franchises': _('Franchises'),
+        'tags': _('Favorites & Tags'),
+    }
+
+    _SHEET_STYLES = ['grid', 'list']
+
+    def _setup_navbar_prefs(self):
+        self.navbar_sync_row.set_active(
+            self._settings.get_boolean('navbar-sync'))
+        self.navbar_sync_row.connect(
+            'notify::active', self._on_navbar_sync_changed)
+
+        # Sheet style combo
+        current_style = self._settings.get_string('navbar-sheet-style')
+        idx = self._SHEET_STYLES.index(current_style) \
+            if current_style in self._SHEET_STYLES else 0
+        self.navbar_sheet_style_row.set_selected(idx)
+        self.navbar_sheet_style_row.connect(
+            'notify::selected', self._on_sheet_style_changed)
+
+        self._rebuild_navbar_list('navbar-desktop', self.navbar_desktop_list)
+        self._rebuild_navbar_list('navbar-mobile', self.navbar_mobile_list)
+        self._update_mobile_sensitivity()
+
+    def _update_mobile_sensitivity(self):
+        is_sync = self.navbar_sync_row.get_active()
+        self.navbar_mobile_group.set_sensitive(not is_sync)
+
+    def _on_navbar_sync_changed(self, row, _pspec):
+        self._settings.set_boolean('navbar-sync', row.get_active())
+        self._update_mobile_sensitivity()
+
+    def _on_sheet_style_changed(self, row, _pspec):
+        idx = row.get_selected()
+        if 0 <= idx < len(self._SHEET_STYLES):
+            self._settings.set_string(
+                'navbar-sheet-style', self._SHEET_STYLES[idx])
+
+    def _rebuild_navbar_list(self, settings_key, listbox):
+        """Build a tab list with visibility toggles and move buttons."""
+        while True:
+            row = listbox.get_row_at_index(0)
+            if row is None:
+                break
+            listbox.remove(row)
+
+        visible_ids = parse_tab_order(
+            self._settings.get_string(settings_key))
+        all_ids = ensure_complete(visible_ids)
+        visible_set = set(visible_ids)
+        num_visible = len(visible_ids)
+
+        # Store refs: {settings_key: [(tab_id, switch, up_btn, down_btn)]}
+        if not hasattr(self, '_navbar_entries'):
+            self._navbar_entries = {}
+        self._navbar_entries[settings_key] = []
+
+        for i, tab_id in enumerate(all_ids):
+            tab = get_tab(tab_id)
+            if not tab:
+                continue
+
+            is_visible = tab_id in visible_set
+            vis_idx = visible_ids.index(tab_id) if is_visible else -1
+
+            row = Adw.ActionRow(
+                title=self._NAV_TAB_LABELS.get(tab_id, tab['label']),
+                icon_name=tab['icon'],
+            )
+
+            # Move up button (only for visible tabs, not first)
+            up_btn = Gtk.Button(
+                icon_name='go-up-symbolic',
+                valign=Gtk.Align.CENTER,
+                sensitive=is_visible and vis_idx > 0,
+            )
+            up_btn.add_css_class('flat')
+            up_btn.connect('clicked', self._on_move_tab, settings_key,
+                           listbox, tab_id, -1)
+            row.add_suffix(up_btn)
+
+            # Move down button (only for visible tabs, not last)
+            down_btn = Gtk.Button(
+                icon_name='go-down-symbolic',
+                valign=Gtk.Align.CENTER,
+                sensitive=is_visible and vis_idx < num_visible - 1,
+            )
+            down_btn.add_css_class('flat')
+            down_btn.connect('clicked', self._on_move_tab, settings_key,
+                             listbox, tab_id, 1)
+            row.add_suffix(down_btn)
+
+            # Visibility switch
+            switch = Gtk.Switch(valign=Gtk.Align.CENTER, active=is_visible)
+            switch.connect('notify::active',
+                           self._on_tab_visibility_changed,
+                           settings_key, listbox)
+            row.add_suffix(switch)
+            listbox.append(row)
+            self._navbar_entries[settings_key].append(
+                (tab_id, switch, up_btn, down_btn))
+
+        # Also keep old key for compat
+        if not hasattr(self, '_navbar_switches'):
+            self._navbar_switches = {}
+        self._navbar_switches[settings_key] = [
+            (tid, sw) for tid, sw, _, _ in self._navbar_entries[settings_key]
+        ]
+
+    def _on_tab_visibility_changed(self, switch, _pspec,
+                                   settings_key, listbox):
+        entries = self._navbar_entries.get(settings_key, [])
+        visible = [tid for tid, sw, _, _ in entries if sw.get_active()]
+        if not visible:
+            visible = [ALL_TAB_IDS[0]]
+            # Re-enable the first switch if user turned off all
+            if entries:
+                entries[0][1].set_active(True)
+                return
+        self._settings.set_string(settings_key, serialize_tab_order(visible))
+        # Rebuild to update move button sensitivity
+        self._rebuild_navbar_list(settings_key, listbox)
+
+    def _on_move_tab(self, _btn, settings_key, listbox, tab_id, direction):
+        """Move a visible tab up (-1) or down (+1)."""
+        entries = self._navbar_entries.get(settings_key, [])
+        visible_ids = [tid for tid, sw, _, _ in entries if sw.get_active()]
+
+        if tab_id not in visible_ids:
+            return
+        idx = visible_ids.index(tab_id)
+        new_idx = idx + direction
+        if new_idx < 0 or new_idx >= len(visible_ids):
+            return
+
+        visible_ids[idx], visible_ids[new_idx] = (
+            visible_ids[new_idx], visible_ids[idx])
+
+        self._settings.set_string(settings_key,
+                                  serialize_tab_order(visible_ids))
+        self._rebuild_navbar_list(settings_key, listbox)
