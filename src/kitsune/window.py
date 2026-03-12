@@ -10,37 +10,25 @@ from gi.repository import Adw, Gdk, Gtk, Gio
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
 from kitsune.navbar import get_tab, get_visible_tabs
-
-_nav_css_loaded = False
-
-
-def _ensure_nav_css():
-    global _nav_css_loaded
-    if _nav_css_loaded:
-        return
-    _nav_css_loaded = True
-    css = Gtk.CssProvider()
-    _T = ADW_TRANSITION
-    css.load_from_string(
-        '.nav-tab { background: none;'
-        ' border-radius: 12px; padding: 6px 8px;'
-        ' transition: background ' + _T + '; }'
-        ' .nav-tab:hover { background: alpha(currentColor, 0.07); }'
-        ' .nav-tab-active { background: alpha(currentColor, 0.1); }'
-        ' .nav-tab-active:hover { background: alpha(currentColor, 0.14); }'
-        ' .drag-handle-pill { background: alpha(currentColor, 0.25);'
-        ' border-radius: 2px; }'
-        ' .sheet-grid-item { padding: 8px 6px;'
-        ' border-radius: 12px; }'
-        ' .sheet-grid flowboxchild { background: none; }'
-        ' .sheet-grid flowboxchild:hover { background: none; }'
-        ' .sheet-grid flowboxchild:active { background: none; }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
+from kitsune.ui import register_css
 from kitsune.ui.catalog_view import CatalogView
+
+_T = ADW_TRANSITION
+_NAV_CSS = (
+    '.nav-tab { background: none;'
+    ' border-radius: 12px; padding: 6px 8px;'
+    ' transition: background ' + _T + '; }'
+    ' .nav-tab:hover { background: alpha(currentColor, 0.07); }'
+    ' .nav-tab-active { background: alpha(currentColor, 0.1); }'
+    ' .nav-tab-active:hover { background: alpha(currentColor, 0.14); }'
+    ' .drag-handle-pill { background: alpha(currentColor, 0.25);'
+    ' border-radius: 2px; }'
+    ' .sheet-grid-item { padding: 8px 6px;'
+    ' border-radius: 12px; }'
+    ' .sheet-grid flowboxchild { background: none; }'
+    ' .sheet-grid flowboxchild:hover { background: none; }'
+    ' .sheet-grid flowboxchild:active { background: none; }'
+)
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/window.ui')
@@ -72,7 +60,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._client.set_on_network_error(self._on_network_error)
         self._client.set_on_network_ok(self._on_network_ok)
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
-        _ensure_nav_css()
+        register_css(_NAV_CSS)
         self._active_player = None
         self._setup_window_state()
         self._setup_actions()

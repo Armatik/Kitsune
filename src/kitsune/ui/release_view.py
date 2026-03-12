@@ -17,58 +17,39 @@ log = logging.getLogger('kitsune.ui.release')
 from kitsune.models import Release, Episode
 from kitsune.ui.image_cache import load_image
 from kitsune import release_cache, watch_positions, tags_store
+from kitsune.ui import register_css, format_size
 
-_css_loaded = False
+_RELEASE_CSS = (
+    '.release-chip { padding: 4px 10px; border-radius: 9999px;'
+    ' background: alpha(currentColor, 0.1);'
+    ' transition: background 150ms ease-in-out; }'
+    ' .release-chip:hover { background: alpha(currentColor, 0.18); }'
+    ' .release-chip-compact { padding: 8px; border-radius: 50%;'
+    ' background: alpha(currentColor, 0.1);'
+    ' min-width: 0; min-height: 0;'
+    ' transition: background 150ms ease-in-out; }'
+    ' .release-chip-compact:hover { background: alpha(currentColor, 0.18); }'
+    ' .poster-fade { background: linear-gradient(to bottom,'
+    ' transparent 40%, @window_bg_color 100%); }'
+    ' .episode-card { border-radius: 12px;'
+    ' background: alpha(currentColor, 0.08); }'
+    ' .episode-overlay { background: linear-gradient(to top,'
+    ' alpha(black, 0.7) 0%, transparent 50%); }'
+    ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
+    ' .episode-progress { min-height: 4px; border-radius: 0; }'
+    ' .episode-progress trough { min-height: 4px; background: alpha(white, 0.3); }'
+    ' .episode-progress progress { min-height: 4px; background: @accent_bg_color; }'
+    ' .episode-blur { filter: blur(8px); }'
+    ' .episode-check { background: alpha(black, 0.6); border-radius: 50%;'
+    '   min-width: 24px; min-height: 24px; padding: 2px;'
+    '   color: @accent_color; text-shadow: none; }'
+    ' .episode-separator { min-height: 1px;'
+    '   background-color: rgba(200, 200, 200, 0.6); padding: 0; margin: 0; }'
+    ' .list-progress { margin-top: 4px; }'
+    ' .list-progress trough { min-height: 4px; }'
+    ' .list-progress progress { min-height: 4px; background: @accent_bg_color; }'
+)
 
-
-def _ensure_css():
-    global _css_loaded
-    if _css_loaded:
-        return
-    _css_loaded = True
-    css = Gtk.CssProvider()
-    css.load_from_string(
-        '.release-chip { padding: 4px 10px; border-radius: 9999px;'
-        ' background: alpha(currentColor, 0.1);'
-        ' transition: background 150ms ease-in-out; }'
-        ' .release-chip:hover { background: alpha(currentColor, 0.18); }'
-        ' .release-chip-compact { padding: 8px; border-radius: 50%;'
-        ' background: alpha(currentColor, 0.1);'
-        ' min-width: 0; min-height: 0;'
-        ' transition: background 150ms ease-in-out; }'
-        ' .release-chip-compact:hover { background: alpha(currentColor, 0.18); }'
-        ' .poster-fade { background: linear-gradient(to bottom,'
-        ' transparent 40%, @window_bg_color 100%); }'
-        ' .episode-card { border-radius: 12px;'
-        ' background: alpha(currentColor, 0.08); }'
-        ' .episode-overlay { background: linear-gradient(to top,'
-        ' alpha(black, 0.7) 0%, transparent 50%); }'
-        ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
-        ' .episode-progress { min-height: 4px; border-radius: 0; }'
-        ' .episode-progress trough { min-height: 4px; background: alpha(white, 0.3); }'
-        ' .episode-progress progress { min-height: 4px; background: @accent_bg_color; }'
-        ' .episode-blur { filter: blur(8px); }'
-        ' .episode-check { background: alpha(black, 0.6); border-radius: 50%;'
-        '   min-width: 24px; min-height: 24px; padding: 2px;'
-        '   color: @accent_color; text-shadow: none; }'
-        ' .episode-separator { min-height: 1px;'
-        '   background-color: rgba(200, 200, 200, 0.6); padding: 0; margin: 0; }'
-        ' .list-progress { margin-top: 4px; }'
-        ' .list-progress trough { min-height: 4px; }'
-        ' .list-progress progress { min-height: 4px; background: @accent_bg_color; }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
-
-
-def _format_size(size_bytes: int) -> str:
-    if size_bytes >= 1_073_741_824:
-        return f'{size_bytes / 1_073_741_824:.2f} GB'
-    if size_bytes >= 1_048_576:
-        return f'{size_bytes / 1_048_576:.1f} MB'
-    return f'{size_bytes / 1024:.0f} KB'
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/release_view.ui')
@@ -136,7 +117,7 @@ class ReleaseView(Adw.NavigationPage):
         self._refresh_timer = 0
         self._watch_data = {}
         self._watch_filter = 'all'
-        _ensure_css()
+        register_css(_RELEASE_CSS)
 
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
 
@@ -977,6 +958,9 @@ class ReleaseView(Adw.NavigationPage):
         if nav:
             view = ReleaseView(release=release, client=self._client)
             view.set_on_episode_play(self._on_episode_play)
+            view.set_on_genre_clicked(self._on_genre_navigate)
+            view.set_on_tag_clicked(self._on_tag_navigate)
+            view.set_on_tags_changed(self._on_tags_changed_ext)
             nav.push(view)
 
     # --- Team ---
@@ -1022,7 +1006,7 @@ class ReleaseView(Adw.NavigationPage):
                 title_parts.append(torrent.codec)
             title = '  '.join(title_parts) if title_parts else torrent.label
 
-            subtitle_parts = [_format_size(torrent.size)]
+            subtitle_parts = [format_size(torrent.size)]
             if torrent.quality:
                 subtitle_parts.append(torrent.quality)
             if torrent.seeders:

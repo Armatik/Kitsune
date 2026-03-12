@@ -7,10 +7,11 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from kitsune import tags_store
-from kitsune.ui.widgets.tag_card import COLOR_MAP
+from kitsune.ui import register_css
+from kitsune.ui.widgets.tag_card import COLOR_MAP, create_color_circle
 
 _COLOR_NAME_KEYS = {
     'blue': 'Blue',
@@ -28,26 +29,13 @@ _COLOR_NAME_KEYS = {
 def _color_display_name(key: str) -> str:
     return _(_COLOR_NAME_KEYS.get(key, key))
 
-_dialog_css_loaded = False
-
-
-def _ensure_dialog_css():
-    global _dialog_css_loaded
-    if _dialog_css_loaded:
-        return
-    _dialog_css_loaded = True
-    css = Gtk.CssProvider()
-    css.load_from_string(
-        '.color-ring { border-radius: 50%;'
-        ' border: 2.5px solid transparent; padding: 2px;'
-        ' transition: border-color 150ms ease-in-out; }'
-        ' .color-ring-selected { border-color: currentColor; }'
-        ' .color-ring:hover { border-color: alpha(currentColor, 0.4); }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
+_DIALOG_CSS = (
+    '.color-ring { border-radius: 50%;'
+    ' border: 2.5px solid transparent; padding: 2px;'
+    ' transition: border-color 150ms ease-in-out; }'
+    ' .color-ring-selected { border-color: currentColor; }'
+    ' .color-ring:hover { border-color: alpha(currentColor, 0.4); }'
+)
 
 
 def _get_existing_tag_names() -> set[str]:
@@ -56,7 +44,7 @@ def _get_existing_tag_names() -> set[str]:
 
 def show_create_tag_dialog(parent, callback=None, prefill_name=''):
     """Show a dialog to create a new tag. Calls callback(tag_dict) or callback(None)."""
-    _ensure_dialog_css()
+    register_css(_DIALOG_CSS)
 
     dialog = Adw.AlertDialog(heading=_('New Tag'))
     dialog.add_response('cancel', _('Cancel'))
@@ -131,25 +119,12 @@ def show_create_tag_dialog(parent, callback=None, prefill_name=''):
     )
 
     rings = {}
-    for color_name, hex_val in COLOR_MAP.items():
+    for color_name in COLOR_MAP:
         ring = Gtk.Box(
             halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
             css_classes=['color-ring'],
         )
-        circle = Gtk.Box(
-            width_request=28, height_request=28,
-            halign=Gtk.Align.CENTER,
-        )
-        c_css = Gtk.CssProvider()
-        c_css.load_from_string(
-            f'box {{ background: {hex_val}; border-radius: 50%;'
-            f' min-width: 28px; min-height: 28px;'
-            f' border: 1.5px solid alpha(white, 0.25); }}'
-        )
-        circle.get_style_context().add_provider(
-            c_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
-        ring.append(circle)
+        ring.append(create_color_circle(color_name, 28))
         rings[color_name] = ring
 
         fb_child = Gtk.FlowBoxChild()

@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.models import Release
@@ -16,24 +16,12 @@ from kitsune.ui.tag_releases_view import TagReleasesView
 from kitsune.ui.widgets.content_grid import ContentGrid
 from kitsune.ui.widgets.tag_card import TagCard
 from kitsune.ui.image_cache import load_image
+from kitsune.ui import register_css
 
-_css_loaded = False
-
-
-def _ensure_css():
-    global _css_loaded
-    if _css_loaded:
-        return
-    _css_loaded = True
-    css = Gtk.CssProvider()
-    css.load_from_string(
-        '.tag-add-card { border: 2px dashed alpha(currentColor, 0.15);'
-        '   border-radius: 12px; background: none; }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
+_TAGS_CSS = (
+    '.tag-add-card { border: 2px dashed alpha(currentColor, 0.15);'
+    '   border-radius: 12px; background: none; }'
+)
 
 
 class TagsView(Gtk.Box):
@@ -47,7 +35,7 @@ class TagsView(Gtk.Box):
         self._narrow = False
         self._current_tag = None
         self._view_mode = 'cards'
-        _ensure_css()
+        register_css(_TAGS_CSS)
 
         # Navigation stack: main (cards/list) + releases detail
         self._nav_stack = Gtk.Stack(
@@ -178,7 +166,7 @@ class TagsView(Gtk.Box):
             self._list_container.append(block)
 
     def _create_list_row(self, tag: dict) -> Adw.ExpanderRow:
-        from kitsune.ui.widgets.tag_card import COLOR_MAP
+        from kitsune.ui.widgets.tag_card import create_color_circle
         row = Adw.ExpanderRow(title=tag['name'])
 
         if tag['icon_type'] == 'emoji':
@@ -193,20 +181,7 @@ class TagsView(Gtk.Box):
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
         else:
-            hex_color = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-            icon = Gtk.Box(
-                width_request=28, height_request=28,
-                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-            )
-            css = Gtk.CssProvider()
-            css.load_from_string(
-                f'box {{ background: {hex_color}; border-radius: 50%;'
-                f' min-width: 28px; min-height: 28px;'
-                f' border: 1.5px solid alpha(white, 0.25); }}'
-            )
-            icon.get_style_context().add_provider(
-                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
+            icon = create_color_circle(tag['icon_value'], 28)
         row.add_prefix(icon)
 
         count = len(tag.get('releases', []))

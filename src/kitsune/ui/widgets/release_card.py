@@ -7,11 +7,20 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from kitsune.models import Release
 from kitsune import tags_store
+from kitsune.ui import register_css
 from kitsune.ui.image_cache import load_image
+
+_BADGE_CSS = (
+    '.tag-badge-pill { padding: 5px 8px; border-radius: 9999px;'
+    ' background: alpha(@accent_bg_color, 0.85); }'
+    ' .tag-badge-pill image { -gtk-icon-style: symbolic;'
+    ' color: @accent_fg_color; }'
+    ' .tag-badge-emoji { font-size: 16px; }'
+)
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/release_card.ui')
@@ -24,8 +33,6 @@ class ReleaseCard(Gtk.FlowBoxChild):
     title_label = Gtk.Template.Child()
     subtitle_label = Gtk.Template.Child()
     tag_badges = Gtk.Template.Child()
-
-    _badge_css_loaded = False
 
     def __init__(self, release: Release, **kwargs):
         super().__init__(**kwargs)
@@ -54,29 +61,8 @@ class ReleaseCard(Gtk.FlowBoxChild):
 
         self._populate_tag_badges()
 
-    @classmethod
-    def _ensure_badge_css(cls):
-        if cls._badge_css_loaded:
-            return
-        cls._badge_css_loaded = True
-        css = Gtk.CssProvider()
-        css.load_from_string(
-            '.tag-badge-pill { padding: 5px 8px; border-radius: 9999px;'
-            ' background: alpha(@accent_bg_color, 0.85); }'
-            ' .tag-badge-pill image { -gtk-icon-style: symbolic;'
-            ' color: @accent_fg_color; }'
-            ' .tag-badge-emoji { font-size: 16px; }'
-            ' .tag-badge-color { min-width: 16px; min-height: 16px;'
-            ' border-radius: 50%;'
-            ' border: 1px solid alpha(white, 0.3); }'
-        )
-        Gtk.StyleContext.add_provider_for_display(
-            Gdk.Display.get_default(), css,
-            Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
-
     def _populate_tag_badges(self):
-        self._ensure_badge_css()
+        register_css(_BADGE_CSS)
         tags = tags_store.get_tags_for_release(self.release.id)
         if not tags:
             return
@@ -99,20 +85,8 @@ class ReleaseCard(Gtk.FlowBoxChild):
                     css_classes=['tag-badge-emoji'],
                 ))
             else:
-                from kitsune.ui.widgets.tag_card import COLOR_MAP
-                hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-                circle = Gtk.Box(
-                    css_classes=['tag-badge-color'],
-                    valign=Gtk.Align.CENTER,
-                )
-                c_css = Gtk.CssProvider()
-                c_css.load_from_string(
-                    f'.tag-badge-color {{ background: {hex_c}; }}'
-                )
-                circle.get_style_context().add_provider(
-                    c_css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-                )
-                pill.append(circle)
+                from kitsune.ui.widgets.tag_card import create_color_circle
+                pill.append(create_color_circle(tag['icon_value'], 16))
 
         if has_more:
             pill.append(Gtk.Image(

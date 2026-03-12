@@ -7,34 +7,20 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, Gtk
+from gi.repository import Adw, Gtk
 
 from kitsune import tags_store
-from kitsune.ui.widgets.tag_card import COLOR_MAP
+from kitsune.ui import register_css
+from kitsune.ui.widgets.tag_card import create_color_circle
 
-_popover_css_loaded = False
-
-
-def _ensure_popover_css():
-    global _popover_css_loaded
-    if _popover_css_loaded:
-        return
-    _popover_css_loaded = True
-    css = Gtk.CssProvider()
-    css.load_from_string(
-        '.tag-popover-emoji { font-size: 22px; }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
+_POPOVER_CSS = '.tag-popover-emoji { font-size: 22px; }'
 
 
 class TagPopover(Gtk.Popover):
 
     def __init__(self, release_id: int, on_changed=None, **kwargs):
         super().__init__(**kwargs)
-        _ensure_popover_css()
+        register_css(_POPOVER_CSS)
         self._release_id = release_id
         self._on_changed = on_changed
         self.set_has_arrow(True)
@@ -109,21 +95,7 @@ class TagPopover(Gtk.Popover):
                     css_classes=['tag-popover-emoji'],
                 ))
             else:
-                hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-                circle = Gtk.Box(
-                    width_request=22, height_request=22,
-                    valign=Gtk.Align.CENTER,
-                )
-                css = Gtk.CssProvider()
-                css.load_from_string(
-                    f'box {{ background: {hex_c}; border-radius: 50%;'
-                    f' min-width: 22px; min-height: 22px;'
-                    f' border: 1.5px solid alpha(white, 0.25); }}'
-                )
-                circle.get_style_context().add_provider(
-                    css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-                )
-                row.add_prefix(circle)
+                row.add_prefix(create_color_circle(tag['icon_value'], 22))
 
             check = Gtk.CheckButton(
                 active=tag['id'] in release_tag_ids,

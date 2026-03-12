@@ -10,28 +10,16 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from kitsune import ADW_TRANSITION
+from kitsune.ui import register_css
 
-_css_loaded = False
-
-
-def _ensure_css():
-    global _css_loaded
-    if _css_loaded:
-        return
-    _css_loaded = True
-    _T = ADW_TRANSITION
-    css = Gtk.CssProvider()
-    css.load_from_string(
-        '.filter-chip { padding: 4px 10px; min-height: 0; min-width: 0; font-size: 13px;'
-        ' transition: background ' + _T + ', color ' + _T + '; }'
-        ' .filter-chip:checked { background: @accent_bg_color; color: @accent_fg_color; }'
-        ' .filter-panel { background: @window_bg_color;'
-        ' border-left: 1px solid alpha(currentColor, 0.15); }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
+_T = ADW_TRANSITION
+_FILTER_CSS = (
+    '.filter-chip { padding: 4px 10px; min-height: 0; min-width: 0; font-size: 13px;'
+    ' transition: background ' + _T + ', color ' + _T + '; }'
+    ' .filter-chip:checked { background: @accent_bg_color; color: @accent_fg_color; }'
+    ' .filter-panel { background: @window_bg_color;'
+    ' border-left: 1px solid alpha(currentColor, 0.15); }'
+)
 
 
 def _types():
@@ -103,7 +91,7 @@ class FilterPanel(Gtk.Box):
     def __init__(self, genres: list | None = None,
                  year_range: tuple[int, int] | None = None, **kwargs):
         super().__init__(**kwargs)
-        _ensure_css()
+        register_css(_FILTER_CSS)
         self.add_css_class('filter-panel')
 
         self._genres_data = genres or []

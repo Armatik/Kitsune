@@ -15,64 +15,52 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 from kitsune import ADW_TRANSITION, watch_positions
 from kitsune.models import Episode, Release
 from kitsune.player.gst_player import GstPlayer
+from kitsune.ui import register_css
 
 log = logging.getLogger('kitsune.ui.player')
 
 _HIDE_DELAY = 2
-_css_loaded = False
-
-
-def _ensure_player_css():
-    global _css_loaded
-    if _css_loaded:
-        return
-    _css_loaded = True
-    css = Gtk.CssProvider()
-    _T = ADW_TRANSITION
-    css.load_from_string(
-        '.player-bg { background: black; }'
-        ' .player-shade {'
-        '   background: linear-gradient(to bottom,'
-        '     alpha(black, 0.5) 0%, alpha(black, 0.08) 18%,'
-        '     transparent 30%, transparent 70%,'
-        '     alpha(black, 0.08) 82%, alpha(black, 0.6) 100%);'
-        ' }'
-        ' .player-text { color: white;'
-        '   text-shadow: 0 1px 3px alpha(black, 0.8); }'
-        ' .player-play-btn { -gtk-icon-size: 32px;'
-        '   color: white; min-width: 64px; min-height: 64px; padding: 0;'
-        '   border-radius: 50%; background: alpha(white, 0.1);'
-        '   transition: background ' + _T + '; }'
-        ' .player-play-btn:hover { background: alpha(white, 0.2); }'
-        ' .player-center-btn { -gtk-icon-size: 24px;'
-        '   color: white; min-width: 48px; min-height: 48px; padding: 0;'
-        '   border-radius: 50%; background: alpha(white, 0.1);'
-        '   transition: background ' + _T + '; }'
-        ' .player-center-btn:hover { background: alpha(white, 0.2); }'
-        ' .player-shade scale { padding: 0; }'
-        ' .player-shade scale trough {'
-        '   background: alpha(white, 0.3); min-height: 4px;'
-        '   margin: 0; padding: 0; }'
-        ' .player-shade scale highlight {'
-        '   background: white; min-height: 4px; }'
-        ' .player-shade scale fill {'
-        '   background: alpha(white, 0.5); min-height: 4px; }'
-        ' .player-shade scale slider {'
-        '   background: white; border: none;'
-        '   min-width: 14px; min-height: 14px;'
-        '   border-radius: 7px; margin: -5px; }'
-        ' .player-shade dropdown button {'
-        '   color: white; background: alpha(white, 0.15);'
-        '   transition: background ' + _T + '; }'
-        ' .player-shade dropdown button:hover {'
-        '   background: alpha(white, 0.25); }'
-        ' .player-shade dropdown button:checked {'
-        '   background: alpha(white, 0.3); }'
-    )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-    )
+_T = ADW_TRANSITION
+_PLAYER_CSS = (
+    '.player-bg { background: black; }'
+    ' .player-shade {'
+    '   background: linear-gradient(to bottom,'
+    '     alpha(black, 0.5) 0%, alpha(black, 0.08) 18%,'
+    '     transparent 30%, transparent 70%,'
+    '     alpha(black, 0.08) 82%, alpha(black, 0.6) 100%);'
+    ' }'
+    ' .player-text { color: white;'
+    '   text-shadow: 0 1px 3px alpha(black, 0.8); }'
+    ' .player-play-btn { -gtk-icon-size: 32px;'
+    '   color: white; min-width: 64px; min-height: 64px; padding: 0;'
+    '   border-radius: 50%; background: alpha(white, 0.1);'
+    '   transition: background ' + _T + '; }'
+    ' .player-play-btn:hover { background: alpha(white, 0.2); }'
+    ' .player-center-btn { -gtk-icon-size: 24px;'
+    '   color: white; min-width: 48px; min-height: 48px; padding: 0;'
+    '   border-radius: 50%; background: alpha(white, 0.1);'
+    '   transition: background ' + _T + '; }'
+    ' .player-center-btn:hover { background: alpha(white, 0.2); }'
+    ' .player-shade scale { padding: 0; }'
+    ' .player-shade scale trough {'
+    '   background: alpha(white, 0.3); min-height: 4px;'
+    '   margin: 0; padding: 0; }'
+    ' .player-shade scale highlight {'
+    '   background: white; min-height: 4px; }'
+    ' .player-shade scale fill {'
+    '   background: alpha(white, 0.5); min-height: 4px; }'
+    ' .player-shade scale slider {'
+    '   background: white; border: none;'
+    '   min-width: 14px; min-height: 14px;'
+    '   border-radius: 7px; margin: -5px; }'
+    ' .player-shade dropdown button {'
+    '   color: white; background: alpha(white, 0.15);'
+    '   transition: background ' + _T + '; }'
+    ' .player-shade dropdown button:hover {'
+    '   background: alpha(white, 0.25); }'
+    ' .player-shade dropdown button:checked {'
+    '   background: alpha(white, 0.3); }'
+)
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/player_view.ui')
@@ -128,7 +116,7 @@ class PlayerView(Adw.NavigationPage):
         self._buffering = False
         self._spinner = Adw.Spinner()
         self._spinner.set_size_request(32, 32)
-        _ensure_player_css()
+        register_css(_PLAYER_CSS)
 
         # Episode navigation
         self._episodes = list(release.episodes) if release.episodes else []

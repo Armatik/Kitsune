@@ -9,6 +9,8 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Gdk, Gtk
 
+from kitsune.ui import register_css
+
 COLOR_MAP = {
     'blue': '#3584e4',
     'teal': '#2190a4',
@@ -21,31 +23,37 @@ COLOR_MAP = {
     'slate': '#6e7781',
 }
 
-_card_css_loaded = False
-
-
-def _ensure_card_css():
-    global _card_css_loaded
-    if _card_css_loaded:
-        return
-    _card_css_loaded = True
+def create_color_circle(color_name: str, size: int = 28) -> Gtk.Box:
+    """Create a colored circle widget for tag display."""
+    hex_color = COLOR_MAP.get(color_name, '#6e7781')
+    circle = Gtk.Box(
+        width_request=size, height_request=size,
+        halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+    )
     css = Gtk.CssProvider()
     css.load_from_string(
-        '.tag-card-emoji-bg { font-size: 140px;'
-        ' opacity: 0.35; filter: blur(20px);'
-        ' margin: -30px; }'
-        ' .tag-card-bg-emoji { background: alpha(@accent_bg_color, 0.12);'
-        '   border-radius: 12px; }'
-        ' .tag-card-icon { font-size: 36px; }'
-        ' .tag-card-color-circle { min-width: 36px; min-height: 36px;'
-        '   border-radius: 50%;'
-        '   border: 1.5px solid alpha(white, 0.25); }'
-        ' .tag-card-rounded { border-radius: 12px; }'
+        f'box {{ background: {hex_color}; border-radius: 50%;'
+        f' min-width: {size}px; min-height: {size}px;'
+        f' border: 1.5px solid alpha(white, 0.25); }}'
     )
-    Gtk.StyleContext.add_provider_for_display(
-        Gdk.Display.get_default(), css,
-        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    circle.get_style_context().add_provider(
+        css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
     )
+    return circle
+
+
+_TAG_CARD_CSS = (
+    '.tag-card-emoji-bg { font-size: 140px;'
+    ' opacity: 0.35; filter: blur(20px);'
+    ' margin: -30px; }'
+    ' .tag-card-bg-emoji { background: alpha(@accent_bg_color, 0.12);'
+    '   border-radius: 12px; }'
+    ' .tag-card-icon { font-size: 36px; }'
+    ' .tag-card-color-circle { min-width: 36px; min-height: 36px;'
+    '   border-radius: 50%;'
+    '   border: 1.5px solid alpha(white, 0.25); }'
+    ' .tag-card-rounded { border-radius: 12px; }'
+)
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/tag_card.ui')
@@ -60,7 +68,7 @@ class TagCard(Gtk.FlowBoxChild):
 
     def __init__(self, tag: dict, **kwargs):
         super().__init__(**kwargs)
-        _ensure_card_css()
+        register_css(_TAG_CARD_CSS)
         self.tag = tag
         self.card_overlay.add_css_class('tag-card-rounded')
 

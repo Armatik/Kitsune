@@ -9,6 +9,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gio, Gtk
 
+from kitsune.ui import format_size
 from kitsune.ui.image_cache import get_cache_size, get_cache_count, clear_cache
 from kitsune import release_cache, watch_positions, tags_store
 from kitsune.navbar import (
@@ -20,15 +21,6 @@ _STYLE_DESCRIPTIONS = {
     'accent': _('Gradient background from poster accent colors'),
 }
 
-
-def _format_size(size_bytes: int) -> str:
-    if size_bytes < 1024:
-        return f'{size_bytes} B'
-    elif size_bytes < 1024 * 1024:
-        return f'{size_bytes / 1024:.1f} KB'
-    elif size_bytes < 1024 * 1024 * 1024:
-        return f'{size_bytes / (1024 * 1024):.1f} MB'
-    return f'{size_bytes / (1024 * 1024 * 1024):.1f} GB'
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/preferences_window.ui')
@@ -103,13 +95,13 @@ class PreferencesWindow(Adw.PreferencesDialog):
         count = get_cache_count('posters')
         size = get_cache_size('posters')
         self.cache_size_row.set_subtitle(
-            f'{count} — {_format_size(size)}')
+            f'{count} — {format_size(size)}')
 
     def _update_preview_cache(self):
         count = get_cache_count('previews')
         size = get_cache_size('previews')
         self.preview_count_row.set_subtitle(str(count))
-        self.preview_size_row.set_subtitle(_format_size(size))
+        self.preview_size_row.set_subtitle(format_size(size))
 
     @Gtk.Template.Callback()
     def on_style_changed(self, toggle_group, _pspec):
@@ -137,13 +129,13 @@ class PreferencesWindow(Adw.PreferencesDialog):
         count = watch_positions.get_count()
         size = watch_positions.get_size()
         self.watch_count_row.set_subtitle(str(count))
-        self.watch_size_row.set_subtitle(_format_size(size))
+        self.watch_size_row.set_subtitle(format_size(size))
 
     def _update_release_cache(self):
         count = release_cache.get_count()
         size = release_cache.get_size()
         self.release_count_row.set_subtitle(str(count))
-        self.release_size_row.set_subtitle(_format_size(size))
+        self.release_size_row.set_subtitle(format_size(size))
 
     @Gtk.Template.Callback()
     def on_clear_release_clicked(self, _button):
@@ -169,7 +161,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         count = tags_store.get_count()
         size = tags_store.get_size()
         self.tags_count_row.set_subtitle(str(count))
-        self.tags_size_row.set_subtitle(_format_size(size))
+        self.tags_size_row.set_subtitle(format_size(size))
 
     @Gtk.Template.Callback()
     def on_clear_tags_clicked(self, _button):
