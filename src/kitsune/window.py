@@ -32,6 +32,9 @@ def _ensure_nav_css():
         ' border-radius: 2px; }'
         ' .sheet-grid-item { padding: 8px 6px;'
         ' border-radius: 12px; }'
+        ' .sheet-grid flowboxchild { background: none; }'
+        ' .sheet-grid flowboxchild:hover { background: none; }'
+        ' .sheet-grid flowboxchild:active { background: none; }'
     )
     Gtk.StyleContext.add_provider_for_display(
         Gdk.Display.get_default(), css,
@@ -274,6 +277,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             margin_start=12,
             margin_end=12,
         )
+        flow.add_css_class('sheet-grid')
         for tab_id in tab_ids:
             tab = get_tab(tab_id)
             if not tab:
