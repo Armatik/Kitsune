@@ -283,7 +283,10 @@ class PlayerView(Adw.NavigationPage):
         self._player.connect('buffering', self._on_buffering_signal)
 
     def _on_first_map(self, _widget):
-        self.disconnect_by_func(self._on_first_map)
+        # Guard: NavigationView may map/unmap during push() animation,
+        # so this handler can fire more than once.
+        if self._start_idle:
+            return
         self._start_idle = GLib.idle_add(self._start_playback)
 
     def _start_playback(self):
@@ -705,9 +708,9 @@ class PlayerView(Adw.NavigationPage):
                 root = self.get_root()
                 if root:
                     root.unfullscreen()
-            if self._start_idle:
-                GLib.source_remove(self._start_idle)
-                self._start_idle = 0
+            # _start_idle is NOT cancelled here: NavigationView may
+            # map/unmap during push(), and _start_playback already
+            # checks get_mapped() before starting the pipeline.
             if self._hide_timer:
                 GLib.source_remove(self._hide_timer)
                 self._hide_timer = 0
