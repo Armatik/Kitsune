@@ -5,6 +5,8 @@ src/kitsune/ui/filter_dialog.py
 src/kitsune/ui/player_view.py
 src/kitsune/ui/preferences_window.py
 src/kitsune/ui/release_view.py
+src/kitsune/ui/release_view_episodes.py
+src/kitsune/ui/release_view_related.py
 src/kitsune/ui/tag_popover.py
 src/kitsune/ui/tags_view.py
 src/kitsune/ui/widgets/franchise_card.py

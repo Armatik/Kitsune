@@ -45,6 +45,14 @@
   </supports>
 
   <releases>
+    <release version="0.7.0" date="2026-03-12">
+      <description>
+        <p>Configurable navigation — rearrange, show or hide tabs in the sidebar and bottom bar. First 3 tabs are shown as buttons, overflow tabs open in a BottomSheet with drag handle. Changes apply live without restart. Grid and list display styles for the sheet.</p>
+        <p>Stability fixes — idle source tracking and cleanup on view unmap prevents use-after-free crashes, GStreamer bus signal handlers are properly disconnected on player cleanup, API callbacks are always invoked even in offline error paths, and duplicate GLib.source_remove calls have been eliminated.</p>
+        <p>Code quality — release detail page decomposed into focused helper modules (episodes, related releases, tags), genre and franchise views unified under a shared base class, storage modules consolidated with shared atomic write, and widget-level tests added for views and widgets.</p>
+        <p>Visual polish — adaptive tag pills switch between full and compact mode based on available space, SVG icon replaces text plus on tag badges, double hover background on sheet grid items removed, native BottomSheet animation with custom drag handle pills.</p>
+      </description>
+    </release>
     <release version="0.6.1" date="2026-03-11">
       <description>
         <p>Bugfix: renamed action icons with app_id prefix (net.armatik.Kitsune.*) to prevent file conflicts with other applications when installed to the shared icon directory.</p>
