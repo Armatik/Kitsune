@@ -5,8 +5,9 @@ from __future__ import annotations
 import json
 import os
 import secrets
-import tempfile
 from pathlib import Path
+
+from kitsune.storage import _atomic_write_json
 
 _TAGS_FILE = Path(
     os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
@@ -39,19 +40,7 @@ def _load() -> dict:
 
 
 def _save(data: dict):
-    _TAGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=_TAGS_FILE.parent)
-    try:
-        os.write(fd, json.dumps(data, ensure_ascii=False).encode())
-        os.close(fd)
-        os.replace(tmp, _TAGS_FILE)
-    except BaseException:
-        os.close(fd)
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+    _atomic_write_json(_TAGS_FILE, data, ensure_ascii=False)
 
 
 def _find_tag(data: dict, tag_id: str) -> dict | None:

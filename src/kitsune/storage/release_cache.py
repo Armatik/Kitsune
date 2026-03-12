@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from pathlib import Path
+
+from kitsune.storage import _atomic_write_json
 
 _CACHE_DIR = Path(
     os.environ.get('XDG_CACHE_HOME', os.path.expanduser('~/.cache'))
@@ -23,20 +24,8 @@ def get(release_id: int) -> dict | None:
 
 def save(release_id: int, data: dict):
     release_id = int(release_id)
-    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
     target = _CACHE_DIR / f'{release_id}.json'
-    fd, tmp = tempfile.mkstemp(dir=_CACHE_DIR)
-    try:
-        os.write(fd, json.dumps(data).encode())
-        os.close(fd)
-        os.replace(tmp, target)
-    except BaseException:
-        os.close(fd)
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+    _atomic_write_json(target, data)
 
 
 def get_count() -> int:

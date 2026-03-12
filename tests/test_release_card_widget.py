@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import kitsune.tags_store as tags_store
+from kitsune import tags_store
 
 from kitsune.models import Release
 from kitsune.ui.widgets.release_card import ReleaseCard

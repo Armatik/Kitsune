@@ -5,8 +5,8 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import kitsune.tags_store as tags_store
-import kitsune.release_cache as release_cache
+from kitsune import tags_store
+from kitsune import release_cache
 
 from kitsune.models import Release
 from kitsune.ui.release_view import ReleaseView

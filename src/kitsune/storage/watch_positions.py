@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from pathlib import Path
+
+from kitsune.storage import _atomic_write_json
 
 _POSITIONS_FILE = Path(
     os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
@@ -20,19 +21,7 @@ def _load() -> dict:
 
 
 def _save(data: dict):
-    _POSITIONS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=_POSITIONS_FILE.parent)
-    try:
-        os.write(fd, json.dumps(data).encode())
-        os.close(fd)
-        os.replace(tmp, _POSITIONS_FILE)
-    except BaseException:
-        os.close(fd)
-        try:
-            os.unlink(tmp)
-        except OSError:
-            pass
-        raise
+    _atomic_write_json(_POSITIONS_FILE, data)
 
 
 def get_position(release_id: int, ordinal: float) -> float:

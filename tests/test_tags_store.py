@@ -6,7 +6,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import kitsune.tags_store as tags_store
+from kitsune import tags_store
 
 
 def _use_temp_file(tmp_path):

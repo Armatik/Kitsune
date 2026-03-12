@@ -5,7 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-import kitsune.watch_positions as wp
+from kitsune import watch_positions as wp
 
 
 def _setup_tmp(monkeypatch, tmp_path):

@@ -31,8 +31,8 @@ if os.path.exists(_gresource):
     resource = Gio.Resource.load(_gresource)
     Gio.resources_register(resource)
 
-import kitsune.tags_store as tags_store
-import kitsune.release_cache as release_cache
+from kitsune import tags_store
+from kitsune import release_cache
 
 
 class StubClient:
