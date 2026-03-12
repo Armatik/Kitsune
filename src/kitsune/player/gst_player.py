@@ -47,10 +47,12 @@ class GstPlayer(GObject.Object):
 
         bus = self._playbin.get_bus()
         bus.add_signal_watch()
-        bus.connect('message::error', self._on_error)
-        bus.connect('message::eos', self._on_eos)
-        bus.connect('message::state-changed', self._on_state_changed)
-        bus.connect('message::buffering', self._on_buffering)
+        self._bus_handler_ids = [
+            bus.connect('message::error', self._on_error),
+            bus.connect('message::eos', self._on_eos),
+            bus.connect('message::state-changed', self._on_state_changed),
+            bus.connect('message::buffering', self._on_buffering),
+        ]
 
         self._position_timer = 0
         self._cleaned_up = False
@@ -216,9 +218,11 @@ class GstPlayer(GObject.Object):
             return
         self._cleaned_up = True
         log.debug('cleanup')
-        # Remove bus watch FIRST to prevent queued callbacks from restarting
         bus = self._playbin.get_bus()
         if bus:
+            for hid in self._bus_handler_ids:
+                bus.disconnect(hid)
+            self._bus_handler_ids.clear()
             bus.remove_signal_watch()
         self.stop()
         self._playbin.set_state(Gst.State.NULL)
