@@ -16,6 +16,16 @@ _REQUEST_TIMEOUT_MS = 10000
 _OFFLINE_TIMEOUT_MS = 2000
 
 
+def _make_callback(callback, parser):
+    """Wrap a user callback with a parser for successful responses."""
+    def on_data(data, error):
+        if error:
+            callback(None, error)
+            return
+        callback(parser(data), None)
+    return on_data
+
+
 class AniLibriaClient:
 
     def __init__(self):
@@ -106,12 +116,6 @@ class AniLibriaClient:
     def get_catalog(self, page: int = 1, limit: int = 20,
                     filters: dict | None = None,
                     callback=None, cancellable=None):
-        def on_data(data, error):
-            if error:
-                callback(None, error)
-                return
-            callback(CatalogResponse.from_dict(data), None)
-
         params = f'page={page}&limit={limit}'
         if filters:
             from urllib.parse import quote
@@ -124,63 +128,41 @@ class AniLibriaClient:
                         params += f'&f%5B{quote(key)}%5D%5B%5D={quote(str(item))}'
                 elif value is not None:
                     params += f'&f%5B{quote(key)}%5D={quote(str(value))}'
-        self._fetch(f'/anime/catalog/releases?{params}', on_data, cancellable)
+        self._fetch(f'/anime/catalog/releases?{params}',
+                    _make_callback(callback, CatalogResponse.from_dict),
+                    cancellable)
 
     def search_releases(self, query: str, callback=None, cancellable=None):
         from urllib.parse import quote
-        def on_data(data, error):
-            if error:
-                callback(None, error)
-                return
-            releases = [Release.from_dict(r) for r in data]
-            callback(releases, None)
-
-        self._fetch(f'/app/search/releases?query={quote(query)}', on_data, cancellable)
+        self._fetch(f'/app/search/releases?query={quote(query)}',
+                    _make_callback(callback, lambda d: [Release.from_dict(r) for r in d]),
+                    cancellable)
 
     def get_release(self, id_or_alias: str, callback=None, cancellable=None):
         from urllib.parse import quote
-        def on_data(data, error):
-            if error:
-                callback(None, error)
-                return
-            callback(Release.from_dict(data), None)
-
-        self._fetch(f'/anime/releases/{quote(str(id_or_alias))}', on_data, cancellable)
+        self._fetch(f'/anime/releases/{quote(str(id_or_alias))}',
+                    _make_callback(callback, Release.from_dict),
+                    cancellable)
 
     def get_release_raw(self, id_or_alias: str, callback=None, cancellable=None):
         from urllib.parse import quote
         self._fetch(f'/anime/releases/{quote(str(id_or_alias))}', callback, cancellable)
 
     def get_genres(self, callback=None, cancellable=None):
-        def on_data(data, error):
-            if error:
-                callback(None, error)
-                return
-            genres = [Genre.from_dict(g) for g in data]
-            callback(genres, None)
-
-        self._fetch('/anime/genres', on_data, cancellable)
+        self._fetch('/anime/genres',
+                    _make_callback(callback, lambda d: [Genre.from_dict(g) for g in d]),
+                    cancellable)
 
     def get_franchises(self, callback=None, cancellable=None):
-        def on_data(data, error):
-            if error:
-                callback(None, error)
-                return
-            franchises = [Franchise.from_dict(f) for f in data]
-            callback(franchises, None)
-
-        self._fetch('/anime/franchises', on_data, cancellable)
+        self._fetch('/anime/franchises',
+                    _make_callback(callback, lambda d: [Franchise.from_dict(f) for f in d]),
+                    cancellable)
 
     def get_franchise(self, franchise_id: str, callback=None, cancellable=None):
         from urllib.parse import quote
-
-        def on_data(data, error):
-            if error:
-                callback(None, error)
-                return
-            callback(Franchise.from_dict(data), None)
-
-        self._fetch(f'/anime/franchises/{quote(franchise_id)}', on_data, cancellable)
+        self._fetch(f'/anime/franchises/{quote(franchise_id)}',
+                    _make_callback(callback, Franchise.from_dict),
+                    cancellable)
 
     def get_franchise_for_release(self, release_id: int, callback=None, cancellable=None):
         def on_data(data, error):

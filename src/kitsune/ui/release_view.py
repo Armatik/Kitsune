@@ -18,6 +18,9 @@ from kitsune.models import Release, Episode
 from kitsune.ui.image_cache import load_image
 from kitsune import release_cache, watch_positions, tags_store
 from kitsune.ui import register_css, format_size
+from kitsune.ui import release_view_episodes as episodes_helper
+from kitsune.ui import release_view_related as related_helper
+from kitsune.ui import release_view_tags as tags_helper
 
 _RELEASE_CSS = (
     '.release-chip { padding: 4px 10px; border-radius: 9999px;'
@@ -31,25 +34,7 @@ _RELEASE_CSS = (
     ' .release-chip-compact:hover { background: alpha(currentColor, 0.18); }'
     ' .poster-fade { background: linear-gradient(to bottom,'
     ' transparent 40%, @window_bg_color 100%); }'
-    ' .episode-card { border-radius: 12px;'
-    ' background: alpha(currentColor, 0.08); }'
-    ' .episode-overlay { background: linear-gradient(to top,'
-    ' alpha(black, 0.7) 0%, transparent 50%); }'
-    ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
-    ' .episode-progress { min-height: 4px; border-radius: 0; }'
-    ' .episode-progress trough { min-height: 4px; background: alpha(white, 0.3); }'
-    ' .episode-progress progress { min-height: 4px; background: @accent_bg_color; }'
-    ' .episode-blur { filter: blur(8px); }'
-    ' .episode-check { background: alpha(black, 0.6); border-radius: 50%;'
-    '   min-width: 24px; min-height: 24px; padding: 2px;'
-    '   color: @accent_color; text-shadow: none; }'
-    ' .episode-separator { min-height: 1px;'
-    '   background-color: rgba(200, 200, 200, 0.6); padding: 0; margin: 0; }'
-    ' .list-progress { margin-top: 4px; }'
-    ' .list-progress trough { min-height: 4px; }'
-    ' .list-progress progress { min-height: 4px; background: @accent_bg_color; }'
 )
-
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/release_view.ui')
@@ -413,26 +398,10 @@ class ReleaseView(Adw.NavigationPage):
         self._refresh_episodes()
 
     def _get_filtered_episodes(self) -> list[Episode]:
-        episodes = list(self._release.episodes)
-        if self._watch_filter == 'watched':
-            episodes = [ep for ep in episodes
-                        if self._watch_data.get(ep.ordinal, 0) != 0]
-        elif self._watch_filter == 'unwatched':
-            episodes = [ep for ep in episodes
-                        if self._watch_data.get(ep.ordinal, 0) == 0]
-        if self._search_text:
-            query = self._search_text
-            filtered = []
-            for ep in episodes:
-                ordinal = int(ep.ordinal) if ep.ordinal == int(ep.ordinal) else ep.ordinal
-                if query in str(ordinal):
-                    filtered.append(ep)
-                elif ep.name and query in ep.name.lower():
-                    filtered.append(ep)
-            episodes = filtered
-        if self._sort_newest_first:
-            episodes = list(reversed(episodes))
-        return episodes
+        return episodes_helper.get_filtered_episodes(
+            self._release.episodes, self._watch_filter,
+            self._search_text, self._sort_newest_first, self._watch_data,
+        )
 
     def _refresh_episodes(self):
         self._populate_episodes()
@@ -580,46 +549,11 @@ class ReleaseView(Adw.NavigationPage):
         self._watch_data = watch_positions.get_all_for_release(self._release.id)
 
     def _populate_episodes(self):
-        while child := self.episodes_list.get_first_child():
-            self.episodes_list.remove(child)
-
         self._load_watch_data()
-
-        for episode in self._get_filtered_episodes():
-            pos = self._watch_data.get(episode.ordinal, 0)
-
-            row = Adw.ActionRow(
-                title=self._episode_title(episode),
-                subtitle=self._episode_subtitle(episode),
-                activatable=True,
-                use_markup=False,
-            )
-            if pos == -1:
-                check = Gtk.Image(
-                    icon_name='object-select-symbolic',
-                    css_classes=['accent'],
-                    valign=Gtk.Align.CENTER,
-                )
-                row.add_suffix(check)
-            elif pos > 0 and episode.duration and episode.duration > 0:
-                fraction = min(1.0, max(0.0, pos / episode.duration))
-                prog = Gtk.ProgressBar(
-                    fraction=fraction,
-                    valign=Gtk.Align.CENTER,
-                    css_classes=['list-progress'],
-                )
-                prog.set_size_request(60, -1)
-                row.add_suffix(prog)
-
-            play_btn = Gtk.Button(
-                icon_name='media-playback-start-symbolic',
-                valign=Gtk.Align.CENTER, css_classes=['flat'],
-            )
-            play_btn.connect('clicked', self._on_play_clicked, episode)
-            row.add_suffix(play_btn)
-
-            row.connect('activated', lambda _r, ep=episode: self._play_episode(ep))
-            self.episodes_list.append(row)
+        episodes_helper.populate_episode_list(
+            self.episodes_list, self._get_filtered_episodes(),
+            self._watch_data, self._play_episode,
+        )
 
     # --- Episodes (grid) ---
 
@@ -630,204 +564,10 @@ class ReleaseView(Adw.NavigationPage):
         self._load_watch_data()
 
         for episode in self._get_filtered_episodes():
-            card = self._build_episode_card(episode)
+            card = episodes_helper.build_episode_card(
+                episode, self._watch_data, self._settings, self._play_episode,
+            )
             self.episodes_grid.append(card)
-
-    _EP_CARD_W = 240
-    _EP_CARD_H = 135  # 16:9
-
-    def _build_episode_card(self, episode: Episode) -> Gtk.Widget:
-        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        pos = self._watch_data.get(episode.ordinal, 0)
-
-        clamp = Adw.Clamp(maximum_size=self._EP_CARD_W)
-
-        overlay = Gtk.Overlay(
-            css_classes=['episode-card'],
-            width_request=self._EP_CARD_W,
-            height_request=self._EP_CARD_H,
-        )
-        overlay.set_overflow(Gtk.Overflow.HIDDEN)
-        overlay.set_cursor(Gdk.Cursor.new_from_name('pointer'))
-
-        pic_classes = []
-        if pos == 0 and self._settings.get_boolean('blur-unwatched-episodes'):
-            pic_classes.append('episode-blur')
-
-        picture = Gtk.Picture(
-            content_fit=Gtk.ContentFit.COVER,
-            width_request=self._EP_CARD_W,
-            height_request=self._EP_CARD_H,
-            css_classes=pic_classes,
-        )
-        overlay.set_child(picture)
-
-        if episode.preview:
-            spinner = Adw.Spinner(
-                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                width_request=32, height_request=32,
-            )
-            overlay.add_overlay(spinner)
-
-            def _on_preview_loaded(tex, err, pic=picture, sp=spinner, ov=overlay):
-                sp.set_visible(False)
-                if tex:
-                    pic.set_paintable(tex)
-                else:
-                    ov.add_overlay(Gtk.Image(
-                        icon_name='net.armatik.Kitsune.image-missing-symbolic',
-                        pixel_size=48, opacity=0.4,
-                        halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                    ))
-
-            load_image(episode.preview, _on_preview_loaded,
-                       category='previews')
-        else:
-            placeholder = Gtk.Image(
-                icon_name='net.armatik.Kitsune.image-missing-symbolic',
-                pixel_size=48, opacity=0.4,
-                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-            )
-            overlay.add_overlay(placeholder)
-
-        gradient = Gtk.Box(
-            css_classes=['episode-overlay'],
-            hexpand=True, vexpand=True,
-        )
-        overlay.add_overlay(gradient)
-
-        ordinal = int(episode.ordinal) if episode.ordinal == int(episode.ordinal) else episode.ordinal
-
-        label_box = Gtk.Box(
-            spacing=4, margin_start=10, margin_end=10,
-            margin_bottom=8, valign=Gtk.Align.END,
-        )
-
-        # Episode number (+ optional name as subtitle)
-        if episode.name:
-            title_col = Gtk.Box(
-                orientation=Gtk.Orientation.VERTICAL,
-                hexpand=True, spacing=1,
-            )
-            ep_label = Gtk.Label(
-                label=_('Episode {}').format(ordinal),
-                xalign=0,
-                css_classes=['heading', 'ep-overlay-text'],
-            )
-            name_label = Gtk.Label(
-                label=episode.name,
-                xalign=0, ellipsize=3,  # PANGO_ELLIPSIZE_END
-                css_classes=['caption', 'ep-overlay-text'],
-            )
-            title_col.append(ep_label)
-            title_col.append(name_label)
-            label_box.append(title_col)
-        else:
-            ep_label = Gtk.Label(
-                label=_('Episode {}').format(ordinal),
-                xalign=0, hexpand=True,
-                css_classes=['heading', 'ep-overlay-text'],
-            )
-            label_box.append(ep_label)
-
-        if pos > 0 and episode.duration:
-            remaining = max(0, episode.duration - pos)
-            rem_min = int(remaining) // 60
-            rem_label = Gtk.Label(
-                label=_('Remaining: {} min').format(rem_min),
-                valign=Gtk.Align.END,
-                css_classes=['caption', 'ep-overlay-text'],
-            )
-            label_box.append(rem_label)
-        elif episode.duration:
-            mins = episode.duration // 60
-            secs = episode.duration % 60
-            dur_label = Gtk.Label(
-                label=f'{mins}:{secs:02d}',
-                valign=Gtk.Align.END,
-                css_classes=['caption', 'ep-overlay-text'],
-            )
-            label_box.append(dur_label)
-        overlay.add_overlay(label_box)
-
-        # Progress bar at bottom with 1px separator
-        if pos != 0 and episode.duration and episode.duration > 0:
-            fraction = 1.0 if pos == -1 else min(1.0, max(0.0, pos / episode.duration))
-            progress_box = Gtk.Box(
-                orientation=Gtk.Orientation.VERTICAL,
-                valign=Gtk.Align.END,
-                hexpand=True,
-            )
-            separator = Gtk.Box(
-                css_classes=['episode-separator'],
-                hexpand=True,
-            )
-            progress_box.append(separator)
-            progress_bar = Gtk.ProgressBar(
-                fraction=fraction,
-                css_classes=['episode-progress'],
-            )
-            progress_box.append(progress_bar)
-            overlay.add_overlay(progress_box)
-
-        # Checkmark for completed
-        if pos == -1:
-            check_box = Gtk.Box(
-                halign=Gtk.Align.END, valign=Gtk.Align.START,
-                margin_top=6, margin_end=6,
-            )
-            check_icon = Gtk.Image(
-                icon_name='object-select-symbolic',
-                pixel_size=16,
-                css_classes=['episode-check'],
-            )
-            check_box.append(check_icon)
-            overlay.add_overlay(check_box)
-
-        gesture = Gtk.GestureClick()
-        gesture.connect('released',
-                        lambda g, n, x, y, ep=episode: self._play_episode(ep))
-        overlay.add_controller(gesture)
-
-        clamp.set_child(overlay)
-        box.append(clamp)
-        return box
-
-    # --- Episodes helpers ---
-
-    def _episode_title(self, episode: Episode) -> str:
-        ordinal = int(episode.ordinal) if episode.ordinal == int(episode.ordinal) else episode.ordinal
-        if episode.name:
-            return f'{ordinal}. {episode.name}'
-        return _('Episode {}').format(ordinal)
-
-    def _episode_subtitle(self, episode: Episode) -> str:
-        parts = []
-        pos = self._watch_data.get(episode.ordinal, 0)
-        if pos == -1 and episode.duration:
-            mins = episode.duration // 60
-            parts.append(_('Watched') + f' ({mins} ' + _('min') + ')')
-        elif pos > 0 and episode.duration:
-            remaining = max(0, episode.duration - pos)
-            rem_min = int(remaining) // 60
-            total_min = episode.duration // 60
-            parts.append(_('Remaining: {} min of {} min').format(rem_min, total_min))
-        elif episode.duration:
-            mins = episode.duration // 60
-            parts.append(f'{mins} ' + _('min'))
-        qualities = []
-        if episode.hls_1080:
-            qualities.append('1080p')
-        if episode.hls_720:
-            qualities.append('720p')
-        if episode.hls_480:
-            qualities.append('480p')
-        if qualities:
-            parts.append(' / '.join(qualities))
-        return ' \u2014 '.join(parts) if parts else ''
-
-    def _on_play_clicked(self, _button, episode):
-        self._play_episode(episode)
 
     def _play_episode(self, episode: Episode):
         if self._on_episode_play:
@@ -855,104 +595,10 @@ class ReleaseView(Adw.NavigationPage):
 
     def _populate_related(self):
         self.related_spinner.set_visible(False)
-        f = self._franchise
-
-        # Franchise header
-        self.related_header.set_visible(True)
-        title = Gtk.Label(
-            label=f.name, xalign=0, wrap=True,
-            margin_start=16, margin_end=16, margin_top=12,
-            css_classes=['title-4'],
+        related_helper.populate_related(
+            self.related_header, self.related_list, self._franchise,
+            self._release.id, self._on_related_activated,
         )
-        self.related_header.append(title)
-
-        if f.name_english:
-            en = Gtk.Label(
-                label=f.name_english, xalign=0, wrap=True,
-                margin_start=16, margin_end=16,
-                css_classes=['dim-label'],
-            )
-            self.related_header.append(en)
-
-        meta_parts = []
-        if f.first_year and f.last_year:
-            meta_parts.append(f'{f.first_year} \u2014 {f.last_year}')
-        elif f.first_year:
-            meta_parts.append(str(f.first_year))
-        if f.total_releases:
-            meta_parts.append(
-                _('%d seasons') % f.total_releases
-                if f.total_releases > 1 else _('1 season')
-            )
-        if f.total_episodes:
-            meta_parts.append(_('%d episodes') % f.total_episodes)
-        if f.total_duration:
-            meta_parts.append(f.total_duration)
-
-        if meta_parts:
-            meta = Gtk.Label(
-                label=' \u2022 '.join(meta_parts), xalign=0, wrap=True,
-                margin_start=16, margin_end=16, margin_bottom=12,
-                css_classes=['dim-label', 'caption'],
-            )
-            self.related_header.append(meta)
-
-        # Franchise releases
-        self.related_list.set_visible(True)
-        for idx, release in enumerate(f.releases):
-            is_current = release.id == self._release.id
-
-            row = Adw.ActionRow(
-                title=release.name.main,
-                subtitle=self._related_subtitle(release),
-                activatable=not is_current,
-                use_markup=False,
-            )
-            row.add_css_class('heading')
-
-            num_classes = ['title-2']
-            num_classes.append('accent' if is_current else 'dim-label')
-            num_label = Gtk.Label(
-                label=f'#{idx + 1}',
-                css_classes=num_classes,
-                valign=Gtk.Align.CENTER,
-            )
-            row.add_suffix(num_label)
-
-            clamp = Adw.Clamp(maximum_size=90, valign=Gtk.Align.CENTER)
-            pic_overlay = Gtk.Overlay(
-                width_request=90, height_request=126,
-                css_classes=['card'],
-            )
-            pic_overlay.set_overflow(Gtk.Overflow.HIDDEN)
-            pic = Gtk.Picture(
-                width_request=90, height_request=126,
-                content_fit=Gtk.ContentFit.COVER,
-            )
-            pic_overlay.set_child(pic)
-            clamp.set_child(pic_overlay)
-            if release.poster:
-                load_image(release.poster, lambda tex, err, p=pic:
-                           p.set_paintable(tex) if tex else None)
-            row.add_prefix(clamp)
-
-            if not is_current:
-                row.connect('activated', lambda _r, rel=release:
-                            self._on_related_activated(rel))
-
-            self.related_list.append(row)
-
-    def _related_subtitle(self, release: Release) -> str:
-        parts = []
-        if release.year:
-            parts.append(str(release.year))
-        if release.season:
-            parts.append(release.season)
-        if release.type:
-            parts.append(release.type)
-        if release.episodes_total:
-            parts.append(_('%d episodes') % release.episodes_total)
-        return ' \u2022 '.join(parts)
 
     def _on_related_activated(self, release: Release):
         nav = self.get_ancestor(Adw.NavigationView)
@@ -1146,71 +792,9 @@ class ReleaseView(Adw.NavigationPage):
     def _update_tag_pills(self):
         if not hasattr(self, '_tag_pills_wrap'):
             return
-        while child := self._tag_pills_wrap.get_first_child():
-            self._tag_pills_wrap.remove(child)
-
-        release_tags = tags_store.get_tags_for_release(self._release.id)
-        if not release_tags:
-            self._tag_pills_wrap.set_visible(False)
-            return
-        self._tag_pills_wrap.set_visible(True)
-
-        threshold = 3 if self._narrow_mode else 5
-        compact = len(release_tags) > threshold
-        for tag in release_tags:
-            if compact:
-                btn = self._create_compact_tag_pill(tag)
-            else:
-                btn = self._create_full_tag_pill(tag)
-            btn.connect('clicked', lambda _b, t=tag: self._on_tag_pill_clicked(t))
-            self._tag_pills_wrap.append(btn)
-
-    def _create_full_tag_pill(self, tag: dict) -> Gtk.Button:
-        from kitsune.ui.widgets.tag_card import COLOR_MAP
-        box = Gtk.Box(spacing=5, halign=Gtk.Align.CENTER)
-        if tag['icon_type'] == 'emoji':
-            box.append(Gtk.Label(label=tag['icon_value']))
-        else:
-            hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-            circle = Gtk.Box(
-                width_request=14, height_request=14,
-                valign=Gtk.Align.CENTER,
-            )
-            css = Gtk.CssProvider()
-            css.load_from_string(
-                f'box {{ background: {hex_c}; border-radius: 50%;'
-                f' min-width: 14px; min-height: 14px;'
-                f' border: 1px solid alpha(white, 0.3); }}'
-            )
-            circle.get_style_context().add_provider(
-                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
-            box.append(circle)
-        box.append(Gtk.Label(label=tag['name']))
-        return Gtk.Button(child=box, css_classes=['pill', 'release-chip'])
-
-    def _create_compact_tag_pill(self, tag: dict) -> Gtk.Button:
-        from kitsune.ui.widgets.tag_card import COLOR_MAP
-        if tag['icon_type'] == 'emoji':
-            child = Gtk.Label(label=tag['icon_value'])
-        else:
-            hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-            child = Gtk.Box(
-                width_request=14, height_request=14,
-                valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
-            )
-            css = Gtk.CssProvider()
-            css.load_from_string(
-                f'box {{ background: {hex_c}; border-radius: 50%;'
-                f' min-width: 14px; min-height: 14px;'
-                f' border: 1px solid alpha(white, 0.3); }}'
-            )
-            child.get_style_context().add_provider(
-                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-            )
-        return Gtk.Button(
-            child=child, css_classes=['release-chip-compact'],
-            tooltip_text=tag['name'],
+        tags_helper.update_tag_pills(
+            self._tag_pills_wrap, self._release.id,
+            self._narrow_mode, self._on_tag_pill_clicked,
         )
 
     def _on_tag_pill_clicked(self, tag):

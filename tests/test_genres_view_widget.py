@@ -26,11 +26,11 @@ def test_genres_double_load_noop(mock_client):
     calls = []
     view = GenresView(client=mock_client, auto_load=False)
 
-    original = view._load_genres
+    original = view._load_items
     def tracking_load():
         calls.append(True)
         original()
-    view._load_genres = tracking_load
+    view._load_items = tracking_load
 
     view.load()
     view.load()
