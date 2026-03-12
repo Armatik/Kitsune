@@ -54,6 +54,18 @@ class AniLibriaClient:
             self._on_response, (callback, msg, state, timeout_id),
         )
 
+    def _handle_error(self, state, timeout_id, callback, error_msg):
+        """Mark request handled, cancel timeout, always notify caller."""
+        if state[0]:
+            return
+        state[0] = True
+        GLib.source_remove(timeout_id)
+        callback(None, error_msg)
+        if not self._offline:
+            self._offline = True
+            if self._on_network_error:
+                self._on_network_error()
+
     def _on_response(self, session, result, user_data):
         callback, msg, state, timeout_id = user_data
         if state[0]:
@@ -62,14 +74,12 @@ class AniLibriaClient:
             gbytes = session.send_and_read_finish(result)
             status = msg.get_status()
             if status != Soup.Status.OK:
-                state[0] = True
-                GLib.source_remove(timeout_id)
-                if self._offline:
-                    return
-                self._offline = True
-                callback(None, f'HTTP {status.value_nick}')
-                if self._on_network_error:
-                    self._on_network_error()
+                self._handle_error(state, timeout_id, callback,
+                                   f'HTTP {status.value_nick}')
+                return
+            if gbytes is None:
+                self._handle_error(state, timeout_id, callback,
+                                   'Empty response')
                 return
             state[0] = True
             GLib.source_remove(timeout_id)
@@ -85,26 +95,13 @@ class AniLibriaClient:
                     self._on_network_ok()
         except GLib.Error as e:
             if e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
-                state[0] = True
-                GLib.source_remove(timeout_id)
+                if not state[0]:
+                    state[0] = True
+                    GLib.source_remove(timeout_id)
                 return
-            state[0] = True
-            GLib.source_remove(timeout_id)
-            if self._offline:
-                return
-            self._offline = True
-            callback(None, str(e))
-            if self._on_network_error:
-                self._on_network_error()
+            self._handle_error(state, timeout_id, callback, str(e))
         except Exception as e:
-            state[0] = True
-            GLib.source_remove(timeout_id)
-            if self._offline:
-                return
-            self._offline = True
-            callback(None, str(e))
-            if self._on_network_error:
-                self._on_network_error()
+            self._handle_error(state, timeout_id, callback, str(e))
 
     def get_catalog(self, page: int = 1, limit: int = 20,
                     filters: dict | None = None,
