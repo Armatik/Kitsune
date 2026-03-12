@@ -40,6 +40,7 @@ class ItemsGridView(Gtk.Box):
         self._stack.add_named(self._releases_placeholder, 'releases')
 
         self.append(self._stack)
+        self.connect('map', self._on_map)
         if auto_load:
             self.load()
 
@@ -123,6 +124,10 @@ class ItemsGridView(Gtk.Box):
         if item is not None:
             self._show_item_releases(item)
 
+    def _on_map(self, _widget):
+        if self._pending_items and not self._batch_idle:
+            self._batch_idle = GLib.idle_add(self._add_pending_batch)
+
     def _show_releases(self, item, releases_view):
         """Helper for subclasses: swap in the releases view."""
         self._current_item = item
@@ -145,6 +150,5 @@ class ItemsGridView(Gtk.Box):
             if self._batch_idle:
                 GLib.source_remove(self._batch_idle)
                 self._batch_idle = 0
-            self._pending_items.clear()
         finally:
             Gtk.Box.do_unmap(self)

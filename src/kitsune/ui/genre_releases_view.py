@@ -87,11 +87,3 @@ class GenreReleasesView(Gtk.Box):
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
-
-    def do_unmap(self):
-        try:
-            if self._cancellable:
-                self._cancellable.cancel()
-                self._cancellable = None
-        finally:
-            Gtk.Box.do_unmap(self)

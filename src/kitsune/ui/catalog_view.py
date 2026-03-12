@@ -37,6 +37,7 @@ class CatalogView(Gtk.Box):
         self._grid.set_on_child_activated(self._on_child_activated)
         self.append(self._grid)
 
+        self.connect('map', self._on_map)
         self._load_next_page()
 
     @property
@@ -158,14 +159,14 @@ class CatalogView(Gtk.Box):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
 
+    def _on_map(self, _widget):
+        if self._pending_releases and not self._batch_idle:
+            self._batch_idle = GLib.idle_add(self._add_pending_batch)
+
     def do_unmap(self):
         try:
             if self._batch_idle:
                 GLib.source_remove(self._batch_idle)
                 self._batch_idle = 0
-            self._pending_releases.clear()
-            if self._cancellable:
-                self._cancellable.cancel()
-                self._cancellable = None
         finally:
             Gtk.Box.do_unmap(self)

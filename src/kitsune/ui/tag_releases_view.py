@@ -28,7 +28,9 @@ class TagReleasesView(Gtk.Box):
         self._grid = ContentGrid()
         self._grid.set_on_child_activated(self._on_child_activated)
         self.append(self._grid)
+        self._batch = []
 
+        self.connect('map', self._on_map)
         self._load_releases()
 
     def set_narrow(self, narrow: bool):
@@ -96,6 +98,10 @@ class TagReleasesView(Gtk.Box):
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
+
+    def _on_map(self, _widget):
+        if self._batch and not self._batch_idle:
+            self._batch_idle = GLib.idle_add(self._add_batch)
 
     def do_unmap(self):
         try:
