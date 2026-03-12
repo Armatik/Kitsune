@@ -581,6 +581,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             genre=genre, client=self._client,
         )
         releases_view.set_on_release_activated(self._show_release_detail)
+        releases_view.set_narrow(self._narrow)
         page = Adw.NavigationPage(
             title=genre.name,
             child=Adw.ToolbarView(
@@ -597,6 +598,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             tag=tag, client=self._client,
         )
         releases_view.set_on_release_activated(self._show_release_detail)
+        releases_view.set_narrow(self._narrow)
         page = Adw.NavigationPage(
             title=tag['name'],
             child=Adw.ToolbarView(

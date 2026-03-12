@@ -32,6 +32,11 @@ def _ensure_css():
         ' background: alpha(currentColor, 0.1);'
         ' transition: background 150ms ease-in-out; }'
         ' .release-chip:hover { background: alpha(currentColor, 0.18); }'
+        ' .release-chip-compact { padding: 8px; border-radius: 50%;'
+        ' background: alpha(currentColor, 0.1);'
+        ' min-width: 0; min-height: 0;'
+        ' transition: background 150ms ease-in-out; }'
+        ' .release-chip-compact:hover { background: alpha(currentColor, 0.18); }'
         ' .poster-fade { background: linear-gradient(to bottom,'
         ' transparent 40%, @window_bg_color 100%); }'
         ' .episode-card { border-radius: 12px;'
@@ -1076,6 +1081,7 @@ class ReleaseView(Adw.NavigationPage):
         self.episodes_toolbar.reorder_child_after(self.episodes_controls, None)
         self.episodes_controls.set_halign(Gtk.Align.CENTER)
         self._update_toolbar()
+        self._update_tag_pills()
         if self._accent_mode:
             mobile_ok = self._settings.get_boolean('accent-mobile-enabled')
             if not mobile_ok:
@@ -1091,6 +1097,7 @@ class ReleaseView(Adw.NavigationPage):
         )
         self.episodes_controls.set_halign(Gtk.Align.FILL)
         self._update_toolbar()
+        self._update_tag_pills()
         if self._accent_mode:
             self.gradient_bg.set_opacity(0.3)
 
@@ -1163,7 +1170,8 @@ class ReleaseView(Adw.NavigationPage):
             return
         self._tag_pills_wrap.set_visible(True)
 
-        compact = len(release_tags) > 4 or self._narrow_mode
+        threshold = 3 if self._narrow_mode else 5
+        compact = len(release_tags) > threshold
         for tag in release_tags:
             if compact:
                 btn = self._create_compact_tag_pill(tag)
@@ -1198,7 +1206,6 @@ class ReleaseView(Adw.NavigationPage):
 
     def _create_compact_tag_pill(self, tag: dict) -> Gtk.Button:
         from kitsune.ui.widgets.tag_card import COLOR_MAP
-        size = 26 if self._narrow_mode else 28
         if tag['icon_type'] == 'emoji':
             child = Gtk.Label(label=tag['icon_value'])
         else:
@@ -1217,9 +1224,8 @@ class ReleaseView(Adw.NavigationPage):
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
         return Gtk.Button(
-            child=child, css_classes=['pill', 'release-chip', 'circular'],
+            child=child, css_classes=['release-chip-compact'],
             tooltip_text=tag['name'],
-            width_request=size, height_request=size,
         )
 
     def _on_tag_pill_clicked(self, tag):

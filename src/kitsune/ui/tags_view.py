@@ -106,6 +106,9 @@ class TagsView(Gtk.Box):
     def set_narrow(self, narrow: bool):
         self._narrow = narrow
         self._card_grid.set_narrow(narrow)
+        releases = self._nav_stack.get_child_by_name('releases')
+        if releases and isinstance(releases, TagReleasesView):
+            releases.set_narrow(narrow)
 
     def set_on_release_activated(self, callback):
         self._on_release_activated = callback
