@@ -45,6 +45,12 @@
   </supports>
 
   <releases>
+    <release version="0.7.1" date="2026-03-13">
+      <description>
+        <p>Fixed video player not starting — NavigationView internally maps and unmaps pages during push transitions, which caused the playback idle source to be cancelled before it could fire.</p>
+        <p>Fixed catalog and other views showing infinite spinners on first launch — the same map/unmap cycle was aborting in-flight API requests and clearing pending data.</p>
+      </description>
+    </release>
     <release version="0.7.0" date="2026-03-12">
       <description>
         <p>Configurable navigation — rearrange, show or hide tabs in the sidebar and bottom bar. First 3 tabs are shown as buttons, overflow tabs open in a BottomSheet with drag handle. Changes apply live without restart. Grid and list display styles for the sheet.</p>
