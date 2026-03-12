@@ -66,7 +66,6 @@ class AniLibriaClient:
                 GLib.source_remove(timeout_id)
                 if self._offline:
                     return
-                GLib.source_remove(timeout_id)
                 self._offline = True
                 callback(None, f'HTTP {status.value_nick}')
                 if self._on_network_error:
@@ -93,7 +92,6 @@ class AniLibriaClient:
             GLib.source_remove(timeout_id)
             if self._offline:
                 return
-            GLib.source_remove(timeout_id)
             self._offline = True
             callback(None, str(e))
             if self._on_network_error:
