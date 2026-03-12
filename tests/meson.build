@@ -1,8 +1,24 @@
+test_dir = meson.current_source_dir()
+test_env = ['PYTHONPATH=' + meson.project_source_root() / 'src']
+
 test_files = [
   'test_models.py',
   'test_watch_positions.py',
   'test_tags_store.py',
   'test_navbar.py',
+]
+
+foreach test_file : test_files
+  test_name = test_file.replace('.py', '').replace('test_', '')
+  test(test_name, py_installation,
+    args: ['-m', 'pytest', test_dir / test_file, '-v'],
+    env: test_env,
+  )
+endforeach
+
+xvfb_run = find_program('xvfb-run', required: false)
+
+widget_test_files = [
   'test_content_grid.py',
   'test_tags_view_widget.py',
   'test_catalog_view_widget.py',
@@ -13,10 +29,19 @@ test_files = [
   'test_player_view_widget.py',
 ]
 
-foreach test_file : test_files
+foreach test_file : widget_test_files
   test_name = test_file.replace('.py', '').replace('test_', '')
-  test(test_name, py_installation,
-    args: ['-m', 'pytest', meson.current_source_dir() / test_file, '-v'],
-    env: ['PYTHONPATH=' + meson.project_source_root() / 'src'],
-  )
+  if xvfb_run.found()
+    test(test_name, xvfb_run,
+      args: ['-a', py_installation.full_path(), '-m', 'pytest',
+             test_dir / test_file, '-v'],
+      env: test_env,
+      is_parallel: false,
+    )
+  else
+    test(test_name, py_installation,
+      args: ['-m', 'pytest', test_dir / test_file, '-v'],
+      env: test_env,
+    )
+  endif
 endforeach

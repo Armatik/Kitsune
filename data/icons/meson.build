@@ -18,6 +18,7 @@ action_icons = [
   'seek-forward-10-symbolic',
   'image-missing-symbolic',
   'sidebar-collapse-right-symbolic',
+  'plus-circle-symbolic',
 ]
 
 foreach icon : action_icons

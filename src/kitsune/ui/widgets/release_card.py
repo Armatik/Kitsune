@@ -63,6 +63,8 @@ class ReleaseCard(Gtk.FlowBoxChild):
         css.load_from_string(
             '.tag-badge-pill { padding: 5px 8px; border-radius: 9999px;'
             ' background: alpha(@accent_bg_color, 0.85); }'
+            ' .tag-badge-pill image { -gtk-icon-style: symbolic;'
+            ' color: @accent_fg_color; }'
             ' .tag-badge-emoji { font-size: 16px; }'
             ' .tag-badge-color { min-width: 16px; min-height: 16px;'
             ' border-radius: 50%;'
@@ -113,9 +115,9 @@ class ReleaseCard(Gtk.FlowBoxChild):
                 pill.append(circle)
 
         if has_more:
-            pill.append(Gtk.Label(
-                label='+',
-                css_classes=['tag-badge-emoji'],
+            pill.append(Gtk.Image(
+                icon_name='net.armatik.Kitsune.plus-circle-symbolic',
+                pixel_size=16,
                 valign=Gtk.Align.CENTER,
             ))
 
