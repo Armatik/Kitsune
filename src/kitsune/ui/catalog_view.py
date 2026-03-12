@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import GLib, Gtk
+from gi.repository import Gio, GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.ui.widgets.content_grid import ContentGrid
@@ -28,6 +28,9 @@ class CatalogView(Gtk.Box):
         self._genres_data: list = []
         self._year_range: tuple[int, int] | None = None
         self._filter_panel = None
+        self._batch_idle = 0
+        self._cancellable = None
+        self._pending_releases = []
 
         self._grid = ContentGrid()
         self._grid.set_on_scroll_near_end(self._on_scroll_near_end)
@@ -103,10 +106,14 @@ class CatalogView(Gtk.Box):
         self._loading = True
         self._page += 1
         self._grid.set_spinner_visible(True)
+        if self._cancellable:
+            self._cancellable.cancel()
+        self._cancellable = Gio.Cancellable()
         self._client.get_catalog(
             page=self._page, limit=20,
             filters=self._filters or None,
             callback=self._on_catalog_loaded,
+            cancellable=self._cancellable,
         )
 
     def retry(self):
@@ -128,6 +135,7 @@ class CatalogView(Gtk.Box):
         self._add_pending_batch()
 
     def _add_pending_batch(self):
+        self._batch_idle = 0
         if not self.get_mapped():
             return GLib.SOURCE_REMOVE
         batch = self._pending_releases[:4]
@@ -136,7 +144,7 @@ class CatalogView(Gtk.Box):
             self._grid.append_child(ReleaseCard(release))
 
         if self._pending_releases:
-            GLib.idle_add(self._add_pending_batch)
+            self._batch_idle = GLib.idle_add(self._add_pending_batch)
         else:
             self._grid.set_spinner_visible(False)
             if self._page >= self._last_page:
@@ -149,3 +157,15 @@ class CatalogView(Gtk.Box):
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
+
+    def do_unmap(self):
+        try:
+            if self._batch_idle:
+                GLib.source_remove(self._batch_idle)
+                self._batch_idle = 0
+            self._pending_releases.clear()
+            if self._cancellable:
+                self._cancellable.cancel()
+                self._cancellable = None
+        finally:
+            Gtk.Box.do_unmap(self)

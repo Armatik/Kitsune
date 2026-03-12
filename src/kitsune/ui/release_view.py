@@ -114,6 +114,7 @@ class ReleaseView(Adw.NavigationPage):
         self._sort_newest_first = False
         self._search_text = ''
         self._refresh_fade_anim = None
+        self._gradient_idle = 0
         self._refresh_timer = 0
         self._watch_data = {}
         self._watch_filter = 'all'
@@ -1266,11 +1267,13 @@ class ReleaseView(Adw.NavigationPage):
         def _generate():
             colors = extract_colors_from_bytes(png_bytes)
             gradient_data = create_gradient_bytes(colors, n_points=n_points, noise=glass)
-            GLib.idle_add(self._on_gradient_ready, gradient_data)
+            self._gradient_idle = GLib.idle_add(
+                self._on_gradient_ready, gradient_data)
 
         threading.Thread(target=_generate, daemon=True).start()
 
     def _on_gradient_ready(self, gradient_data):
+        self._gradient_idle = 0
         if not self.get_mapped():
             return GLib.SOURCE_REMOVE
         # Create GDK texture on the main thread
@@ -1300,6 +1303,9 @@ class ReleaseView(Adw.NavigationPage):
             if self._refresh_fade_anim:
                 self._refresh_fade_anim.skip()
                 self._refresh_fade_anim = None
+            if self._gradient_idle:
+                GLib.source_remove(self._gradient_idle)
+                self._gradient_idle = 0
             if self._refresh_timer:
                 GLib.source_remove(self._refresh_timer)
                 self._refresh_timer = 0

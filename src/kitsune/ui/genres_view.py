@@ -26,6 +26,8 @@ class GenresView(Gtk.Box):
         self._current_genre = None
         self._narrow = False
         self._loaded = False
+        self._batch_idle = 0
+        self._pending_genres = []
 
         self._stack = Gtk.Stack(
             transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT,
@@ -116,6 +118,7 @@ class GenresView(Gtk.Box):
         self._add_pending_batch()
 
     def _add_pending_batch(self):
+        self._batch_idle = 0
         if not self.get_mapped():
             return GLib.SOURCE_REMOVE
         batch = self._pending_genres[:4]
@@ -123,10 +126,19 @@ class GenresView(Gtk.Box):
         for genre in batch:
             self._grid.append_child(GenreCard(genre))
         if self._pending_genres:
-            GLib.idle_add(self._add_pending_batch)
+            self._batch_idle = GLib.idle_add(self._add_pending_batch)
         else:
             self._grid.set_spinner_visible(False)
 
     def _on_child_activated(self, child):
         if isinstance(child, GenreCard):
             self._show_genre_releases(child.genre)
+
+    def do_unmap(self):
+        try:
+            if self._batch_idle:
+                GLib.source_remove(self._batch_idle)
+                self._batch_idle = 0
+            self._pending_genres.clear()
+        finally:
+            Gtk.Box.do_unmap(self)

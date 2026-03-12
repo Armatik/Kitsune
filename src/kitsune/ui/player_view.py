@@ -114,6 +114,7 @@ class PlayerView(Adw.NavigationPage):
         self._last_known_position = 0
         self._restore_position = None
         self._buffering = False
+        self._start_idle = 0
         self._spinner = Adw.Spinner()
         self._spinner.set_size_request(32, 32)
         register_css(_PLAYER_CSS)
@@ -283,9 +284,10 @@ class PlayerView(Adw.NavigationPage):
 
     def _on_first_map(self, _widget):
         self.disconnect_by_func(self._on_first_map)
-        GLib.idle_add(self._start_playback)
+        self._start_idle = GLib.idle_add(self._start_playback)
 
     def _start_playback(self):
+        self._start_idle = 0
         if not self.get_mapped():
             log.debug('_start_playback: not mapped, skip')
             return
@@ -703,6 +705,9 @@ class PlayerView(Adw.NavigationPage):
                 root = self.get_root()
                 if root:
                     root.unfullscreen()
+            if self._start_idle:
+                GLib.source_remove(self._start_idle)
+                self._start_idle = 0
             if self._hide_timer:
                 GLib.source_remove(self._hide_timer)
                 self._hide_timer = 0
