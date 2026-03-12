@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Gtk
+from gi.repository import Gio, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.models import Genre
@@ -26,6 +26,7 @@ class GenreReleasesView(Gtk.Box):
         self._loading = False
         self._reached_end = False
         self._on_release_activated = None
+        self._cancellable = None
 
         self._grid = ContentGrid()
         self._grid.set_on_scroll_near_end(self._on_scroll_near_end)
@@ -51,10 +52,14 @@ class GenreReleasesView(Gtk.Box):
         self._loading = True
         self._page += 1
         self._grid.set_spinner_visible(True)
+        if self._cancellable:
+            self._cancellable.cancel()
+        self._cancellable = Gio.Cancellable()
         self._client.get_catalog(
             page=self._page, limit=20,
             filters={'genres': [self._genre.id]},
             callback=self._on_catalog_loaded,
+            cancellable=self._cancellable,
         )
 
     def retry(self):
@@ -82,3 +87,11 @@ class GenreReleasesView(Gtk.Box):
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
+
+    def do_unmap(self):
+        try:
+            if self._cancellable:
+                self._cancellable.cancel()
+                self._cancellable = None
+        finally:
+            Gtk.Box.do_unmap(self)

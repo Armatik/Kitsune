@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk
+from gi.repository import Gio, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.models import Franchise
@@ -22,6 +22,7 @@ class FranchiseReleasesView(Gtk.Box):
         self._franchise = franchise
         self._client = client
         self._on_release_activated = None
+        self._cancellable = None
 
         self._grid = ContentGrid()
         self._grid.set_on_child_activated(self._on_child_activated)
@@ -40,9 +41,13 @@ class FranchiseReleasesView(Gtk.Box):
 
     def _load_franchise(self):
         self._grid.set_spinner_visible(True)
+        if self._cancellable:
+            self._cancellable.cancel()
+        self._cancellable = Gio.Cancellable()
         self._client.get_franchise(
             self._franchise.id,
             callback=self._on_franchise_loaded,
+            cancellable=self._cancellable,
         )
 
     def retry(self):
@@ -64,3 +69,11 @@ class FranchiseReleasesView(Gtk.Box):
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
+
+    def do_unmap(self):
+        try:
+            if self._cancellable:
+                self._cancellable.cancel()
+                self._cancellable = None
+        finally:
+            Gtk.Box.do_unmap(self)

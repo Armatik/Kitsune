@@ -23,6 +23,7 @@ class TagReleasesView(Gtk.Box):
         self._tag = tag
         self._client = client
         self._on_release_activated = None
+        self._batch_idle = 0
 
         self._grid = ContentGrid()
         self._grid.set_on_child_activated(self._on_child_activated)
@@ -80,15 +81,26 @@ class TagReleasesView(Gtk.Box):
         self._add_batch()
 
     def _add_batch(self):
+        self._batch_idle = 0
+        if not self.get_mapped():
+            return GLib.SOURCE_REMOVE
         batch = self._batch[:4]
         self._batch = self._batch[4:]
         for release in batch:
             self._grid.append_child(ReleaseCard(release))
         if self._batch:
-            GLib.idle_add(self._add_batch)
+            self._batch_idle = GLib.idle_add(self._add_batch)
         else:
             self._grid.show_end()
 
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
             self._on_release_activated(child.release)
+
+    def do_unmap(self):
+        try:
+            if self._batch_idle:
+                GLib.source_remove(self._batch_idle)
+                self._batch_idle = 0
+        finally:
+            Gtk.Box.do_unmap(self)
