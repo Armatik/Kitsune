@@ -101,7 +101,8 @@ class PlayerView(Adw.NavigationPage):
         self._last_motion = 0
         self._hide_timer = 0
         self._controls_visible = True
-        self._hovering_controls = False
+        self._last_mx = -1.0
+        self._last_my = -1.0
         self._fullscreen = False
         self._fade_anim = None
         self._last_duration = 0
@@ -241,10 +242,11 @@ class PlayerView(Adw.NavigationPage):
         motion.connect('motion', self._on_motion)
         self.main_overlay.add_controller(motion)
 
-        # Track hover over controls — don't auto-hide while hovering
+        # Motion on controls — reset hide timer (controls_box covers
+        # the whole overlay, so when can_target=True events go here
+        # instead of main_overlay)
         ctrl_motion = Gtk.EventControllerMotion()
-        ctrl_motion.connect('enter', lambda *a: setattr(self, '_hovering_controls', True))
-        ctrl_motion.connect('leave', self._on_controls_leave)
+        ctrl_motion.connect('motion', self._on_motion)
         self.controls_box.add_controller(ctrl_motion)
 
         # Click on video — tap to reveal, double-click to fullscreen
@@ -351,20 +353,19 @@ class PlayerView(Adw.NavigationPage):
         self._hide_timer = 0
         if scheduled_at != self._last_motion:
             return GLib.SOURCE_REMOVE
-        if self._hovering_controls:
-            return GLib.SOURCE_REMOVE
         self._hide_controls()
         return GLib.SOURCE_REMOVE
 
     # --- Input handlers ---
 
-    def _on_motion(self, _ctrl, _x, _y):
+    def _on_motion(self, _ctrl, x, y):
+        dx = x - self._last_mx
+        dy = y - self._last_my
+        if dx * dx + dy * dy < 1:
+            return
+        self._last_mx = x
+        self._last_my = y
         self._reveal_controls()
-
-    def _on_controls_leave(self, *_args):
-        self._hovering_controls = False
-        if self._player.is_playing:
-            self._schedule_hide()
 
     def _on_click_released(self, _gesture, n_press, _x, _y):
         if n_press == 2:
