@@ -70,6 +70,13 @@ meson compile -C _build
 sudo meson install -C _build --no-rebuild
 ```
 
+**Зависимости для работы:**
+
+Для нормального воспроизведения необходимо наличие:
+
+- gst-plugin-gtk4
+- libwebp-pixbuf-loader
+
 ## Сообщество
 
 - [Telegram-канал](https://t.me/kitsune_linux) — новости и обновления
