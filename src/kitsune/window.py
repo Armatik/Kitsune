@@ -191,25 +191,23 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self.narrow_tabs_box.append(btn)
             self._narrow_tab_buttons[tab_id] = btn
 
-        # Show drag handle only if there are overflow tabs
-        has_overflow = len(tab_ids) > 3
-        self.narrow_drag_handle.set_visible(has_overflow)
+        # Always show drag handle (sheet has Preferences + About)
+        self.narrow_drag_handle.set_visible(True)
 
         # Drag handle pill at top of sheet content
-        if has_overflow:
-            sheet_handle = Gtk.Box(halign=Gtk.Align.CENTER,
-                                   margin_top=8, margin_bottom=4)
-            pill = Gtk.Box(width_request=32, height_request=4,
-                           valign=Gtk.Align.CENTER)
-            pill.add_css_class('drag-handle-pill')
-            sheet_handle.append(pill)
-            gesture = Gtk.GestureClick.new()
-            gesture.connect(
-                'released',
-                lambda *_: self.narrow_sheet.set_open(False),
-            )
-            sheet_handle.add_controller(gesture)
-            self.narrow_sheet_box.append(sheet_handle)
+        sheet_handle = Gtk.Box(halign=Gtk.Align.CENTER,
+                               margin_top=8, margin_bottom=4)
+        pill = Gtk.Box(width_request=32, height_request=4,
+                       valign=Gtk.Align.CENTER)
+        pill.add_css_class('drag-handle-pill')
+        sheet_handle.append(pill)
+        gesture = Gtk.GestureClick.new()
+        gesture.connect(
+            'released',
+            lambda *_: self.narrow_sheet.set_open(False),
+        )
+        sheet_handle.add_controller(gesture)
+        self.narrow_sheet_box.append(sheet_handle)
 
         # Sheet content: grid or list style
         sheet_style = self._settings.get_string('navbar-sheet-style')
@@ -222,16 +220,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if self._drag_handle_gesture:
             self.narrow_drag_handle.remove_controller(
                 self._drag_handle_gesture)
-        if has_overflow:
-            self._drag_handle_gesture = Gtk.GestureClick.new()
-            self._drag_handle_gesture.connect(
-                'released',
-                lambda *_: self.narrow_sheet.set_open(True),
-            )
-            self.narrow_drag_handle.add_controller(
-                self._drag_handle_gesture)
-        else:
-            self._drag_handle_gesture = None
+        self._drag_handle_gesture = Gtk.GestureClick.new()
+        self._drag_handle_gesture.connect(
+            'released',
+            lambda *_: self.narrow_sheet.set_open(True),
+        )
+        self.narrow_drag_handle.add_controller(
+            self._drag_handle_gesture)
 
     def _build_sheet_list(self, tab_ids, labels):
         """Build sheet content as a list of rows."""
@@ -250,6 +245,28 @@ class KitsuneWindow(Adw.ApplicationWindow):
             listbox.append(row)
         listbox.connect('row-activated', self._on_sheet_row_activated)
         self.narrow_sheet_box.append(listbox)
+
+        # Separator + app menu items
+        self.narrow_sheet_box.append(Gtk.Separator(
+            margin_top=4, margin_bottom=4))
+        menu_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        menu_list.add_css_class('navigation-sidebar')
+        prefs_row = Adw.ActionRow(
+            title=_('Preferences'),
+            icon_name='preferences-system-symbolic',
+            activatable=True,
+        )
+        prefs_row._action = 'preferences'
+        menu_list.append(prefs_row)
+        about_row = Adw.ActionRow(
+            title=_('About Kitsune'),
+            icon_name='help-about-symbolic',
+            activatable=True,
+        )
+        about_row._action = 'about'
+        menu_list.append(about_row)
+        menu_list.connect('row-activated', self._on_sheet_menu_activated)
+        self.narrow_sheet_box.append(menu_list)
 
     def _build_sheet_grid(self, tab_ids, labels):
         """Build sheet content as a grid of icon buttons."""
@@ -287,6 +304,43 @@ class KitsuneWindow(Adw.ApplicationWindow):
             flow.append(btn)
         self.narrow_sheet_box.append(flow)
 
+        # Separator + app menu items
+        self.narrow_sheet_box.append(Gtk.Separator(
+            margin_start=12, margin_end=12))
+        menu_flow = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            homogeneous=True,
+            max_children_per_line=4,
+            min_children_per_line=3,
+            row_spacing=8,
+            column_spacing=8,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+        )
+        menu_flow.add_css_class('sheet-grid')
+        for icon, label, action in (
+            ('preferences-system-symbolic', _('Preferences'), 'preferences'),
+            ('help-about-symbolic', _('About Kitsune'), 'about'),
+        ):
+            btn = Gtk.Button()
+            btn.add_css_class('flat')
+            btn.add_css_class('sheet-grid-item')
+            box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                spacing=4, halign=Gtk.Align.CENTER,
+                valign=Gtk.Align.CENTER,
+            )
+            box.append(Gtk.Image(icon_name=icon))
+            lbl = Gtk.Label(label=label)
+            lbl.add_css_class('caption')
+            box.append(lbl)
+            btn.set_child(box)
+            btn.connect('clicked', self._on_sheet_menu_clicked, action)
+            menu_flow.append(btn)
+        self.narrow_sheet_box.append(menu_flow)
+
     def _on_narrow_tab_clicked(self, _button, tab_id):
         self._switch_tab(tab_id)
 
@@ -297,6 +351,20 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _on_sheet_grid_clicked(self, _button, tab_id):
         self.narrow_sheet.set_open(False)
         self._switch_tab(tab_id)
+
+    def _on_sheet_menu_activated(self, _listbox, row):
+        self.narrow_sheet.set_open(False)
+        self._activate_menu_action(row._action)
+
+    def _on_sheet_menu_clicked(self, _button, action):
+        self.narrow_sheet.set_open(False)
+        self._activate_menu_action(action)
+
+    def _activate_menu_action(self, action):
+        if action == 'preferences':
+            self._on_preferences(None, None)
+        elif action == 'about':
+            self.get_application().activate_action('about', None)
 
     def _on_navbar_settings_changed(self, _settings, _key):
         """Rebuild navigation when settings change."""
