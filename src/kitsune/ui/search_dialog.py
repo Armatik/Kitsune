@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -16,6 +18,8 @@ from kitsune.models.release import Genre, ReleaseName
 from kitsune.models.franchise import Franchise
 from kitsune import ADW_TRANSITION
 from kitsune.ui import register_css
+
+log = logging.getLogger('kitsune.search_dialog')
 
 _T = ADW_TRANSITION
 
@@ -269,8 +273,42 @@ class SearchDialog(Adw.Dialog):
         self._update_tabs()
         if total > 0:
             self.stack.set_visible_child_name('results')
+            log.debug('render: %d results across %d categories',
+                      total, len(self._section_indices))
+            # Log row sizes after layout settles
+            GLib.idle_add(self._debug_log_sizes)
         else:
             self.stack.set_visible_child_name('no-results')
+
+    def _debug_log_sizes(self):
+        idx = 0
+        row = self.listbox.get_row_at_index(idx)
+        while row:
+            child = row.get_child()
+            stype = getattr(row, '_search_type', 'header')
+            log.debug('row[%d] type=%s row_alloc=(%d,%d) child_alloc=(%d,%d)',
+                      idx, stype,
+                      row.get_allocated_width(), row.get_allocated_height(),
+                      child.get_allocated_width() if child else 0,
+                      child.get_allocated_height() if child else 0)
+            # Find thumbnails in the row
+            if child:
+                c = child.get_first_child() if hasattr(child, 'get_first_child') else None
+                while c:
+                    if isinstance(c, Gtk.Fixed):
+                        log.debug('  Fixed: req=(%d,%d) alloc=(%d,%d)',
+                                  c.get_size_request()[0], c.get_size_request()[1],
+                                  c.get_allocated_width(), c.get_allocated_height())
+                        pic = c.get_first_child()
+                        if pic:
+                            log.debug('  Picture: req=(%d,%d) alloc=(%d,%d) type=%s',
+                                      pic.get_size_request()[0], pic.get_size_request()[1],
+                                      pic.get_allocated_width(), pic.get_allocated_height(),
+                                      type(pic).__name__)
+                    c = c.get_next_sibling() if hasattr(c, 'get_next_sibling') else None
+            idx += 1
+            row = self.listbox.get_row_at_index(idx)
+        return GLib.SOURCE_REMOVE
 
     def _make_section_header(self, label):
         lbl = Gtk.Label(
@@ -517,6 +555,7 @@ class SearchDialog(Adw.Dialog):
         """Create a fixed-size thumbnail with crop-to-fill. h defaults to w (square)."""
         if h is None:
             h = w
+        log.debug('thumbnail: target=%dx%d url=%s', w, h, url[:60] if url else 'None')
         # Gtk.Fixed gives absolute size control — no expansion
         fixed = Gtk.Fixed(width_request=w, height_request=h)
         fixed.set_size_request(w, h)
@@ -530,9 +569,20 @@ class SearchDialog(Adw.Dialog):
             )
             picture.set_size_request(w, h)
             fixed.put(picture, 0, 0)
-            load_image(url, lambda tex, err, p=picture:
-                       p.set_paintable(tex) if tex else None,
-                       category='posters')
+
+            def _on_thumb_loaded(tex, err, p=picture, fw=w, fh=h, u=url):
+                if tex:
+                    log.debug('thumbnail loaded: %dx%d tex=%dx%d url=%s',
+                              fw, fh, tex.get_width(), tex.get_height(),
+                              u[:60])
+                    p.set_paintable(tex)
+                    log.debug('thumbnail after set: size_req=(%d,%d) alloc=(%d,%d)',
+                              p.get_size_request()[0], p.get_size_request()[1],
+                              p.get_allocated_width(), p.get_allocated_height())
+                else:
+                    log.debug('thumbnail failed: %s url=%s', err, u[:60] if u else '')
+
+            load_image(url, _on_thumb_loaded, category='posters')
         else:
             placeholder = Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
