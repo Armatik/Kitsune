@@ -34,10 +34,6 @@ _SEARCH_CSS = (
     ' transition: background ' + _T + '; }'
     ' .search-poster { border-radius: 8px;'
     ' overflow: hidden; }'
-    ' .search-poster-56x80 { min-width: 56px; max-width: 56px;'
-    ' min-height: 80px; max-height: 80px; }'
-    ' .search-poster-36x36 { min-width: 36px; max-width: 36px;'
-    ' min-height: 36px; max-height: 36px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
     ' .search-episode-bar { background: @accent_bg_color;'
     ' border-radius: 8px; padding: 6px 10px; margin-top: 4px;'
@@ -539,19 +535,20 @@ class SearchDialog(Adw.Dialog):
     # --- Helpers ---
 
     def _make_fixed_thumbnail(self, url, w, h=None):
-        """Create a fixed-size thumbnail with crop-to-fill via CSS constraints."""
+        """Create a fixed-size thumbnail with crop-to-fill.
+
+        Uses Adw.Clamp for width and explicit height on inner box.
+        """
         if h is None:
             h = w
-        log.debug('thumbnail: target=%dx%d url=%s', w, h, url[:60] if url else 'None')
 
-        # Use Gtk.Box + CSS max-width/max-height for true size clamping
-        frame = Gtk.Box(
-            hexpand=False, vexpand=False,
-            halign=Gtk.Align.START, valign=Gtk.Align.START,
+        # Inner box: holds the picture, has overflow hidden for crop + border-radius
+        inner = Gtk.Box(
+            hexpand=True, vexpand=True,
         )
-        frame.set_overflow(Gtk.Overflow.HIDDEN)
-        frame.add_css_class('search-poster')
-        frame.add_css_class(f'search-poster-{w}x{h}')
+        inner.set_size_request(w, h)
+        inner.set_overflow(Gtk.Overflow.HIDDEN)
+        inner.add_css_class('search-poster')
 
         if url:
             from kitsune.ui.image_cache import load_image
@@ -560,18 +557,28 @@ class SearchDialog(Adw.Dialog):
                 can_shrink=True,
                 hexpand=True, vexpand=True,
             )
-            frame.append(picture)
+            inner.append(picture)
             load_image(url, lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None,
                        category='posters')
         else:
-            frame.append(Gtk.Image(
+            inner.append(Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
                 pixel_size=int(min(w, h) * 0.45), opacity=0.3,
                 halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
                 hexpand=True, vexpand=True,
             ))
-        return frame
+
+        # Adw.Clamp constrains maximum width — this actually works in GTK4
+        clamp = Adw.Clamp(
+            maximum_size=w,
+            tightening_threshold=w,
+            child=inner,
+            hexpand=False, vexpand=False,
+            halign=Gtk.Align.START, valign=Gtk.Align.START,
+        )
+        clamp.set_size_request(w, h)
+        return clamp
 
     # --- Genre / Franchise / Tag rows ---
 
