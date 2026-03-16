@@ -85,6 +85,17 @@ class KitsuneWindow(Adw.ApplicationWindow):
         prefs_action.connect('activate', self._on_preferences)
         self.add_action(prefs_action)
 
+        shortcut_ctrl = Gtk.ShortcutController()
+        shortcut_ctrl.set_scope(Gtk.ShortcutScope.MANAGED)
+        shortcut = Gtk.Shortcut(
+            trigger=Gtk.ShortcutTrigger.parse_string('<Control>f'),
+            action=Gtk.CallbackAction.new(
+                lambda *_: self._open_search_dialog() or True
+            ),
+        )
+        shortcut_ctrl.add_shortcut(shortcut)
+        self.add_controller(shortcut_ctrl)
+
     def _setup_views(self):
         self._narrow = False
         self._genres_view = None
@@ -436,12 +447,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_search_clicked(self, _button):
-        dialog = Adw.AlertDialog(
-            heading=_('Search'),
-            body=_('This feature is under development'),
-        )
-        dialog.add_response('ok', _('OK'))
-        dialog.present(self)
+        self._open_search_dialog()
 
     @Gtk.Template.Callback()
     def on_back_clicked(self, _button):
@@ -640,6 +646,33 @@ class KitsuneWindow(Adw.ApplicationWindow):
         releases_view.set_narrow(self._narrow)
         page = Adw.NavigationPage(
             title=genre.name,
+            child=Adw.ToolbarView(
+                top_bar_style=Adw.ToolbarStyle.FLAT,
+                content=releases_view,
+            ),
+        )
+        page.get_child().add_top_bar(Adw.HeaderBar())
+        self.nav_view.push(page)
+
+    def _open_search_dialog(self):
+        from kitsune.ui.search_dialog import SearchDialog
+        dialog = SearchDialog(client=self._client)
+        dialog.set_on_release_activated(self._show_release_detail)
+        dialog.set_on_episode_play(self._play_episode)
+        dialog.set_on_genre_activated(self._navigate_to_genre)
+        dialog.set_on_franchise_activated(self._navigate_to_franchise)
+        dialog.set_on_tag_activated(self._navigate_to_tag)
+        dialog.present(self)
+
+    def _navigate_to_franchise(self, franchise):
+        from kitsune.ui.franchise_releases_view import FranchiseReleasesView
+        releases_view = FranchiseReleasesView(
+            franchise=franchise, client=self._client,
+        )
+        releases_view.set_on_release_activated(self._show_release_detail)
+        releases_view.set_narrow(self._narrow)
+        page = Adw.NavigationPage(
+            title=franchise.name,
             child=Adw.ToolbarView(
                 top_bar_style=Adw.ToolbarStyle.FLAT,
                 content=releases_view,
