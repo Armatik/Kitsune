@@ -75,8 +75,11 @@ def _categories(settings=None):
     if settings:
         import json
         try:
-            order = json.loads(settings.get_string('search-category-order'))
-        except (json.JSONDecodeError, TypeError):
+            schema = settings.get_property('settings-schema')
+            if schema and schema.has_key('search-category-order'):
+                order = json.loads(
+                    settings.get_string('search-category-order'))
+        except (json.JSONDecodeError, TypeError, Exception):
             pass
     return [(cid, _ALL_CATEGORIES[cid]()) for cid in order if cid in _ALL_CATEGORIES]
 
