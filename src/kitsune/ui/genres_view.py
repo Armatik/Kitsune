@@ -2,9 +2,21 @@
 
 from __future__ import annotations
 
+from kitsune.models.release import Genre
+from kitsune.storage import search_index
 from kitsune.ui.genre_releases_view import GenreReleasesView
 from kitsune.ui.items_grid_view import ItemsGridView
 from kitsune.ui.widgets.genre_card import GenreCard
+
+
+def _genre_from_index(d: dict) -> Genre:
+    """Construct Genre from flat index dict (image is already a resolved URL)."""
+    return Genre(
+        id=d.get('id', 0),
+        name=d.get('name', ''),
+        image=d.get('image'),
+        total_releases=d.get('total_releases', 0),
+    )
 
 
 class GenresView(ItemsGridView):
@@ -15,7 +27,17 @@ class GenresView(ItemsGridView):
 
     def _load_items(self):
         self._grid.set_spinner_visible(True)
-        self._client.get_genres(callback=self._on_items_loaded)
+        cached = search_index.get_genres()
+        if cached is not None:
+            genres = [_genre_from_index(g) for g in cached]
+            self._on_items_loaded(genres, None)
+        else:
+            self._client.get_genres(callback=self._on_genres_fetched)
+
+    def _on_genres_fetched(self, genres, error):
+        if not error and genres:
+            search_index.update_genres(genres)
+        self._on_items_loaded(genres, error)
 
     def _create_card(self, item):
         return GenreCard(item)

@@ -24,6 +24,11 @@ _MAX_DOWNLOAD_SIZE = 30 * 1024 * 1024  # 30 MB
 _memory_cache: OrderedDict[str, Gdk.Texture] = OrderedDict()
 
 
+def get_from_memory(url: str):
+    """Return cached Gdk.Texture if url is in memory, else None."""
+    return _memory_cache.get(url)
+
+
 def _cache_dir(category: str = 'posters') -> str:
     return os.path.join(_base_cache_dir, category)
 

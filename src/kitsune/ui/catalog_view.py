@@ -65,13 +65,24 @@ class CatalogView(Gtk.Box):
         return self._filter_panel
 
     def _load_genres(self):
-        self._client.get_genres(callback=self._on_genres_loaded)
+        from kitsune.storage import search_index
+        cached = search_index.get_genres()
+        if cached is not None:
+            from kitsune.models.release import Genre
+            genres = [Genre(id=g['id'], name=g['name'], image=g.get('image'),
+                            total_releases=g.get('total_releases', 0))
+                      for g in cached]
+            self._on_genres_loaded(genres, None)
+        else:
+            self._client.get_genres(callback=self._on_genres_loaded)
 
     def _on_genres_loaded(self, genres, error):
         if genres:
             self._genres_data = [{'id': g.id, 'name': g.name} for g in genres]
             if self._filter_panel:
                 self._filter_panel.update_genres(self._genres_data)
+            from kitsune.storage import search_index
+            search_index.update_genres(genres)
 
     def _load_year_range(self):
         self._client.get_year_range(callback=self._on_year_range_loaded)

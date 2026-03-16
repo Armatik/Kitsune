@@ -26,6 +26,8 @@ def save(release_id: int, data: dict):
     release_id = int(release_id)
     target = _CACHE_DIR / f'{release_id}.json'
     _atomic_write_json(target, data)
+    from kitsune.storage import search_index
+    search_index.index_release(release_id, data)
 
 
 def get_count() -> int:
@@ -45,3 +47,5 @@ def clear_all():
         for f in _CACHE_DIR.iterdir():
             if f.suffix == '.json':
                 f.unlink()
+    from kitsune.storage import search_index
+    search_index.clear_releases()
