@@ -60,13 +60,26 @@ _SEARCH_CSS = (
 )
 
 
-def _categories():
-    return [
-        ('anime', _('Anime')),
-        ('genres', _('Genres')),
-        ('franchises', _('Franchises')),
-        ('tags', _('Tags')),
-    ]
+_ALL_CATEGORIES = {
+    'anime': lambda: _('Anime'),
+    'genres': lambda: _('Genres'),
+    'franchises': lambda: _('Franchises'),
+    'tags': lambda: _('Tags'),
+}
+
+_DEFAULT_ORDER = ['anime', 'genres', 'franchises', 'tags']
+
+
+def _categories(settings=None):
+    """Return category list ordered by GSettings preference."""
+    order = _DEFAULT_ORDER
+    if settings:
+        import json
+        try:
+            order = json.loads(settings.get_string('search-category-order'))
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return [(cid, _ALL_CATEGORIES[cid]()) for cid in order if cid in _ALL_CATEGORIES]
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/search_dialog.ui')
@@ -85,6 +98,7 @@ class SearchDialog(Adw.Dialog):
         super().__init__(**kwargs)
         register_css(_SEARCH_CSS)
         self._client = client
+        self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
         self._cancellable = None
         self._debounce_id = 0
         self._on_release_activated = None
@@ -148,7 +162,7 @@ class SearchDialog(Adw.Dialog):
     # --- Tabs ---
 
     def _build_tabs(self):
-        for cat_id, label in _categories():
+        for cat_id, label in _categories(self._settings):
             btn = Gtk.ToggleButton(
                 label=label,
                 css_classes=['pill', 'search-tab'],
@@ -391,7 +405,7 @@ class SearchDialog(Adw.Dialog):
 
         total = 0
         idx = 0
-        for cat_id, label in _categories():
+        for cat_id, label in _categories(self._settings):
             items = self._results.get(cat_id, [])
             if not items:
                 continue
