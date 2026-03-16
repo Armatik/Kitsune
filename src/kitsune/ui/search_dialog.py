@@ -588,7 +588,10 @@ class SearchDialog(Adw.Dialog):
         box.append(self._make_fixed_thumbnail(item.get('image'), 56, 80))
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                              hexpand=True, valign=Gtk.Align.CENTER)
-        label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
+        label_box.append(Gtk.Label(
+            label=item.get('name', ''), xalign=0,
+            ellipsize=3, lines=2, wrap=True,
+        ))
         box.append(label_box)
         count = item.get('total_releases', 0)
         if count:
@@ -607,7 +610,10 @@ class SearchDialog(Adw.Dialog):
         box.append(self._make_fixed_thumbnail(item.get('image'), 56, 80))
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                              hexpand=True, valign=Gtk.Align.CENTER)
-        label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
+        label_box.append(Gtk.Label(
+            label=item.get('name', ''), xalign=0,
+            ellipsize=3, lines=2, wrap=True,
+        ))
         parts = []
         fy = item.get('first_year')
         ly = item.get('last_year')
@@ -636,8 +642,12 @@ class SearchDialog(Adw.Dialog):
         else:
             from kitsune.ui.widgets.tag_card import create_color_circle
             box.append(create_color_circle(item.get('icon_value', 'blue'), 28))
-        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
-        label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                             hexpand=True, valign=Gtk.Align.CENTER)
+        label_box.append(Gtk.Label(
+            label=item.get('name', ''), xalign=0,
+            ellipsize=3, lines=2, wrap=True,
+        ))
         box.append(label_box)
         count = len(item.get('releases', []))
         if count:
