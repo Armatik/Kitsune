@@ -513,10 +513,12 @@ class SearchDialog(Adw.Dialog):
 
     # --- Helpers ---
 
-    def _make_fixed_thumbnail(self, url, size):
-        """Create a fixed-size square thumbnail with crop-to-fill."""
-        frame = Gtk.Box(valign=Gtk.Align.CENTER)
-        frame.set_size_request(size, size)
+    def _make_fixed_thumbnail(self, url, w, h=None):
+        """Create a fixed-size thumbnail with crop-to-fill. h defaults to w (square)."""
+        if h is None:
+            h = w
+        frame = Gtk.Box(valign=Gtk.Align.START)
+        frame.set_size_request(w, h)
         frame.set_overflow(Gtk.Overflow.HIDDEN)
         frame.add_css_class('search-poster')
         if url:
@@ -527,7 +529,7 @@ class SearchDialog(Adw.Dialog):
                 hexpand=False, vexpand=False,
                 halign=Gtk.Align.FILL, valign=Gtk.Align.FILL,
             )
-            picture.set_size_request(size, size)
+            picture.set_size_request(w, h)
             frame.append(picture)
             load_image(url, lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None,
@@ -535,7 +537,7 @@ class SearchDialog(Adw.Dialog):
         else:
             frame.append(Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
-                pixel_size=int(size * 0.45), opacity=0.3,
+                pixel_size=int(min(w, h) * 0.45), opacity=0.3,
                 halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
                 hexpand=True, vexpand=True,
             ))
@@ -544,9 +546,9 @@ class SearchDialog(Adw.Dialog):
     # --- Genre / Franchise / Tag rows ---
 
     def _make_genre_row(self, item):
-        box = Gtk.Box(spacing=10)
+        box = Gtk.Box(spacing=12)
         box.add_css_class('search-result')
-        box.append(self._make_fixed_thumbnail(item.get('image'), 36))
+        box.append(self._make_fixed_thumbnail(item.get('image'), 56, 80))
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                              hexpand=True, valign=Gtk.Align.CENTER)
         label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
