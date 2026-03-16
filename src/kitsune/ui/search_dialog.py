@@ -26,9 +26,10 @@ _SEARCH_CSS = (
     ' .search-poster { border-radius: 8px; min-width: 48px;'
     ' min-height: 68px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
-    ' .search-episode-bar { background: alpha(@accent_bg_color, 0.15);'
+    ' .search-episode-bar { background: @accent_bg_color;'
     ' border-radius: 8px; padding: 6px 10px; margin-top: 4px; }'
     ' .search-episode-bar label { color: @accent_fg_color; }'
+    ' .search-episode-bar image { color: @accent_fg_color; }'
     ' .search-dialog-list row { background: none; }'
     ' .search-dialog-list row:hover .search-result {'
     ' background: alpha(currentColor, 0.07); }'
@@ -280,30 +281,29 @@ class SearchDialog(Adw.Dialog):
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         outer.add_css_class('search-result')
 
-        # --- Top: poster + info (fixed height) ---
+        # --- Top: poster + info ---
         top = Gtk.Box(spacing=12)
 
-        # Poster — fixed 48x68
+        # Poster — fixed 56x80, valign START so it doesn't stretch
+        frame = Gtk.Box(valign=Gtk.Align.START)
+        frame.set_size_request(56, 80)
+        frame.set_overflow(Gtk.Overflow.HIDDEN)
+        frame.add_css_class('search-poster')
         if entry.get('poster_preview'):
             from kitsune.ui.image_cache import load_image
             picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
-            picture.add_css_class('search-poster')
-            picture.set_size_request(48, 68)
+            picture.set_size_request(56, 80)
             load_image(entry['poster_preview'], lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None, category='posters')
-            frame = Gtk.Box()
-            frame.set_size_request(48, 68)
-            frame.set_overflow(Gtk.Overflow.HIDDEN)
-            frame.add_css_class('search-poster')
             frame.append(picture)
-            top.append(frame)
         else:
             placeholder = Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
                 pixel_size=24, opacity=0.3,
             )
-            placeholder.set_size_request(48, 68)
-            top.append(placeholder)
+            placeholder.set_size_request(56, 80)
+            frame.append(placeholder)
+        top.append(frame)
 
         # Info column
         info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
@@ -448,7 +448,7 @@ class SearchDialog(Adw.Dialog):
                              position, ep_data, entry):
         duration = ep_data.get('duration') if ep_data else None
 
-        bar = Gtk.Box(spacing=8)
+        bar = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
         bar.add_css_class('search-episode-bar')
 
         ordinal_str = int(ordinal) if ordinal == int(ordinal) else ordinal
@@ -461,10 +461,14 @@ class SearchDialog(Adw.Dialog):
             dur_str = f'{duration // 60}:{duration % 60:02d}'
             bar.append(Gtk.Label(
                 label=f'{pos_str} / {dur_str}',
-                css_classes=['caption', 'dim-label'],
+                css_classes=['caption'],
             ))
+        bar.append(Gtk.Image(
+            icon_name='go-next-symbolic', pixel_size=16,
+        ))
 
         btn = Gtk.Button(css_classes=['flat'], child=bar)
+        btn.set_overflow(Gtk.Overflow.HIDDEN)
         btn.connect('clicked', self._on_episode_clicked,
                      release_id, ordinal, entry)
         outer.append(btn)
@@ -472,16 +476,20 @@ class SearchDialog(Adw.Dialog):
     def _add_new_episode_block(self, outer, release_id, ep_data, entry):
         ordinal = ep_data.get('ordinal', 0)
 
-        bar = Gtk.Box(spacing=8)
+        bar = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
         bar.add_css_class('search-episode-bar')
 
         ordinal_str = int(ordinal) if ordinal == int(ordinal) else ordinal
         bar.append(Gtk.Label(
             label=_('New episode') + f' {ordinal_str}',
-            css_classes=['caption', 'accent'], hexpand=True, xalign=0,
+            css_classes=['caption'], hexpand=True, xalign=0,
+        ))
+        bar.append(Gtk.Image(
+            icon_name='go-next-symbolic', pixel_size=16,
         ))
 
         btn = Gtk.Button(css_classes=['flat'], child=bar)
+        btn.set_overflow(Gtk.Overflow.HIDDEN)
         btn.connect('clicked', self._on_episode_clicked,
                      release_id, ordinal, entry)
         outer.append(btn)
