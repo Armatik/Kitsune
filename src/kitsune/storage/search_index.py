@@ -117,3 +117,130 @@ def remove_release(release_id: int):
 def get_release_meta(release_id: int) -> dict | None:
     idx = load()
     return idx['releases'].get(str(release_id))
+
+
+def update_genres(genres):
+    idx = load()
+    idx['genres'] = {
+        'fetched_at': int(time.time()),
+        'items': [
+            {
+                'id': g.id,
+                'name': g.name,
+                'image': g.image,
+                'total_releases': g.total_releases,
+            }
+            for g in genres
+        ],
+    }
+    _save()
+
+
+def update_franchises(franchises):
+    idx = load()
+    idx['franchises'] = {
+        'fetched_at': int(time.time()),
+        'items': [
+            {
+                'id': f.id,
+                'name': f.name,
+                'name_english': f.name_english,
+                'image': f.image,
+                'first_year': f.first_year,
+                'last_year': f.last_year,
+                'total_releases': f.total_releases,
+            }
+            for f in franchises
+        ],
+    }
+    _save()
+
+
+def get_genres() -> list[dict] | None:
+    idx = load()
+    section = idx.get('genres')
+    if not section or not isinstance(section, dict):
+        return None
+    fetched_at = section.get('fetched_at', 0)
+    if time.time() - fetched_at > _GENRES_TTL:
+        return None
+    return section.get('items')
+
+
+def get_franchises() -> list[dict] | None:
+    idx = load()
+    section = idx.get('franchises')
+    if not section or not isinstance(section, dict):
+        return None
+    fetched_at = section.get('fetched_at', 0)
+    if time.time() - fetched_at > _FRANCHISES_TTL:
+        return None
+    return section.get('items')
+
+
+def search_releases(query: str) -> list[dict]:
+    if not query or not query.strip():
+        return []
+    q = query.strip().casefold()
+    idx = load()
+    results = []
+    for release_id, entry in idx['releases'].items():
+        fields = (
+            entry.get('main', ''),
+            entry.get('english') or '',
+            entry.get('alternative') or '',
+            entry.get('description') or '',
+        )
+        if any(q in f.casefold() for f in fields):
+            results.append({**entry, 'id': int(release_id)})
+    return results
+
+
+def search_genres(query: str) -> list[dict]:
+    if not query or not query.strip():
+        return []
+    q = query.strip().casefold()
+    idx = load()
+    section = idx.get('genres')
+    if not section or not isinstance(section, dict):
+        return []
+    return [g for g in section.get('items', []) if q in g.get('name', '').casefold()]
+
+
+def search_franchises(query: str) -> list[dict]:
+    if not query or not query.strip():
+        return []
+    q = query.strip().casefold()
+    idx = load()
+    section = idx.get('franchises')
+    if not section or not isinstance(section, dict):
+        return []
+    return [
+        f for f in section.get('items', [])
+        if q in f.get('name', '').casefold()
+        or q in (f.get('name_english') or '').casefold()
+    ]
+
+
+def get_count() -> int:
+    idx = load()
+    return len(idx['releases'])
+
+
+def get_size() -> int:
+    try:
+        return _INDEX_FILE.stat().st_size
+    except OSError:
+        return 0
+
+
+def clear_releases():
+    idx = load()
+    idx['releases'] = {}
+    _save()
+
+
+def clear_all():
+    global _cache
+    _cache = _empty()
+    _save()

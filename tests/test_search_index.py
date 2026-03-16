@@ -93,3 +93,161 @@ def test_index_release_overwrites(mock_index):
     search_index.index_release(42, updated)
     meta = search_index.get_release_meta(42)
     assert meta['year'] == 2023
+
+
+# --- Task 3: Genre and franchise caching ---
+
+from kitsune.models.release import Genre
+from kitsune.models.franchise import Franchise
+
+
+def test_update_genres(mock_index):
+    genres = [Genre(id=1, name='Сёнен', image='https://img/1', total_releases=50)]
+    search_index.update_genres(genres)
+    cached = search_index.get_genres()
+    assert cached is not None
+    assert len(cached) == 1
+    assert cached[0]['id'] == 1
+    assert cached[0]['name'] == 'Сёнен'
+
+
+def test_get_genres_expired(mock_index):
+    genres = [Genre(id=1, name='Сёнен', image=None, total_releases=50)]
+    search_index.update_genres(genres)
+    idx = search_index.load()
+    idx['genres']['fetched_at'] = 0
+    assert search_index.get_genres() is None
+
+
+def test_update_franchises(mock_index):
+    franchises = [Franchise(id='naruto', name='Наруто', name_english='Naruto',
+                            image='https://img/f', first_year=2002, last_year=2017,
+                            total_releases=6)]
+    search_index.update_franchises(franchises)
+    cached = search_index.get_franchises()
+    assert cached is not None
+    assert len(cached) == 1
+    assert cached[0]['name'] == 'Наруто'
+    assert cached[0]['name_english'] == 'Naruto'
+
+
+def test_get_franchises_expired(mock_index):
+    franchises = [Franchise(id='x', name='X')]
+    search_index.update_franchises(franchises)
+    idx = search_index.load()
+    idx['franchises']['fetched_at'] = 0
+    assert search_index.get_franchises() is None
+
+
+def test_genres_persists_to_disk(mock_index):
+    genres = [Genre(id=1, name='Тест', image=None, total_releases=10)]
+    search_index.update_genres(genres)
+    data = json.loads(mock_index.read_text())
+    assert len(data['genres']['items']) == 1
+
+
+# --- Task 4: Search methods ---
+
+_SAMPLE_RAW_2 = {
+    'id': 100,
+    'name': {'main': 'Ван Пис', 'english': 'One Piece', 'alternative': 'ワンピース'},
+    'description': 'Пираты ищут сокровище.',
+    'poster': None,
+    'type': {'value': 'TV'},
+    'year': 1999,
+    'is_ongoing': True,
+    'genres': [{'id': 1, 'name': 'Сёнен'}],
+}
+
+
+def test_search_releases_by_main(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    search_index.index_release(100, _SAMPLE_RAW_2)
+    results = search_index.search_releases('наруто')
+    assert len(results) == 1
+    assert results[0]['main'] == 'Наруто'
+
+
+def test_search_releases_by_english(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    results = search_index.search_releases('naruto')
+    assert len(results) == 1
+
+
+def test_search_releases_by_description(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    search_index.index_release(100, _SAMPLE_RAW_2)
+    results = search_index.search_releases('пираты')
+    assert len(results) == 1
+    assert results[0]['main'] == 'Ван Пис'
+
+
+def test_search_releases_case_insensitive(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    results = search_index.search_releases('НАРУТО')
+    assert len(results) == 1
+
+
+def test_search_releases_empty_query(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    results = search_index.search_releases('')
+    assert results == []
+
+
+def test_search_genres(mock_index):
+    genres = [
+        Genre(id=1, name='Сёнен', image=None, total_releases=50),
+        Genre(id=2, name='Комедия', image=None, total_releases=30),
+    ]
+    search_index.update_genres(genres)
+    results = search_index.search_genres('комед')
+    assert len(results) == 1
+    assert results[0]['name'] == 'Комедия'
+
+
+def test_search_franchises(mock_index):
+    franchises = [
+        Franchise(id='naruto', name='Наруто', name_english='Naruto'),
+        Franchise(id='op', name='Ван Пис', name_english='One Piece'),
+    ]
+    search_index.update_franchises(franchises)
+    results = search_index.search_franchises('piece')
+    assert len(results) == 1
+    assert results[0]['name'] == 'Ван Пис'
+
+
+# --- Task 5: Stats and cleanup ---
+
+def test_get_count(mock_index):
+    assert search_index.get_count() == 0
+    search_index.index_release(42, _SAMPLE_RAW)
+    assert search_index.get_count() == 1
+    search_index.index_release(100, _SAMPLE_RAW_2)
+    assert search_index.get_count() == 2
+
+
+def test_get_size_zero_when_missing(mock_index):
+    assert search_index.get_size() == 0
+
+
+def test_get_size_nonzero_after_write(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    assert search_index.get_size() > 0
+
+
+def test_clear_releases(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    genres = [Genre(id=1, name='Тест', image=None, total_releases=10)]
+    search_index.update_genres(genres)
+    search_index.clear_releases()
+    assert search_index.get_count() == 0
+    assert search_index.get_genres() is not None
+
+
+def test_clear_all(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    genres = [Genre(id=1, name='Тест', image=None, total_releases=10)]
+    search_index.update_genres(genres)
+    search_index.clear_all()
+    assert search_index.get_count() == 0
+    assert search_index.get_genres() is None
