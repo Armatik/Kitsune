@@ -103,6 +103,11 @@ class SearchDialog(Adw.Dialog):
         self._setup_keyboard()
         self.connect('closed', self._on_closed)
         self._ensure_index_populated()
+        # Hide tabs and set correct spacing on initial open
+        self.tabs_box.set_visible(False)
+        search_row = self.search_entry.get_parent()
+        if search_row:
+            search_row.set_margin_bottom(10)
 
     # --- Public setters ---
 
