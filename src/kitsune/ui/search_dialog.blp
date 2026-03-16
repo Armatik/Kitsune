@@ -1,0 +1,91 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsuneSearchDialog: Adw.Dialog {
+  content-width: 460;
+  content-height: 520;
+  title: _("Search");
+
+  child: Adw.ToolbarView {
+    [top]
+    Adw.HeaderBar {
+      show-start-title-buttons: false;
+      show-end-title-buttons: false;
+
+      title-widget: Gtk.SearchEntry search_entry {
+        placeholder-text: _("Search anime...");
+        hexpand: true;
+        search-changed => $on_search_changed();
+      };
+    }
+
+    content: Gtk.Box {
+      orientation: vertical;
+
+      Gtk.Box tabs_box {
+        margin-start: 12;
+        margin-end: 12;
+        margin-top: 6;
+        margin-bottom: 6;
+        spacing: 6;
+      }
+
+      Gtk.Separator {}
+
+      Gtk.Stack stack {
+        Gtk.StackPage {
+          name: "empty";
+          child: Gtk.Box {
+            orientation: vertical;
+            halign: center;
+            valign: center;
+            vexpand: true;
+            spacing: 8;
+
+            Gtk.Image {
+              icon-name: "system-search-symbolic";
+              pixel-size: 48;
+              opacity: 0.4;
+            }
+
+            Gtk.Label empty_subtitle {
+              wrap: true;
+              justify: center;
+              max-width-chars: 40;
+              opacity: 0.5;
+
+              styles ["dim-label"]
+            }
+          };
+        }
+
+        Gtk.StackPage {
+          name: "results";
+          child: Gtk.ScrolledWindow scrolled {
+            hscrollbar-policy: never;
+            vexpand: true;
+
+            Gtk.ListBox listbox {
+              selection-mode: browse;
+              activate-on-single-click: true;
+              row-activated => $on_row_activated();
+
+              styles ["boxed-list"]
+            }
+          };
+        }
+
+        Gtk.StackPage {
+          name: "no-results";
+          child: Adw.StatusPage {
+            title: _("No Results");
+            description: _("Try a different search query");
+            icon-name: "system-search-symbolic";
+          };
+        }
+      }
+    };
+  };
+}
