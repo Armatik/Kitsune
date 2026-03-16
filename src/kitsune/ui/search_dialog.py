@@ -14,20 +14,26 @@ from kitsune.storage import search_index, tags_store, watch_positions, release_c
 from kitsune.models import Release
 from kitsune.models.release import Genre, ReleaseName
 from kitsune.models.franchise import Franchise
+from kitsune import ADW_TRANSITION
 from kitsune.ui import register_css
+
+_T = ADW_TRANSITION
 
 _SEARCH_CSS = (
     '.search-tab { padding: 4px 10px; min-height: 0; min-width: 0;'
-    ' font-size: 12px; border-radius: 99px; }'
+    ' font-size: 12px; border-radius: 99px;'
+    ' transition: background ' + _T + ', color ' + _T + '; }'
     ' .search-tab:checked { background: @accent_bg_color;'
     ' color: @accent_fg_color; }'
     ' .search-result { background: alpha(currentColor, 0.04);'
-    ' border-radius: 12px; padding: 10px; margin: 3px 6px; }'
+    ' border-radius: 12px; padding: 10px; margin: 3px 6px;'
+    ' transition: background ' + _T + '; }'
     ' .search-poster { border-radius: 8px; min-width: 48px;'
     ' min-height: 68px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
     ' .search-episode-bar { background: @accent_bg_color;'
-    ' border-radius: 8px; padding: 6px 10px; margin-top: 4px; }'
+    ' border-radius: 8px; padding: 6px 10px; margin-top: 4px;'
+    ' transition: background ' + _T + '; }'
     ' .search-episode-bar label { color: @accent_fg_color; }'
     ' .search-episode-bar image { color: @accent_fg_color; }'
     ' .search-episode-btn { margin: 0; padding: 0;'
@@ -37,11 +43,11 @@ _SEARCH_CSS = (
     ' .search-episode-btn:focus { outline: none; background: none; }'
     ' .search-episode-btn:active { background: none; }'
     ' .search-episode-btn:hover .search-episode-bar {'
-    ' background: alpha(@accent_bg_color, 0.85);'
-    ' transition: background 150ms ease-in-out; }'
+    ' background: alpha(@accent_bg_color, 0.85); }'
     ' .search-episode-btn:active .search-episode-bar {'
     ' background: alpha(@accent_bg_color, 0.7); }'
-    ' .search-dialog-list row { background: none; }'
+    ' .search-dialog-list row { background: none;'
+    ' transition: background ' + _T + '; }'
     ' .search-dialog-list row:hover .search-result {'
     ' background: alpha(currentColor, 0.07); }'
     ' .search-dialog-list row:selected .search-result,'
