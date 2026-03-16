@@ -514,23 +514,32 @@ class SearchDialog(Adw.Dialog):
     # --- Helpers ---
 
     def _make_fixed_thumbnail(self, url, size):
-        """Create a fixed-size square thumbnail. Uses Gtk.Image for stable sizing."""
-        image = Gtk.Image(
-            pixel_size=size,
-            icon_name='net.armatik.Kitsune.image-missing-symbolic',
-            opacity=0.3,
-            valign=Gtk.Align.CENTER,
-            halign=Gtk.Align.CENTER,
-        )
-        image.set_size_request(size, size)
-        image.add_css_class('search-poster')
+        """Create a fixed-size square thumbnail with crop-to-fill."""
+        frame = Gtk.Box(valign=Gtk.Align.CENTER)
+        frame.set_size_request(size, size)
+        frame.set_overflow(Gtk.Overflow.HIDDEN)
+        frame.add_css_class('search-poster')
         if url:
             from kitsune.ui.image_cache import load_image
-            image.set_opacity(1.0)
-            load_image(url, lambda tex, err, img=image:
-                       img.set_from_paintable(tex) if tex else None,
+            picture = Gtk.Picture(
+                content_fit=Gtk.ContentFit.COVER,
+                can_shrink=True,
+                hexpand=False, vexpand=False,
+                halign=Gtk.Align.FILL, valign=Gtk.Align.FILL,
+            )
+            picture.set_size_request(size, size)
+            frame.append(picture)
+            load_image(url, lambda tex, err, p=picture:
+                       p.set_paintable(tex) if tex else None,
                        category='posters')
-        return image
+        else:
+            frame.append(Gtk.Image(
+                icon_name='net.armatik.Kitsune.image-missing-symbolic',
+                pixel_size=int(size * 0.45), opacity=0.3,
+                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                hexpand=True, vexpand=True,
+            ))
+        return frame
 
     # --- Genre / Franchise / Tag rows ---
 
