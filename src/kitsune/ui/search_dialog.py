@@ -26,8 +26,15 @@ _SEARCH_CSS = (
     ' .search-poster { border-radius: 8px; min-width: 48px;'
     ' min-height: 68px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
-    ' .search-episode-bar { background: alpha(currentColor, 0.06);'
+    ' .search-episode-bar { background: alpha(@accent_bg_color, 0.15);'
     ' border-radius: 8px; padding: 6px 10px; margin-top: 4px; }'
+    ' .search-episode-bar label { color: @accent_fg_color; }'
+    ' .search-dialog-list row { background: none; }'
+    ' .search-dialog-list row:hover .search-result {'
+    ' background: alpha(currentColor, 0.07); }'
+    ' .search-dialog-list row:selected .search-result,'
+    ' .search-dialog-list row:focus .search-result {'
+    ' background: alpha(@accent_bg_color, 0.12); }'
 )
 
 
@@ -486,20 +493,25 @@ class SearchDialog(Adw.Dialog):
         box.add_css_class('search-result')
         img_url = item.get('image')
         if img_url:
-            pic = Gtk.Picture(width_request=36, height_request=36,
-                              content_fit=Gtk.ContentFit.COVER)
+            pic = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
             pic.set_size_request(36, 36)
             pic.add_css_class('search-poster')
+            frame = Gtk.Box()
+            frame.set_size_request(36, 36)
+            frame.set_overflow(Gtk.Overflow.HIDDEN)
+            frame.add_css_class('search-poster')
+            frame.append(pic)
             from kitsune.ui.image_cache import load_image
             load_image(img_url, lambda tex, err, p=pic:
                        p.set_paintable(tex) if tex else None,
                        category='posters')
-            box.append(pic)
+            box.append(frame)
         else:
             box.append(Gtk.Image(
-                icon_name='tag-symbolic', pixel_size=20,
+                icon_name='net.armatik.Kitsune.image-missing-symbolic',
+                pixel_size=20,
                 width_request=36, height_request=36,
-                opacity=0.4,
+                opacity=0.3,
             ))
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                              hexpand=True, valign=Gtk.Align.CENTER)
@@ -521,20 +533,25 @@ class SearchDialog(Adw.Dialog):
         box.add_css_class('search-result')
         img_url = item.get('image')
         if img_url:
-            pic = Gtk.Picture(width_request=36, height_request=36,
-                              content_fit=Gtk.ContentFit.COVER)
+            pic = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
             pic.set_size_request(36, 36)
             pic.add_css_class('search-poster')
+            frame = Gtk.Box()
+            frame.set_size_request(36, 36)
+            frame.set_overflow(Gtk.Overflow.HIDDEN)
+            frame.add_css_class('search-poster')
+            frame.append(pic)
             from kitsune.ui.image_cache import load_image
             load_image(img_url, lambda tex, err, p=pic:
                        p.set_paintable(tex) if tex else None,
                        category='posters')
-            box.append(pic)
+            box.append(frame)
         else:
             box.append(Gtk.Image(
-                icon_name='folder-symbolic', pixel_size=20,
+                icon_name='net.armatik.Kitsune.image-missing-symbolic',
+                pixel_size=20,
                 width_request=36, height_request=36,
-                opacity=0.4,
+                opacity=0.3,
             ))
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                              hexpand=True, valign=Gtk.Align.CENTER)
