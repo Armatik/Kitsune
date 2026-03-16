@@ -32,8 +32,7 @@ _SEARCH_CSS = (
     ' .search-result { background: alpha(currentColor, 0.04);'
     ' border-radius: 12px; padding: 10px; margin: 3px 6px;'
     ' transition: background ' + _T + '; }'
-    ' .search-poster { border-radius: 8px; min-width: 48px;'
-    ' min-height: 68px; }'
+    ' .search-poster { border-radius: 8px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
     ' .search-episode-bar { background: @accent_bg_color;'
     ' border-radius: 8px; padding: 6px 10px; margin-top: 4px;'
@@ -556,8 +555,12 @@ class SearchDialog(Adw.Dialog):
         if h is None:
             h = w
         log.debug('thumbnail: target=%dx%d url=%s', w, h, url[:60] if url else 'None')
-        # Gtk.Fixed gives absolute size control — no expansion
-        fixed = Gtk.Fixed(width_request=w, height_request=h)
+        # Gtk.Fixed with explicit no-expand constraints
+        fixed = Gtk.Fixed(
+            width_request=w, height_request=h,
+            hexpand=False, vexpand=False,
+            halign=Gtk.Align.START, valign=Gtk.Align.START,
+        )
         fixed.set_size_request(w, h)
         fixed.set_overflow(Gtk.Overflow.HIDDEN)
         fixed.add_css_class('search-poster')
