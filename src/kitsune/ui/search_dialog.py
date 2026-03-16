@@ -75,6 +75,7 @@ class SearchDialog(Adw.Dialog):
 
     search_entry = Gtk.Template.Child()
     tabs_box = Gtk.Template.Child()
+    separator = Gtk.Template.Child()
     stack = Gtk.Template.Child()
     scrolled = Gtk.Template.Child()
     listbox = Gtk.Template.Child()
@@ -163,8 +164,17 @@ class SearchDialog(Adw.Dialog):
                 row.grab_focus()
 
     def _update_tabs(self):
+        any_visible = False
         for cat_id, btn in self._tab_buttons.items():
-            btn.set_visible(bool(self._results.get(cat_id)))
+            visible = bool(self._results.get(cat_id))
+            btn.set_visible(visible)
+            if visible:
+                any_visible = True
+        self.tabs_box.set_visible(any_visible)
+        # When tabs hidden: search row needs bottom margin before separator
+        search_row = self.search_entry.get_parent()
+        if search_row:
+            search_row.set_margin_bottom(0 if any_visible else 10)
 
     # --- Search ---
 

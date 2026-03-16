@@ -41,16 +41,11 @@ template $KitsuneSearchDialog: Adw.Dialog {
         margin-start: 12;
         margin-end: 12;
         margin-top: 10;
+        margin-bottom: 10;
         spacing: 6;
       }
 
-      // Spacer before separator — same as top margin
-      Gtk.Box separator_spacer {
-        margin-top: 10;
-        Gtk.Separator {
-          hexpand: true;
-        }
-      }
+      Gtk.Separator separator {}
     }
 
     // Scrollable content area
