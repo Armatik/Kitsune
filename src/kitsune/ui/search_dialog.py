@@ -110,6 +110,7 @@ class SearchDialog(Adw.Dialog):
         self._results: dict[str, list] = {}
         self._suppress_tab_toggle = False
         self._scroll_connected = False
+        self._closed_by_navigation = False
 
         self.empty_subtitle.set_label(
             _('Search anime, genres, franchises and tags')
@@ -816,6 +817,7 @@ class SearchDialog(Adw.Dialog):
     def on_row_activated(self, _listbox, row):
         if not hasattr(row, '_search_type'):
             return
+        self._closed_by_navigation = True
         self.close()
         stype = row._search_type
         data = row._search_data
@@ -870,6 +872,7 @@ class SearchDialog(Adw.Dialog):
             self._on_tag_activated(item)
 
     def _on_episode_clicked(self, _btn, release_id, ordinal, entry):
+        self._closed_by_navigation = True
         self.close()
         if not self._on_episode_play:
             return

@@ -719,6 +719,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_nav_popped(self, _nav_view, page):
         self._stop_active_player()
+        # Reopen search dialog if it was closed by navigating to a result
+        if (hasattr(self, '_search_dialog') and self._search_dialog
+                and self._search_dialog._closed_by_navigation
+                and self.nav_view.get_visible_page() == self.nav_view.get_navigation_stack().get_item(0)):
+            self._search_dialog._closed_by_navigation = False
+            self._search_dialog.present(self)
 
     def _stop_active_player(self):
         if self._active_player:
