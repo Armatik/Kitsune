@@ -74,13 +74,10 @@ def _categories(settings=None):
     order = _DEFAULT_ORDER
     if settings:
         import json
-        try:
-            schema = settings.get_property('settings-schema')
-            if schema and schema.has_key('search-category-order'):
-                order = json.loads(
-                    settings.get_string('search-category-order'))
-        except (json.JSONDecodeError, TypeError, Exception):
-            pass
+        raw = settings.get_string('search-category-order')
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            order = parsed
     return [(cid, _ALL_CATEGORIES[cid]()) for cid in order if cid in _ALL_CATEGORIES]
 
 
