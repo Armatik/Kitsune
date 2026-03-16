@@ -169,6 +169,10 @@ class SearchDialog(Adw.Dialog):
     # --- Search ---
 
     @Gtk.Template.Callback()
+    def on_cancel_clicked(self, _button):
+        self.close()
+
+    @Gtk.Template.Callback()
     def on_search_changed(self, entry):
         if self._debounce_id:
             GLib.source_remove(self._debounce_id)

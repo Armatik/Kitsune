@@ -8,85 +8,102 @@ template $KitsuneSearchDialog: Adw.Dialog {
   content-height: 520;
   title: _("Search");
 
-  child: Adw.ToolbarView {
-    [top]
-    Adw.HeaderBar {
-      show-start-title-buttons: false;
-      show-end-title-buttons: false;
+  child: Gtk.Box {
+    orientation: vertical;
 
-      title-widget: Gtk.SearchEntry search_entry {
-        placeholder-text: _("Search anime...");
-        hexpand: true;
-        search-changed => $on_search_changed();
-      };
-    }
-
-    content: Gtk.Box {
+    // Fixed header bubble: search + cancel + tabs
+    Gtk.Box {
       orientation: vertical;
 
+      // Search row: entry + cancel button
+      Gtk.Box {
+        spacing: 8;
+        margin-start: 12;
+        margin-end: 12;
+        margin-top: 10;
+        margin-bottom: 4;
+
+        Gtk.SearchEntry search_entry {
+          placeholder-text: _("Search anime...");
+          hexpand: true;
+          search-changed => $on_search_changed();
+        }
+
+        Gtk.Button {
+          label: _("Cancel");
+          clicked => $on_cancel_clicked();
+
+          styles ["flat"]
+        }
+      }
+
+      // Category tabs
       Gtk.Box tabs_box {
         margin-start: 12;
         margin-end: 12;
-        margin-top: 6;
+        margin-top: 4;
         margin-bottom: 6;
         spacing: 6;
       }
 
       Gtk.Separator {}
+    }
 
-      Gtk.Stack stack {
-        Gtk.StackPage {
-          name: "empty";
-          child: Gtk.Box {
-            orientation: vertical;
-            halign: center;
-            valign: center;
-            vexpand: true;
-            spacing: 8;
+    // Scrollable content area
+    Gtk.Stack stack {
+      vexpand: true;
 
-            Gtk.Image {
-              icon-name: "system-search-symbolic";
-              pixel-size: 48;
-              opacity: 0.4;
-            }
+      Gtk.StackPage {
+        name: "empty";
+        child: Gtk.Box {
+          orientation: vertical;
+          halign: center;
+          valign: center;
+          vexpand: true;
+          spacing: 8;
 
-            Gtk.Label empty_subtitle {
-              wrap: true;
-              justify: center;
-              max-width-chars: 40;
-              opacity: 0.5;
-
-              styles ["dim-label"]
-            }
-          };
-        }
-
-        Gtk.StackPage {
-          name: "results";
-          child: Gtk.ScrolledWindow scrolled {
-            hscrollbar-policy: never;
-            vexpand: true;
-
-            Gtk.ListBox listbox {
-              selection-mode: browse;
-              activate-on-single-click: true;
-              valign: start;
-              row-activated => $on_row_activated();
-
-              styles ["navigation-sidebar", "search-dialog-list"]
-            }
-          };
-        }
-
-        Gtk.StackPage {
-          name: "no-results";
-          child: Adw.StatusPage {
-            title: _("No Results");
-            description: _("Try a different search query");
+          Gtk.Image {
             icon-name: "system-search-symbolic";
-          };
-        }
+            pixel-size: 48;
+            opacity: 0.4;
+          }
+
+          Gtk.Label empty_subtitle {
+            wrap: true;
+            justify: center;
+            max-width-chars: 40;
+            opacity: 0.5;
+
+            styles ["dim-label"]
+          }
+        };
       }
-    };
+
+      Gtk.StackPage {
+        name: "results";
+        child: Gtk.ScrolledWindow scrolled {
+          hscrollbar-policy: never;
+          vexpand: true;
+
+          Gtk.ListBox listbox {
+            selection-mode: browse;
+            activate-on-single-click: true;
+            valign: start;
+            row-activated => $on_row_activated();
+
+            styles ["navigation-sidebar", "search-dialog-list"]
+          }
+        };
+      }
+
+      Gtk.StackPage {
+        name: "no-results";
+        child: Adw.StatusPage {
+          title: _("No Results");
+          description: _("Try a different search query");
+          icon-name: "system-search-symbolic";
+        };
+      }
+    }
   };
 }
