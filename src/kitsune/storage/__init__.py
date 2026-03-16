@@ -32,4 +32,4 @@ def _atomic_write_json(path: Path, data, *, ensure_ascii: bool = True):
         raise
 
 
-from kitsune.storage import release_cache, tags_store, watch_positions  # noqa: E402, F401
+from kitsune.storage import release_cache, search_index, tags_store, watch_positions  # noqa: E402, F401

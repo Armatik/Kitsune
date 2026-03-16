@@ -7,6 +7,7 @@ test_files = [
   'test_tags_store.py',
   'test_navbar.py',
   'test_storage.py',
+  'test_search_index.py',
 ]
 
 foreach test_file : test_files

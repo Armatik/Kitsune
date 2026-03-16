@@ -33,6 +33,7 @@ if os.path.exists(_gresource):
 
 from kitsune import tags_store
 from kitsune import release_cache
+from kitsune.storage import search_index
 
 
 class StubClient:
@@ -93,6 +94,18 @@ def mock_cache(tmp_path):
     release_cache._CACHE_DIR = d
     yield d
     release_cache._CACHE_DIR = original
+
+
+@pytest.fixture
+def mock_index(tmp_path):
+    """Redirect search_index to a temp file."""
+    f = tmp_path / 'index.json'
+    original = search_index._INDEX_FILE
+    search_index._INDEX_FILE = f
+    search_index._cache = None
+    yield f
+    search_index._INDEX_FILE = original
+    search_index._cache = None
 
 
 @pytest.fixture
