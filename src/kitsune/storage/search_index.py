@@ -96,6 +96,7 @@ def index_release(release_id: int, data: dict):
         'type': type_data.get('value', '') if isinstance(type_data, dict) else str(type_data),
         'year': data.get('year', 0),
         'is_ongoing': data.get('is_ongoing', False),
+        'episodes_total': data.get('episodes_total'),
         'genres': [g.get('id') for g in data.get('genres', []) if isinstance(g, dict)],
         'cached_at': int(time.time()),
     }

@@ -194,6 +194,19 @@ def test_search_releases_empty_query(mock_index):
     assert results == []
 
 
+def test_index_release_episodes_total(mock_index):
+    raw = {**_SAMPLE_RAW, 'episodes_total': 220}
+    search_index.index_release(42, raw)
+    meta = search_index.get_release_meta(42)
+    assert meta['episodes_total'] == 220
+
+
+def test_index_release_episodes_total_none(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    meta = search_index.get_release_meta(42)
+    assert meta['episodes_total'] is None
+
+
 def test_search_genres(mock_index):
     genres = [
         Genre(id=1, name='Сёнен', image=None, total_releases=50),
