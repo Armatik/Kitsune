@@ -95,6 +95,8 @@ class SearchDialog(Adw.Dialog):
         self._tab_buttons: dict[str, Gtk.ToggleButton] = {}
         self._section_indices: dict[str, int] = {}
         self._results: dict[str, list] = {}
+        self._suppress_tab_toggle = False
+        self._scroll_connected = False
 
         self.empty_subtitle.set_label(
             _('Search anime, genres, franchises and tags')
@@ -157,25 +159,76 @@ class SearchDialog(Adw.Dialog):
             btn.set_visible(False)
 
     def _on_tab_toggled(self, btn, cat_id):
+        if self._suppress_tab_toggle:
+            return
         if not btn.get_active():
             return
+        # Deactivate other tabs
+        self._suppress_tab_toggle = True
         for cid, b in self._tab_buttons.items():
-            if cid != cat_id and b.get_active():
+            if cid != cat_id:
                 b.set_active(False)
+        self._suppress_tab_toggle = False
+        # Scroll to section header
         idx = self._section_indices.get(cat_id)
         if idx is not None:
             row = self.listbox.get_row_at_index(idx)
             if row:
-                row.grab_focus()
+                GLib.idle_add(self._scroll_to_row, row)
+
+    def _scroll_to_row(self, row):
+        """Scroll the listbox so that row is visible at the top."""
+        adj = self.scrolled.get_vadjustment()
+        if adj is None:
+            return GLib.SOURCE_REMOVE
+        # Get row's position relative to the listbox
+        ok, y = row.translate_coordinates(self.listbox, 0, 0)
+        if ok:
+            adj.set_value(y)
+        return GLib.SOURCE_REMOVE
+
+    def _setup_scroll_tracking(self):
+        """Track scroll position to highlight the active category tab."""
+        adj = self.scrolled.get_vadjustment()
+        if adj:
+            adj.connect('value-changed', self._on_scroll_changed)
+
+    def _on_scroll_changed(self, adj):
+        """Find which section header is at or above current scroll position."""
+        if not self._section_indices:
+            return
+        scroll_y = adj.get_value()
+        active_cat = None
+        for cat_id, idx in self._section_indices.items():
+            row = self.listbox.get_row_at_index(idx)
+            if row:
+                ok, y = row.translate_coordinates(self.listbox, 0, 0)
+                if ok and y <= scroll_y + 10:
+                    active_cat = cat_id
+        if active_cat:
+            self._set_active_tab(active_cat)
+
+    def _set_active_tab(self, cat_id):
+        """Highlight a tab without triggering scroll."""
+        self._suppress_tab_toggle = True
+        for cid, btn in self._tab_buttons.items():
+            btn.set_active(cid == cat_id)
+        self._suppress_tab_toggle = False
 
     def _update_tabs(self):
         any_visible = False
+        first_visible = None
         for cat_id, btn in self._tab_buttons.items():
             visible = bool(self._results.get(cat_id))
             btn.set_visible(visible)
             if visible:
                 any_visible = True
+                if first_visible is None:
+                    first_visible = cat_id
         self.tabs_box.set_visible(any_visible)
+        # Highlight first tab
+        if first_visible:
+            self._set_active_tab(first_visible)
         # When tabs hidden: search row needs bottom margin before separator
         search_row = self.search_entry.get_parent()
         if search_row:
@@ -294,6 +347,9 @@ class SearchDialog(Adw.Dialog):
             self.stack.set_visible_child_name('results')
             log.debug('render: %d results across %d categories',
                       total, len(self._section_indices))
+            if not self._scroll_connected:
+                self._scroll_connected = True
+                GLib.idle_add(self._setup_scroll_tracking)
             # Log row sizes after layout settles
             GLib.idle_add(self._debug_log_sizes)
         else:
