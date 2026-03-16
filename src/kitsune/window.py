@@ -656,13 +656,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _open_search_dialog(self):
         from kitsune.ui.search_dialog import SearchDialog
-        dialog = SearchDialog(client=self._client)
-        dialog.set_on_release_activated(self._show_release_detail)
-        dialog.set_on_episode_play(self._play_episode)
-        dialog.set_on_genre_activated(self._navigate_to_genre)
-        dialog.set_on_franchise_activated(self._navigate_to_franchise)
-        dialog.set_on_tag_activated(self._navigate_to_tag)
-        dialog.present(self)
+        if not hasattr(self, '_search_dialog') or self._search_dialog is None:
+            self._search_dialog = SearchDialog(client=self._client)
+            self._search_dialog.set_on_release_activated(self._show_release_detail)
+            self._search_dialog.set_on_episode_play(self._play_episode)
+            self._search_dialog.set_on_genre_activated(self._navigate_to_genre)
+            self._search_dialog.set_on_franchise_activated(self._navigate_to_franchise)
+            self._search_dialog.set_on_tag_activated(self._navigate_to_tag)
+        self._search_dialog.present(self)
 
     def _navigate_to_franchise(self, franchise):
         from kitsune.ui.franchise_releases_view import FranchiseReleasesView

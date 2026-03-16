@@ -878,11 +878,14 @@ class SearchDialog(Adw.Dialog):
             self._activate_anime(entry)
             return
         release = Release.from_dict(raw)
+        # First push release page, then player on top —
+        # so "back" from player lands on release page
+        if self._on_release_activated:
+            self._on_release_activated(release)
         for ep in release.episodes:
             if ep.ordinal == ordinal:
                 self._on_episode_play(release, ep)
                 return
-        self._activate_anime(entry)
 
     # --- Keyboard ---
 
