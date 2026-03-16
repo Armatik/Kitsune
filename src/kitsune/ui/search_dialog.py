@@ -21,6 +21,10 @@ _SEARCH_CSS = (
     ' font-size: 12px; border-radius: 99px; }'
     ' .search-tab:checked { background: @accent_bg_color;'
     ' color: @accent_fg_color; }'
+    ' .search-result-row { border-radius: 12px;'
+    ' padding: 10px; margin: 3px 6px; }'
+    ' .search-poster { border-radius: 8px; }'
+    ' .search-section-header { margin: 8px 12px 2px; }'
 )
 
 
@@ -65,6 +69,7 @@ class SearchDialog(Adw.Dialog):
         self._build_tabs()
         self._setup_keyboard()
         self.connect('closed', self._on_closed)
+        self._ensure_index_populated()
 
     # --- Public setters ---
 
@@ -82,6 +87,23 @@ class SearchDialog(Adw.Dialog):
 
     def set_on_tag_activated(self, cb):
         self._on_tag_activated = cb
+
+    # --- Preload index ---
+
+    def _ensure_index_populated(self):
+        """Load genres/franchises into index if not cached yet."""
+        if search_index.get_genres() is None:
+            self._client.get_genres(callback=self._on_preload_genres)
+        if search_index.get_franchises() is None:
+            self._client.get_franchises(callback=self._on_preload_franchises)
+
+    def _on_preload_genres(self, genres, error):
+        if not error and genres:
+            search_index.update_genres(genres)
+
+    def _on_preload_franchises(self, franchises, error):
+        if not error and franchises:
+            search_index.update_franchises(franchises)
 
     # --- Tabs ---
 
@@ -225,10 +247,11 @@ class SearchDialog(Adw.Dialog):
     def _make_section_header(self, label):
         lbl = Gtk.Label(
             label=label, xalign=0,
-            css_classes=['heading', 'dim-label'],
-            margin_start=6, margin_top=4, margin_bottom=2,
+            css_classes=['heading', 'dim-label', 'search-section-header'],
         )
-        return Gtk.ListBoxRow(child=lbl, activatable=False, selectable=False)
+        row = Gtk.ListBoxRow(child=lbl, activatable=False, selectable=False)
+        row.set_can_focus(False)
+        return row
 
     def _make_row(self, cat_id, item):
         if cat_id == 'anime':
@@ -244,26 +267,38 @@ class SearchDialog(Adw.Dialog):
     # --- Anime row ---
 
     def _make_anime_row(self, entry):
-        box = Gtk.Box(spacing=10, margin_top=6, margin_bottom=6,
-                       margin_start=6, margin_end=6)
+        box = Gtk.Box(spacing=12)
+        box.add_css_class('search-result-row')
 
-        # Poster
+        # Poster — fixed size via Overlay with size constraints
+        poster_overlay = Gtk.Overlay(
+            width_request=56, height_request=80,
+        )
+        poster_overlay.set_size_request(56, 80)
         if entry.get('poster_preview'):
             from kitsune.ui.image_cache import load_image
             picture = Gtk.Picture(
-                width_request=48, height_request=68,
+                width_request=56, height_request=80,
                 content_fit=Gtk.ContentFit.COVER,
             )
-            picture.add_css_class('card')
+            picture.add_css_class('search-poster')
+            picture.set_size_request(56, 80)
             load_image(entry['poster_preview'], lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None, category='posters')
-            box.append(picture)
+            poster_overlay.set_child(picture)
         else:
-            box.append(Gtk.Box(width_request=48, height_request=68))
+            placeholder = Gtk.Image(
+                icon_name='net.armatik.Kitsune.image-missing-symbolic',
+                pixel_size=24, opacity=0.3,
+                width_request=56, height_request=80,
+            )
+            placeholder.add_css_class('search-poster')
+            poster_overlay.set_child(placeholder)
+        box.append(poster_overlay)
 
         # Metadata column
-        meta = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
-                        hexpand=True)
+        meta = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3,
+                        hexpand=True, valign=Gtk.Align.CENTER)
 
         # Title
         meta.append(Gtk.Label(
@@ -462,8 +497,8 @@ class SearchDialog(Adw.Dialog):
         info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
         ordinal_str = int(ordinal) if ordinal == int(ordinal) else ordinal
         info.append(Gtk.Label(
-            label='🆕 ' + _('Episode') + f' {ordinal_str}',
-            xalign=0, css_classes=['caption'],
+            label=_('New episode') + f' {ordinal_str}',
+            xalign=0, css_classes=['caption', 'accent'],
         ))
         btn_box.append(info)
 
@@ -475,27 +510,34 @@ class SearchDialog(Adw.Dialog):
     # --- Genre / Franchise / Tag rows ---
 
     def _make_genre_row(self, item):
-        box = Gtk.Box(spacing=10, margin_top=4, margin_bottom=4,
-                       margin_start=6, margin_end=6)
+        box = Gtk.Box(spacing=10)
+        box.add_css_class('search-result-row')
         img_url = item.get('image')
         if img_url:
-            pic = Gtk.Picture(width_request=32, height_request=32,
+            pic = Gtk.Picture(width_request=36, height_request=36,
                               content_fit=Gtk.ContentFit.COVER)
-            pic.add_css_class('card')
+            pic.set_size_request(36, 36)
+            pic.add_css_class('search-poster')
             from kitsune.ui.image_cache import load_image
             load_image(img_url, lambda tex, err, p=pic:
                        p.set_paintable(tex) if tex else None,
                        category='posters')
             box.append(pic)
         else:
-            box.append(Gtk.Image(pixel_size=32))
-        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+            box.append(Gtk.Image(
+                icon_name='tag-symbolic', pixel_size=20,
+                width_request=36, height_request=36,
+                opacity=0.4,
+            ))
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                             hexpand=True, valign=Gtk.Align.CENTER)
         label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
         box.append(label_box)
         count = item.get('total_releases', 0)
         if count:
             box.append(Gtk.Label(
                 label=str(count), css_classes=['dim-label', 'caption'],
+                valign=Gtk.Align.CENTER,
             ))
         row = Gtk.ListBoxRow(child=box)
         row._search_type = 'genre'
@@ -503,21 +545,27 @@ class SearchDialog(Adw.Dialog):
         return row
 
     def _make_franchise_row(self, item):
-        box = Gtk.Box(spacing=10, margin_top=4, margin_bottom=4,
-                       margin_start=6, margin_end=6)
+        box = Gtk.Box(spacing=10)
+        box.add_css_class('search-result-row')
         img_url = item.get('image')
         if img_url:
             pic = Gtk.Picture(width_request=36, height_request=36,
                               content_fit=Gtk.ContentFit.COVER)
-            pic.add_css_class('card')
+            pic.set_size_request(36, 36)
+            pic.add_css_class('search-poster')
             from kitsune.ui.image_cache import load_image
             load_image(img_url, lambda tex, err, p=pic:
                        p.set_paintable(tex) if tex else None,
                        category='posters')
             box.append(pic)
         else:
-            box.append(Gtk.Image(pixel_size=36))
-        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+            box.append(Gtk.Image(
+                icon_name='folder-symbolic', pixel_size=20,
+                width_request=36, height_request=36,
+                opacity=0.4,
+            ))
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                             hexpand=True, valign=Gtk.Align.CENTER)
         label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
         parts = []
         fy = item.get('first_year')
@@ -539,8 +587,8 @@ class SearchDialog(Adw.Dialog):
         return row
 
     def _make_tag_row(self, item):
-        box = Gtk.Box(spacing=10, margin_top=4, margin_bottom=4,
-                       margin_start=6, margin_end=6)
+        box = Gtk.Box(spacing=10)
+        box.add_css_class('search-result-row')
         if item.get('icon_type') == 'emoji':
             box.append(Gtk.Label(label=item.get('icon_value', ''),
                                   width_request=28))
