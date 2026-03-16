@@ -282,6 +282,54 @@ class SearchDialog(Adw.Dialog):
             t for t in all_tags if q in t['name'].casefold()
         ]
 
+        # Smart tag filter: words in query that match tag names
+        # find releases at the intersection of matched tags
+        self._enrich_anime_from_tags(query, all_tags)
+
+    def _enrich_anime_from_tags(self, query, all_tags):
+        """If query words match tag names, add tagged releases to anime results.
+
+        Single word matching a tag: add all releases from that tag.
+        Multiple words each matching a tag: add releases at intersection.
+        """
+        words = query.casefold().split()
+        if not words:
+            return
+
+        # Find tags matching each word (substring match)
+        matched_tag_sets = []
+        for word in words:
+            if len(word) < 2:
+                continue
+            word_release_ids = set()
+            for tag in all_tags:
+                if word in tag['name'].casefold():
+                    word_release_ids.update(tag.get('releases', []))
+            if word_release_ids:
+                matched_tag_sets.append(word_release_ids)
+
+        if not matched_tag_sets:
+            return
+
+        # Intersect all matched sets (releases must match ALL tag-words)
+        tag_release_ids = matched_tag_sets[0]
+        for s in matched_tag_sets[1:]:
+            tag_release_ids &= s
+
+        if not tag_release_ids:
+            return
+
+        # Add releases not already in anime results
+        existing_ids = {r['id'] for r in self._results.get('anime', [])}
+        idx = search_index.load()
+        for rid in tag_release_ids:
+            if rid in existing_ids:
+                continue
+            meta = idx['releases'].get(str(rid))
+            if meta:
+                self._results.setdefault('anime', []).append(
+                    {**meta, 'id': rid})
+
     def _do_api_search(self, query):
         self._debounce_id = 0
         if getattr(self._client, '_offline', False):
