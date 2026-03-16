@@ -592,25 +592,47 @@ class SearchDialog(Adw.Dialog):
         if not positions:
             return
 
+        # Classify episodes: treat near-end (within 120s of duration) as completed
+        raw = release_cache.get(release_id)
+        ep_durations = {}
+        if raw:
+            for ep in raw.get('episodes', []):
+                d = ep.get('duration')
+                if d:
+                    ep_durations[ep.get('ordinal', 0)] = d
+
+        completed_ordinals = set()
         watching_ordinal = None
         watching_position = 0
-        for ordinal, pos in sorted(positions.items(), reverse=True):
-            if pos > 0:
-                watching_ordinal = ordinal
-                watching_position = pos
-                break
 
-        max_completed = max(
-            (o for o, p in positions.items() if p == -1), default=0
-        )
-        new_ep = self._find_new_episode(release_id, max_completed)
+        for ordinal, pos in positions.items():
+            if pos == -1:
+                completed_ordinals.add(ordinal)
+            elif pos > 0:
+                duration = ep_durations.get(ordinal, 0)
+                if duration > 0 and pos >= duration - 120:
+                    # Within 2 minutes of end — treat as completed
+                    completed_ordinals.add(ordinal)
+                else:
+                    # Partially watched — candidate for "continue"
+                    if watching_ordinal is None or ordinal > watching_ordinal:
+                        watching_ordinal = ordinal
+                        watching_position = pos
 
-        if new_ep:
-            self._add_new_episode_block(outer, release_id, new_ep, entry)
-        elif watching_ordinal is not None:
+        max_completed = max(completed_ordinals, default=0)
+
+        # New episode: first unwatched after max completed (from cache)
+        new_ep = self._find_new_episode_from(
+            raw, max_completed, positions, completed_ordinals)
+
+        # Priority: continue > new episode
+        # (if user has a started episode, show that first)
+        if watching_ordinal is not None:
             episode_data = self._get_episode_data(release_id, watching_ordinal)
             self._add_continue_block(outer, release_id, watching_ordinal,
                                      watching_position, episode_data, entry)
+        elif new_ep:
+            self._add_new_episode_block(outer, release_id, new_ep, entry)
 
     def _get_episode_data(self, release_id, ordinal):
         raw = release_cache.get(release_id)
@@ -621,17 +643,22 @@ class SearchDialog(Adw.Dialog):
                 return ep
         return None
 
-    def _find_new_episode(self, release_id, max_completed_ordinal):
-        raw = release_cache.get(release_id)
+    def _find_new_episode_from(self, raw, max_completed, positions,
+                                completed_ordinals):
+        """Find first unwatched episode after max completed ordinal."""
         if not raw:
             return None
         episodes = sorted(raw.get('episodes', []),
                           key=lambda e: e.get('sort_order', 0))
-        positions = watch_positions.get_all_for_release(release_id)
         for ep in episodes:
             ordinal = ep.get('ordinal', 0)
-            if ordinal > max_completed_ordinal and ordinal not in positions:
-                return ep
+            if ordinal <= max_completed:
+                continue
+            if ordinal in completed_ordinals:
+                continue
+            if ordinal in positions:
+                continue  # started but not near-end — skip
+            return ep
         return None
 
     def _add_continue_block(self, outer, release_id, ordinal,
