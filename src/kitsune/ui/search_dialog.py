@@ -21,10 +21,13 @@ _SEARCH_CSS = (
     ' font-size: 12px; border-radius: 99px; }'
     ' .search-tab:checked { background: @accent_bg_color;'
     ' color: @accent_fg_color; }'
-    ' .search-result-row { border-radius: 12px;'
-    ' padding: 10px; margin: 3px 6px; }'
-    ' .search-poster { border-radius: 8px; }'
+    ' .search-result { background: alpha(currentColor, 0.04);'
+    ' border-radius: 12px; padding: 10px; margin: 3px 6px; }'
+    ' .search-poster { border-radius: 8px; min-width: 48px;'
+    ' min-height: 68px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
+    ' .search-episode-bar { background: alpha(currentColor, 0.06);'
+    ' border-radius: 8px; padding: 6px 10px; margin-top: 4px; }'
 )
 
 
@@ -267,47 +270,44 @@ class SearchDialog(Adw.Dialog):
     # --- Anime row ---
 
     def _make_anime_row(self, entry):
-        box = Gtk.Box(spacing=12)
-        box.add_css_class('search-result-row')
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        outer.add_css_class('search-result')
 
-        # Poster — fixed size via Overlay with size constraints
-        poster_overlay = Gtk.Overlay(
-            width_request=56, height_request=80,
-        )
-        poster_overlay.set_size_request(56, 80)
+        # --- Top: poster + info (fixed height) ---
+        top = Gtk.Box(spacing=12)
+
+        # Poster — fixed 48x68
         if entry.get('poster_preview'):
             from kitsune.ui.image_cache import load_image
-            picture = Gtk.Picture(
-                width_request=56, height_request=80,
-                content_fit=Gtk.ContentFit.COVER,
-            )
+            picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
             picture.add_css_class('search-poster')
-            picture.set_size_request(56, 80)
+            picture.set_size_request(48, 68)
             load_image(entry['poster_preview'], lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None, category='posters')
-            poster_overlay.set_child(picture)
+            frame = Gtk.Box()
+            frame.set_size_request(48, 68)
+            frame.set_overflow(Gtk.Overflow.HIDDEN)
+            frame.add_css_class('search-poster')
+            frame.append(picture)
+            top.append(frame)
         else:
             placeholder = Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
                 pixel_size=24, opacity=0.3,
-                width_request=56, height_request=80,
             )
-            placeholder.add_css_class('search-poster')
-            poster_overlay.set_child(placeholder)
-        box.append(poster_overlay)
+            placeholder.set_size_request(48, 68)
+            top.append(placeholder)
 
-        # Metadata column
-        meta = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3,
+        # Info column
+        info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
                         hexpand=True, valign=Gtk.Align.CENTER)
 
-        # Title
-        meta.append(Gtk.Label(
+        info.append(Gtk.Label(
             label=entry.get('main', ''), xalign=0,
             ellipsize=3, lines=2, wrap=True,
             css_classes=['heading'],
         ))
 
-        # Subtitle
         parts = []
         if entry.get('type'):
             parts.append(entry['type'])
@@ -319,7 +319,7 @@ class SearchDialog(Adw.Dialog):
         if entry.get('is_ongoing'):
             parts.append(_('ongoing'))
         if parts:
-            meta.append(Gtk.Label(
+            info.append(Gtk.Label(
                 label=' · '.join(parts), xalign=0,
                 css_classes=['dim-label', 'caption'],
             ))
@@ -341,14 +341,14 @@ class SearchDialog(Adw.Dialog):
                             margin_top=2, margin_bottom=2,
                         ))
                 if chips_box.get_first_child():
-                    meta.append(chips_box)
+                    info.append(chips_box)
 
         # Tag badges
         release_id = entry.get('id')
         if release_id:
             tags = tags_store.get_tags_for_release(release_id)
             if tags:
-                tags_box = Gtk.Box(spacing=4)
+                tags_box = Gtk.Box(spacing=4, margin_top=2)
                 for tag in tags[:4]:
                     if tag['icon_type'] == 'emoji':
                         tags_box.append(Gtk.Label(label=tag['icon_value']))
@@ -361,25 +361,40 @@ class SearchDialog(Adw.Dialog):
                         label=f'+{len(tags) - 4}',
                         css_classes=['dim-label', 'caption'],
                     ))
-                meta.append(tags_box)
+                info.append(tags_box)
 
-        # Watch progress
+        top.append(info)
+
+        # Progress label (right-aligned)
         if release_id:
-            self._add_watch_progress(meta, release_id, ep_total, entry)
+            positions = watch_positions.get_all_for_release(release_id)
+            if positions and ep_total and ep_total > 0:
+                completed = sum(1 for p in positions.values() if p == -1)
+                all_done = completed >= ep_total
+                progress_lbl = Gtk.Label(
+                    label=f'{completed} / {ep_total}' + (' ✓' if all_done else ''),
+                    css_classes=['caption', 'dim-label'],
+                    valign=Gtk.Align.START,
+                )
+                top.append(progress_lbl)
 
-        box.append(meta)
+        outer.append(top)
 
-        row = Gtk.ListBoxRow(child=box)
+        # --- Bottom: episode block (below poster+info) ---
+        if release_id:
+            self._add_episode_block(outer, release_id, ep_total, entry)
+
+        row = Gtk.ListBoxRow(child=outer)
         row._search_type = 'anime'
         row._search_data = entry
         return row
 
-    def _add_watch_progress(self, meta, release_id, ep_total, entry):
+    def _add_episode_block(self, outer, release_id, ep_total, entry):
+        """Add episode continue/new block below the main card content."""
         positions = watch_positions.get_all_for_release(release_id)
         if not positions:
             return
 
-        completed = sum(1 for p in positions.values() if p == -1)
         watching_ordinal = None
         watching_position = 0
         for ordinal, pos in sorted(positions.items(), reverse=True):
@@ -388,40 +403,16 @@ class SearchDialog(Adw.Dialog):
                 watching_position = pos
                 break
 
-        # Episodes progress bar
-        if ep_total and ep_total > 0:
-            all_done = completed >= ep_total
-            fraction = min(completed / ep_total, 1.0)
-
-            bar = Gtk.ProgressBar(fraction=fraction, hexpand=True)
-            bar.set_size_request(-1, 3)
-            bar.add_css_class('osd')
-
-            progress_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
-            progress_box.append(bar)
-
-            if all_done:
-                progress_box.append(Gtk.Label(
-                    label=f'{ep_total} / {ep_total} ✓',
-                    css_classes=['caption'],
-                ))
-            else:
-                progress_box.append(Gtk.Label(
-                    label=f'{completed} / {ep_total}',
-                    css_classes=['caption', 'dim-label'],
-                ))
-            meta.append(progress_box)
-
-        # New episode takes priority over continue block
         max_completed = max(
             (o for o, p in positions.items() if p == -1), default=0
         )
         new_ep = self._find_new_episode(release_id, max_completed)
+
         if new_ep:
-            self._add_new_episode_block(meta, release_id, new_ep, entry)
+            self._add_new_episode_block(outer, release_id, new_ep, entry)
         elif watching_ordinal is not None:
             episode_data = self._get_episode_data(release_id, watching_ordinal)
-            self._add_continue_block(meta, release_id, watching_ordinal,
+            self._add_continue_block(outer, release_id, watching_ordinal,
                                      watching_position, episode_data, entry)
 
     def _get_episode_data(self, release_id, ordinal):
@@ -446,72 +437,53 @@ class SearchDialog(Adw.Dialog):
                 return ep
         return None
 
-    def _add_continue_block(self, meta, release_id, ordinal,
+    def _add_continue_block(self, outer, release_id, ordinal,
                              position, ep_data, entry):
         duration = ep_data.get('duration') if ep_data else None
-        preview_url = None
-        if ep_data and ep_data.get('preview'):
-            from kitsune.models.release import _poster_preview_url
-            preview_url = _poster_preview_url(ep_data.get('preview'))
 
-        btn = Gtk.Button(css_classes=['flat'])
-        btn_box = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
+        bar = Gtk.Box(spacing=8)
+        bar.add_css_class('search-episode-bar')
 
-        if preview_url:
-            thumb = Gtk.Picture(
-                width_request=64, height_request=36,
-                content_fit=Gtk.ContentFit.COVER,
-            )
-            thumb.add_css_class('card')
-            from kitsune.ui.image_cache import load_image
-            load_image(preview_url, lambda tex, err, p=thumb:
-                       p.set_paintable(tex) if tex else None,
-                       category='previews')
-            btn_box.append(thumb)
-
-        info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
         ordinal_str = int(ordinal) if ordinal == int(ordinal) else ordinal
-        info.append(Gtk.Label(
+        bar.append(Gtk.Label(
             label=_('Episode') + f' {ordinal_str}',
-            xalign=0, css_classes=['caption'],
+            css_classes=['caption'], hexpand=True, xalign=0,
         ))
         if duration and duration > 0:
             pos_str = f'{int(position) // 60}:{int(position) % 60:02d}'
             dur_str = f'{duration // 60}:{duration % 60:02d}'
-            info.append(Gtk.Label(
+            bar.append(Gtk.Label(
                 label=f'{pos_str} / {dur_str}',
-                xalign=0, css_classes=['caption', 'dim-label'],
+                css_classes=['caption', 'dim-label'],
             ))
-        btn_box.append(info)
 
-        btn.set_child(btn_box)
+        btn = Gtk.Button(css_classes=['flat'], child=bar)
         btn.connect('clicked', self._on_episode_clicked,
                      release_id, ordinal, entry)
-        meta.append(btn)
+        outer.append(btn)
 
-    def _add_new_episode_block(self, meta, release_id, ep_data, entry):
+    def _add_new_episode_block(self, outer, release_id, ep_data, entry):
         ordinal = ep_data.get('ordinal', 0)
-        btn = Gtk.Button(css_classes=['flat'])
-        btn_box = Gtk.Box(spacing=8, valign=Gtk.Align.CENTER)
 
-        info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+        bar = Gtk.Box(spacing=8)
+        bar.add_css_class('search-episode-bar')
+
         ordinal_str = int(ordinal) if ordinal == int(ordinal) else ordinal
-        info.append(Gtk.Label(
+        bar.append(Gtk.Label(
             label=_('New episode') + f' {ordinal_str}',
-            xalign=0, css_classes=['caption', 'accent'],
+            css_classes=['caption', 'accent'], hexpand=True, xalign=0,
         ))
-        btn_box.append(info)
 
-        btn.set_child(btn_box)
+        btn = Gtk.Button(css_classes=['flat'], child=bar)
         btn.connect('clicked', self._on_episode_clicked,
                      release_id, ordinal, entry)
-        meta.append(btn)
+        outer.append(btn)
 
     # --- Genre / Franchise / Tag rows ---
 
     def _make_genre_row(self, item):
         box = Gtk.Box(spacing=10)
-        box.add_css_class('search-result-row')
+        box.add_css_class('search-result')
         img_url = item.get('image')
         if img_url:
             pic = Gtk.Picture(width_request=36, height_request=36,
@@ -546,7 +518,7 @@ class SearchDialog(Adw.Dialog):
 
     def _make_franchise_row(self, item):
         box = Gtk.Box(spacing=10)
-        box.add_css_class('search-result-row')
+        box.add_css_class('search-result')
         img_url = item.get('image')
         if img_url:
             pic = Gtk.Picture(width_request=36, height_request=36,
@@ -588,7 +560,7 @@ class SearchDialog(Adw.Dialog):
 
     def _make_tag_row(self, item):
         box = Gtk.Box(spacing=10)
-        box.add_css_class('search-result-row')
+        box.add_css_class('search-result')
         if item.get('icon_type') == 'emoji':
             box.append(Gtk.Label(label=item.get('icon_value', ''),
                                   width_request=28))
