@@ -12,7 +12,7 @@ blueprint_compiler = find_program('blueprint-compiler')
 ui_blueprints = [
   'window',
   'preferences_window',
-  'search_view',
+  'search_dialog',
   'release_view',
   'filter_dialog',
   'player_view',
