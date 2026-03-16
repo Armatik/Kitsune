@@ -163,29 +163,44 @@ class SearchDialog(Adw.Dialog):
             return
         if not btn.get_active():
             return
-        # Deactivate other tabs
-        self._suppress_tab_toggle = True
-        for cid, b in self._tab_buttons.items():
-            if cid != cat_id:
-                b.set_active(False)
-        self._suppress_tab_toggle = False
-        # Scroll to section header
+        self._set_active_tab(cat_id)
+        # Smooth scroll to section header
         idx = self._section_indices.get(cat_id)
         if idx is not None:
             row = self.listbox.get_row_at_index(idx)
             if row:
-                GLib.idle_add(self._scroll_to_row, row)
+                GLib.idle_add(self._smooth_scroll_to_row, row)
 
-    def _scroll_to_row(self, row):
-        """Scroll the listbox so that row is visible at the top."""
+    def _smooth_scroll_to_row(self, row):
+        """Animate scroll so that row appears at the top."""
         adj = self.scrolled.get_vadjustment()
         if adj is None:
             return GLib.SOURCE_REMOVE
-        # Get row's position relative to the listbox
-        ok, y = row.translate_coordinates(self.listbox, 0, 0)
-        if ok:
-            adj.set_value(y)
+        ok, target_y = row.translate_coordinates(self.listbox, 0, 0)
+        if not ok:
+            return GLib.SOURCE_REMOVE
+        self._animate_scroll(adj, adj.get_value(), target_y)
         return GLib.SOURCE_REMOVE
+
+    def _animate_scroll(self, adj, start, end, duration_ms=200):
+        """Smooth scroll animation using GLib.timeout_add."""
+        if abs(end - start) < 1:
+            adj.set_value(end)
+            return
+        steps = max(1, duration_ms // 16)  # ~60fps
+        step_i = [0]
+
+        def _tick():
+            step_i[0] += 1
+            t = min(step_i[0] / steps, 1.0)
+            # Ease-out cubic
+            t_ease = 1 - (1 - t) ** 3
+            adj.set_value(start + (end - start) * t_ease)
+            if t >= 1.0:
+                return GLib.SOURCE_REMOVE
+            return GLib.SOURCE_CONTINUE
+
+        GLib.timeout_add(16, _tick)
 
     def _setup_scroll_tracking(self):
         """Track scroll position to highlight the active category tab."""
@@ -194,16 +209,16 @@ class SearchDialog(Adw.Dialog):
             adj.connect('value-changed', self._on_scroll_changed)
 
     def _on_scroll_changed(self, adj):
-        """Find which section header is at or above current scroll position."""
+        """Highlight tab whose section occupies the bottom of visible area."""
         if not self._section_indices:
             return
-        scroll_y = adj.get_value()
+        scroll_bottom = adj.get_value() + adj.get_page_size()
         active_cat = None
         for cat_id, idx in self._section_indices.items():
             row = self.listbox.get_row_at_index(idx)
             if row:
                 ok, y = row.translate_coordinates(self.listbox, 0, 0)
-                if ok and y <= scroll_y + 10:
+                if ok and y < scroll_bottom:
                     active_cat = cat_id
         if active_cat:
             self._set_active_tab(active_cat)
