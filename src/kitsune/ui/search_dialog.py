@@ -517,31 +517,30 @@ class SearchDialog(Adw.Dialog):
         """Create a fixed-size thumbnail with crop-to-fill. h defaults to w (square)."""
         if h is None:
             h = w
-        frame = Gtk.Box(valign=Gtk.Align.START)
-        frame.set_size_request(w, h)
-        frame.set_overflow(Gtk.Overflow.HIDDEN)
-        frame.add_css_class('search-poster')
+        # Gtk.Fixed gives absolute size control — no expansion
+        fixed = Gtk.Fixed(width_request=w, height_request=h)
+        fixed.set_size_request(w, h)
+        fixed.set_overflow(Gtk.Overflow.HIDDEN)
+        fixed.add_css_class('search-poster')
         if url:
             from kitsune.ui.image_cache import load_image
             picture = Gtk.Picture(
                 content_fit=Gtk.ContentFit.COVER,
                 can_shrink=True,
-                hexpand=False, vexpand=False,
-                halign=Gtk.Align.FILL, valign=Gtk.Align.FILL,
             )
             picture.set_size_request(w, h)
-            frame.append(picture)
+            fixed.put(picture, 0, 0)
             load_image(url, lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None,
                        category='posters')
         else:
-            frame.append(Gtk.Image(
+            placeholder = Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
                 pixel_size=int(min(w, h) * 0.45), opacity=0.3,
-                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
-                hexpand=True, vexpand=True,
-            ))
-        return frame
+            )
+            fixed.put(placeholder, w // 2 - int(min(w, h) * 0.225),
+                       h // 2 - int(min(w, h) * 0.225))
+        return fixed
 
     # --- Genre / Franchise / Tag rows ---
 
@@ -565,9 +564,9 @@ class SearchDialog(Adw.Dialog):
         return row
 
     def _make_franchise_row(self, item):
-        box = Gtk.Box(spacing=10)
+        box = Gtk.Box(spacing=12)
         box.add_css_class('search-result')
-        box.append(self._make_fixed_thumbnail(item.get('image'), 36))
+        box.append(self._make_fixed_thumbnail(item.get('image'), 56, 80))
         label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
                              hexpand=True, valign=Gtk.Align.CENTER)
         label_box.append(Gtk.Label(label=item.get('name', ''), xalign=0))
