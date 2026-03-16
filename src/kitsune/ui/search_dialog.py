@@ -32,7 +32,12 @@ _SEARCH_CSS = (
     ' .search-result { background: alpha(currentColor, 0.04);'
     ' border-radius: 12px; padding: 10px; margin: 3px 6px;'
     ' transition: background ' + _T + '; }'
-    ' .search-poster { border-radius: 8px; }'
+    ' .search-poster { border-radius: 8px;'
+    ' overflow: hidden; }'
+    ' .search-poster-56x80 { min-width: 56px; max-width: 56px;'
+    ' min-height: 80px; max-height: 80px; }'
+    ' .search-poster-36x36 { min-width: 36px; max-width: 36px;'
+    ' min-height: 36px; max-height: 36px; }'
     ' .search-section-header { margin: 8px 12px 2px; }'
     ' .search-episode-bar { background: @accent_bg_color;'
     ' border-radius: 8px; padding: 6px 10px; margin-top: 4px;'
@@ -338,26 +343,9 @@ class SearchDialog(Adw.Dialog):
         # --- Top: poster + info ---
         top = Gtk.Box(spacing=12)
 
-        # Poster — fixed 56x80, valign START so it doesn't stretch
-        frame = Gtk.Box(valign=Gtk.Align.START)
-        frame.set_size_request(56, 80)
-        frame.set_overflow(Gtk.Overflow.HIDDEN)
-        frame.add_css_class('search-poster')
-        if entry.get('poster_preview'):
-            from kitsune.ui.image_cache import load_image
-            picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
-            picture.set_size_request(56, 80)
-            load_image(entry['poster_preview'], lambda tex, err, p=picture:
-                       p.set_paintable(tex) if tex else None, category='posters')
-            frame.append(picture)
-        else:
-            placeholder = Gtk.Image(
-                icon_name='net.armatik.Kitsune.image-missing-symbolic',
-                pixel_size=24, opacity=0.3,
-            )
-            placeholder.set_size_request(56, 80)
-            frame.append(placeholder)
-        top.append(frame)
+        # Poster — reuse the same CSS-constrained thumbnail
+        top.append(self._make_fixed_thumbnail(
+            entry.get('poster_preview'), 56, 80))
 
         # Info column
         info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
@@ -551,49 +539,39 @@ class SearchDialog(Adw.Dialog):
     # --- Helpers ---
 
     def _make_fixed_thumbnail(self, url, w, h=None):
-        """Create a fixed-size thumbnail with crop-to-fill. h defaults to w (square)."""
+        """Create a fixed-size thumbnail with crop-to-fill via CSS constraints."""
         if h is None:
             h = w
         log.debug('thumbnail: target=%dx%d url=%s', w, h, url[:60] if url else 'None')
-        # Gtk.Fixed with explicit no-expand constraints
-        fixed = Gtk.Fixed(
-            width_request=w, height_request=h,
+
+        # Use Gtk.Box + CSS max-width/max-height for true size clamping
+        frame = Gtk.Box(
             hexpand=False, vexpand=False,
             halign=Gtk.Align.START, valign=Gtk.Align.START,
         )
-        fixed.set_size_request(w, h)
-        fixed.set_overflow(Gtk.Overflow.HIDDEN)
-        fixed.add_css_class('search-poster')
+        frame.set_overflow(Gtk.Overflow.HIDDEN)
+        frame.add_css_class('search-poster')
+        frame.add_css_class(f'search-poster-{w}x{h}')
+
         if url:
             from kitsune.ui.image_cache import load_image
             picture = Gtk.Picture(
                 content_fit=Gtk.ContentFit.COVER,
                 can_shrink=True,
+                hexpand=True, vexpand=True,
             )
-            picture.set_size_request(w, h)
-            fixed.put(picture, 0, 0)
-
-            def _on_thumb_loaded(tex, err, p=picture, fw=w, fh=h, u=url):
-                if tex:
-                    log.debug('thumbnail loaded: %dx%d tex=%dx%d url=%s',
-                              fw, fh, tex.get_width(), tex.get_height(),
-                              u[:60])
-                    p.set_paintable(tex)
-                    log.debug('thumbnail after set: size_req=(%d,%d) alloc=(%d,%d)',
-                              p.get_size_request()[0], p.get_size_request()[1],
-                              p.get_allocated_width(), p.get_allocated_height())
-                else:
-                    log.debug('thumbnail failed: %s url=%s', err, u[:60] if u else '')
-
-            load_image(url, _on_thumb_loaded, category='posters')
+            frame.append(picture)
+            load_image(url, lambda tex, err, p=picture:
+                       p.set_paintable(tex) if tex else None,
+                       category='posters')
         else:
-            placeholder = Gtk.Image(
+            frame.append(Gtk.Image(
                 icon_name='net.armatik.Kitsune.image-missing-symbolic',
                 pixel_size=int(min(w, h) * 0.45), opacity=0.3,
-            )
-            fixed.put(placeholder, w // 2 - int(min(w, h) * 0.225),
-                       h // 2 - int(min(w, h) * 0.225))
-        return fixed
+                halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+                hexpand=True, vexpand=True,
+            ))
+        return frame
 
     # --- Genre / Franchise / Tag rows ---
 

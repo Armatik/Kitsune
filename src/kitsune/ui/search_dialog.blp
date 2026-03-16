@@ -70,6 +70,7 @@ template $KitsuneSearchDialog: Adw.Dialog {
             Gtk.ListBox listbox {
               selection-mode: browse;
               activate-on-single-click: true;
+              valign: start;
               row-activated => $on_row_activated();
 
               styles ["navigation-sidebar", "search-dialog-list"]
