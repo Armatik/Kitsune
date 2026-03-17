@@ -97,7 +97,15 @@ def index_release(release_id: int, data: dict):
         'year': data.get('year', 0),
         'is_ongoing': data.get('is_ongoing', False),
         'episodes_total': data.get('episodes_total'),
-        'genres': [g.get('id') for g in data.get('genres', []) if isinstance(g, dict)],
+        'genres': [g.get('id') for g in (data.get('genres') or []) if isinstance(g, dict)],
+        'episodes': [
+            {
+                'ordinal': e.get('ordinal', 0),
+                'duration': e.get('duration'),
+                'sort_order': e.get('sort_order', 0),
+            }
+            for e in (data.get('episodes') or [])
+        ],
         'cached_at': int(time.time()),
     }
 
@@ -118,6 +126,15 @@ def remove_release(release_id: int):
 def get_release_meta(release_id: int) -> dict | None:
     idx = load()
     return idx['releases'].get(str(release_id))
+
+
+def get_episodes(release_id: int) -> list[dict] | None:
+    """Return cached episode list [{ordinal, duration, sort_order}] or None."""
+    idx = load()
+    entry = idx['releases'].get(str(release_id))
+    if not entry:
+        return None
+    return entry.get('episodes')
 
 
 def update_genres(genres):

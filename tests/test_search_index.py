@@ -194,6 +194,46 @@ def test_search_releases_empty_query(mock_index):
     assert results == []
 
 
+def test_index_release_stores_episodes(mock_index):
+    raw = {**_SAMPLE_RAW, 'episodes': [
+        {'ordinal': 1, 'duration': 1440, 'sort_order': 1},
+        {'ordinal': 2, 'duration': 1380, 'sort_order': 2},
+    ]}
+    search_index.index_release(42, raw)
+    eps = search_index.get_episodes(42)
+    assert eps is not None
+    assert len(eps) == 2
+    assert eps[0]['ordinal'] == 1
+    assert eps[0]['duration'] == 1440
+    assert eps[1]['ordinal'] == 2
+
+
+def test_get_episodes_missing(mock_index):
+    assert search_index.get_episodes(999) is None
+
+
+def test_get_episodes_no_episodes_field(mock_index):
+    search_index.index_release(42, _SAMPLE_RAW)
+    eps = search_index.get_episodes(42)
+    assert eps == []
+
+
+def test_index_release_null_episodes(mock_index):
+    """API returning 'episodes': null should not crash."""
+    raw = {**_SAMPLE_RAW, 'episodes': None}
+    search_index.index_release(42, raw)
+    eps = search_index.get_episodes(42)
+    assert eps == []
+
+
+def test_index_release_null_genres(mock_index):
+    """API returning 'genres': null should not crash."""
+    raw = {**_SAMPLE_RAW, 'genres': None}
+    search_index.index_release(42, raw)
+    meta = search_index.get_release_meta(42)
+    assert meta['genres'] == []
+
+
 def test_index_release_episodes_total(mock_index):
     raw = {**_SAMPLE_RAW, 'episodes_total': 220}
     search_index.index_release(42, raw)
