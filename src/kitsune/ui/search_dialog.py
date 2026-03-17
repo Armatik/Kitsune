@@ -1036,3 +1036,7 @@ class SearchDialog(Adw.Dialog):
         if self._cancellable:
             self._cancellable.cancel()
             self._cancellable = None
+        if not self._closed_by_navigation:
+            self.search_entry.set_text('')
+            self._clear_results()
+            self._refreshed_ids.clear()
