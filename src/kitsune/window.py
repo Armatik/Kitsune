@@ -664,6 +664,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._search_dialog.set_on_franchise_activated(self._navigate_to_franchise)
             self._search_dialog.set_on_tag_activated(self._navigate_to_tag)
         self._search_dialog.present(self)
+        self._search_dialog.search_entry.grab_focus()
 
     def _navigate_to_franchise(self, franchise):
         from kitsune.ui.franchise_releases_view import FranchiseReleasesView
@@ -725,6 +726,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 and self.nav_view.get_visible_page() == self.nav_view.get_navigation_stack().get_item(0)):
             self._search_dialog._closed_by_navigation = False
             self._search_dialog.present(self)
+            self._search_dialog.search_entry.grab_focus()
 
     def _stop_active_player(self):
         if self._active_player:
