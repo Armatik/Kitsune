@@ -39,6 +39,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           Gtk.Button {
             icon-name: "go-previous-symbolic";
             focusable: false;
+            tooltip-text: _("Back");
             clicked => $on_back();
 
             styles ["circular", "osd"]
@@ -51,6 +52,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           Gtk.Button fullscreen_btn {
             icon-name: "view-fullscreen-symbolic";
             focusable: false;
+            tooltip-text: _("Fullscreen");
             clicked => $on_fullscreen();
 
             styles ["circular", "osd"]
@@ -60,6 +62,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
             icon-name: "window-close-symbolic";
             focusable: false;
             visible: false;
+            tooltip-text: _("Close");
             clicked => $on_close();
 
             styles ["circular", "osd"]
@@ -78,6 +81,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           icon-name: "net.armatik.Kitsune.seek-backward-10-symbolic";
           focusable: false;
           valign: center;
+          tooltip-text: _("Rewind 10 seconds");
           clicked => $on_rewind();
 
           styles ["flat", "player-center-btn"]
@@ -87,6 +91,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           icon-name: "media-playback-start-symbolic";
           focusable: false;
           valign: center;
+          tooltip-text: _("Play / Pause");
           clicked => $on_play_pause();
 
           styles ["flat", "player-play-btn"]
@@ -96,6 +101,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           icon-name: "net.armatik.Kitsune.seek-forward-10-symbolic";
           focusable: false;
           valign: center;
+          tooltip-text: _("Forward 10 seconds");
           clicked => $on_forward();
 
           styles ["flat", "player-center-btn"]
@@ -110,6 +116,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
         halign: start;
         valign: center;
         margin-start: 24;
+        tooltip-text: _("Previous episode");
         clicked => $on_prev_episode();
 
         styles ["flat", "player-center-btn"]
@@ -122,6 +129,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
         halign: end;
         valign: center;
         margin-end: 24;
+        tooltip-text: _("Next episode");
         clicked => $on_next_episode();
 
         styles ["flat", "player-center-btn"]
@@ -185,6 +193,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
             Gtk.Button volume_btn {
               icon-name: "audio-volume-high-symbolic";
               focusable: false;
+              tooltip-text: _("Volume");
               clicked => $on_volume_toggle();
 
               styles ["flat", "circular", "player-text"]
