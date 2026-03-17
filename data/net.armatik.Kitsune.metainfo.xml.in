@@ -45,6 +45,11 @@
   </supports>
 
   <releases>
+    <release version="0.8.1" date="2026-03-17">
+      <description>
+        <p>Fixed release page not loading content — deferred initialization via GLib.idle_add was cancelled by NavigationView internal map/unmap cycle during push animation. Now uses the showing signal which fires after the transition completes.</p>
+      </description>
+    </release>
     <release version="0.8.0" date="2026-03-17">
       <description>
         <p>Search dialog — full-featured search with category tabs (anime, genres, franchises, tags), animated scroll tracking, smart tag filtering, ongoing release refresh, episode progress display, and configurable category order. Keyboard navigation with Escape to close and category tab click-to-scroll.</p>

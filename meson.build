@@ -1,5 +1,5 @@
 project('kitsune',
-  version: '0.8.0',
+  version: '0.8.1',
   meson_version: '>= 1.0.0',
   default_options: ['warning_level=2'],
 )
