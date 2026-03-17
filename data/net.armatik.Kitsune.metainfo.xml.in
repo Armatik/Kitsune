@@ -26,6 +26,13 @@
   <url type="translate">https://altlinux.space/alt-gnome/Kitsune/tree/master/po</url>
   <url type="contact">https://t.me/kitsune_linux_chat</url>
 
+  <screenshots>
+    <screenshot type="default">
+      <image>https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/Kitsune-1.png</image>
+      <caption>Browse the anime catalog</caption>
+    </screenshot>
+  </screenshots>
+
   <developer id="net.armatik">
     <name>Semen (Armatik) Fomchenkov</name>
   </developer>
