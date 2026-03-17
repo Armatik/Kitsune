@@ -4,45 +4,45 @@
 
 <h1 align="center">Kitsune</h1>
 
-<p align="center">Libadwaita-клиент для просмотра аниме от <a href="https://anilibria.top">AniLiberty</a></p>
+<p align="center">Libadwaita client for watching anime from <a href="https://anilibria.top">AniLiberty</a></p>
 
 <p align="center">
   <a href="https://altlinux.space/alt-gnome/Kitsune/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg" alt="License"></a>
 </p>
 
-> Kitsune — неофициальный клиент. Весь контент предоставляется командой [AniLiberty](https://anilibria.top) через их публичный API.
+> Kitsune is an unofficial client. All content is provided by the [AniLiberty](https://anilibria.top) team through their public API.
 
-## Возможности
+## Features
 
-- Каталог релизов с фильтрами по жанрам, годам, сезонам и типам
-- Поиск по названию с мгновенными результатами
-- Страница релиза с информацией, списком серий, командой озвучки и торрентами
-- Встроенный видеоплеер с HLS-воспроизведением и управлением качеством
-- Просмотр по жанрам и франшизам
-- Теги и избранное для организации библиотеки
-- Отслеживание прогресса просмотра серий
-- Настраиваемая навигация — порядок и видимость вкладок
-- Сохранение позиции просмотра
-- Кэширование постеров и данных релизов для офлайн-доступа
-- Адаптивный интерфейс для десктопа и мобильных устройств
-- Поддержка русского и английского языков
+- Release catalog with filters by genre, year, season, and type
+- Search by title with instant results
+- Release page with details, episode list, voice cast, and torrents
+- Built-in video player with HLS playback and quality control
+- Browse by genres and franchises
+- Tags and favorites for organizing your library
+- Episode watch progress tracking
+- Customizable navigation — tab order and visibility
+- Watch position saving
+- Poster and release data caching for offline access
+- Adaptive interface for desktop and mobile devices
+- Russian and English language support
 
-## Скриншоты
+## Screenshots
 
 <p align="center">
   <img src="data/screenshots/Kitsune-1.png" alt="Kitsune">
 </p>
 
-## Установка
+## Installation
 
-### Установка из репозитория ALT
+### From ALT Linux repository
 
 ```sh
 apt-get update
 apt-get install kitsune-adw
 ```
 
-### Установка из ALS
+### From ALS (ALT Linux Space)
 
 ```sh
 apt-repo add rpm https://altlinux.space/api/packages/armatik/alt/group/sisyphus.repo noarch classic
@@ -50,65 +50,65 @@ apt-get update
 apt-get install kitsune
 ```
 
-### Сборка из исходников
+### Building from source
 
-**Зависимости:**
+**Dependencies:**
 
 - Python 3.12+
 - GTK 4
-- Libadwaita 1.x
-- GStreamer 1.x (с плагинами gtk4paintablesink, hlsdemux)
+- Libadwaita >= 1.6
+- GStreamer >= 1.24 (with gtk4paintablesink and hlsdemux plugins)
 - Libsoup 3
 - Meson 1.0+
 - Blueprint Compiler
 
-**Сборка и установка:**
+**Build and install:**
 
 ```bash
 meson setup _build
 meson compile -C _build
-sudo meson install -C _build --no-rebuild
+sudo meson install -C _build
 ```
 
-**Зависимости для работы:**
+**Runtime dependencies:**
 
-Для нормального воспроизведения необходимо наличие:
+For proper video playback you also need:
 
 - gst-plugin-gtk4
 - libwebp-pixbuf-loader
 
-## Сообщество
+## Community
 
-- [Telegram-канал](https://t.me/kitsune_linux) — новости и обновления
-- [Telegram-чат](https://t.me/kitsune_linux_chat) — обсуждение и поддержка
-- [Баг-трекер](https://altlinux.space/alt-gnome/Kitsune/issues) — сообщить об ошибке
+- [Telegram channel](https://t.me/kitsune_linux) — news and updates
+- [Telegram chat](https://t.me/kitsune_linux_chat) — discussion and support
+- [Bug tracker](https://altlinux.space/alt-gnome/Kitsune/issues) — report an issue
 
-## Участие в разработке
+## Contributing
 
-Проект приветствует вклад в виде исправлений и улучшений.
+Contributions in the form of fixes and improvements are welcome.
 
-### Перевод
+### Translation
 
-Работа с переводами ведётся через Meson:
+Translations are managed through Meson:
 
 ```bash
-meson compile -C _build kitsune-pot          # Обновить шаблон переводов
-meson compile -C _build kitsune-update-po    # Обновить файлы переводов
+meson compile -C _build kitsune-pot          # Update translation template
+meson compile -C _build kitsune-update-po    # Update translation files
 ```
 
 ## AniLiberty
 
-Kitsune работает на базе контента команды [AniLiberty](https://anilibria.top) — некоммерческого проекта по переводу и озвучке аниме.
+Kitsune is powered by content from the [AniLiberty](https://anilibria.top) team — a non-commercial project dedicated to translating and dubbing anime.
 
-- [Сайт](https://anilibria.top)
+- [Website](https://anilibria.top)
 - [Telegram](https://t.me/anilibria)
 - [VK](https://vk.com/anilibria)
-- [API документация](https://anilibria.top/api/docs/v1)
+- [API documentation](https://anilibria.top/api/docs/v1)
 
-## Лицензия
+## License
 
-Kitsune распространяется по лицензии [GPL-3.0-or-later](LICENSE).
+Kitsune is licensed under [GPL-3.0-or-later](LICENSE).
 
 ---
 
-> При разработке проекта использовались средства ИИ.
+> AI tools were used during the development of this project.
