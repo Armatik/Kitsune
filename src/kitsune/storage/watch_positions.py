@@ -87,3 +87,15 @@ def get_size() -> int:
 def clear_all():
     if _POSITIONS_FILE.exists():
         _POSITIONS_FILE.unlink()
+
+
+_WATCHED_FRACTION = 0.9  # 90% watched = completed
+
+
+def is_completed(pos, duration):
+    """True if episode is completed or watched >= 90%."""
+    if pos == -1:
+        return True
+    if pos > 0 and duration and duration > 0 and pos >= duration * _WATCHED_FRACTION:
+        return True
+    return False

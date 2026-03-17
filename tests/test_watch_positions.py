@@ -42,3 +42,42 @@ def test_get_all_for_release_empty(monkeypatch, tmp_path):
     _setup_tmp(monkeypatch, tmp_path)
     result = wp.get_all_for_release(99)
     assert result == {}
+
+
+def test_is_completed_minus_one():
+    assert wp.is_completed(-1, 1440) is True
+
+
+def test_is_completed_90_percent():
+    # 1300 / 1440 = 90.3% → completed
+    assert wp.is_completed(1300, 1440) is True
+
+
+def test_is_completed_below_90_percent():
+    # 1200 / 1440 = 83.3% → not completed
+    assert wp.is_completed(1200, 1440) is False
+
+
+def test_is_completed_zero():
+    assert wp.is_completed(0, 1440) is False
+
+
+def test_is_completed_no_duration():
+    assert wp.is_completed(100, None) is False
+    assert wp.is_completed(100, 0) is False
+
+
+def test_is_completed_exact_90_percent():
+    # pos = 1296, duration = 1440 → 1296 / 1440 = 0.9 exactly → completed
+    assert wp.is_completed(1296, 1440) is True
+
+
+def test_is_completed_short_episode():
+    # 90s episode, 82s watched = 91% → completed
+    assert wp.is_completed(82, 90) is True
+    # 90s episode, 6s watched = 6.7% → not completed
+    assert wp.is_completed(6, 90) is False
+
+
+def test_is_completed_short_episode_minus_one():
+    assert wp.is_completed(-1, 90) is True
