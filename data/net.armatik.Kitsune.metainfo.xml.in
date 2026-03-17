@@ -45,6 +45,16 @@
   </supports>
 
   <releases>
+    <release version="0.8.0" date="2026-03-17">
+      <description>
+        <p>Search dialog — full-featured search with category tabs (anime, genres, franchises, tags), animated scroll tracking, smart tag filtering, ongoing release refresh, episode progress display, and configurable category order. Keyboard navigation with Escape to close and category tab click-to-scroll.</p>
+        <p>Redesigned preferences — blur unwatched episodes toggle, search category ordering with drag-and-drop, storage page reorganized into Cache and User Data groups with inline clear buttons. All reorderable lists use GNOME-style drag handles.</p>
+        <p>Watch progress improvements — 90%% watched threshold marks episodes as completed across the app (release page, search dialog, progress bars, checkmarks). Near-end detection replaces fixed-seconds threshold.</p>
+        <p>Smooth animations — release page content loads after push animation via deferred initialization, eliminating the stutter in the last pixels of navigation transitions.</p>
+        <p>Accessibility and polish — player buttons have tooltips for screen readers, tag color circles use theme-safe borders for light and dark themes, episode separators adapt to current theme, GSettings enum keys validated with choices.</p>
+        <p>Reliability — async API callbacks guarded against destroyed widgets, HTTP 4xx errors no longer degrade the client to offline mode, scroll animation timers properly cleaned up on dialog close, pycairo dependency validated at build time.</p>
+      </description>
+    </release>
     <release version="0.7.1" date="2026-03-13">
       <description>
         <p>Fixed video player not starting — NavigationView internally maps and unmaps pages during push transitions, which caused the playback idle source to be cancelled before it could fire.</p>
