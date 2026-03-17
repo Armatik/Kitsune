@@ -136,15 +136,13 @@ class ReleaseView(Adw.NavigationPage):
         # Show spinner until deferred content loads
         self.episodes_spinner.set_visible(True)
 
+        self._deferred_done = False
+
         self.connect('realize', self._on_realize)
         self.connect('showing', self._on_showing)
 
-        # Defer heavy work to avoid blocking the push animation
-        self._deferred_idle = GLib.idle_add(self._deferred_init)
-
     def _deferred_init(self):
         """Populate heavy content after the navigation animation."""
-        self._deferred_idle = 0
         if self._release.episodes:
             self._populate_episodes()
             self._apply_episodes_view()
@@ -167,7 +165,6 @@ class ReleaseView(Adw.NavigationPage):
 
         # Always refresh from API
         self._start_refresh()
-        return GLib.SOURCE_REMOVE
 
     def set_on_episode_play(self, callback):
         self._on_episode_play = callback
@@ -182,7 +179,11 @@ class ReleaseView(Adw.NavigationPage):
         self._on_tags_changed_ext = callback
 
     def _on_showing(self, _page):
-        """Refresh episode progress when returning from player."""
+        """First call: deferred init. Subsequent: refresh progress."""
+        if not self._deferred_done:
+            self._deferred_done = True
+            self._deferred_init()
+            return
         self._refresh_episodes()
         if self._episodes_view == 'grid':
             self._refresh_episodes_grid()
@@ -908,8 +909,5 @@ class ReleaseView(Adw.NavigationPage):
             if self._refresh_timer:
                 GLib.source_remove(self._refresh_timer)
                 self._refresh_timer = 0
-            if getattr(self, '_deferred_idle', 0):
-                GLib.source_remove(self._deferred_idle)
-                self._deferred_idle = 0
         finally:
             Adw.NavigationPage.do_unmap(self)
