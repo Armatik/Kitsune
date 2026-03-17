@@ -8,6 +8,7 @@ test_files = [
   'test_navbar.py',
   'test_storage.py',
   'test_search_index.py',
+  'test_release_cache.py',
 ]
 
 foreach test_file : test_files

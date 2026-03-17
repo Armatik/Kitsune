@@ -5,6 +5,9 @@
       <default>'1080'</default>
       <summary>Preferred video quality</summary>
       <description>Preferred HLS stream quality: 1080, 720, or 480</description>
+      <choices>
+        <choice value='1080'/><choice value='720'/><choice value='480'/>
+      </choices>
     </key>
     <key name="volume" type="d">
       <default>1.0</default>
@@ -16,6 +19,9 @@
       <default>'classic'</default>
       <summary>Release page style</summary>
       <description>Visual style for the release page: classic or accent</description>
+      <choices>
+        <choice value='classic'/><choice value='accent'/>
+      </choices>
     </key>
     <key name="accent-fade-duration" type="i">
       <default>2000</default>
@@ -48,6 +54,9 @@
       <default>'list'</default>
       <summary>Episodes view mode</summary>
       <description>How to display episodes: list or grid</description>
+      <choices>
+        <choice value='list'/><choice value='grid'/>
+      </choices>
     </key>
     <key name="blur-unwatched-episodes" type="b">
       <default>true</default>
@@ -58,6 +67,9 @@
       <default>'cards'</default>
       <summary>Tags view mode</summary>
       <description>Display mode for tags tab: cards or list</description>
+      <choices>
+        <choice value='cards'/><choice value='list'/>
+      </choices>
     </key>
     <key name="navbar-desktop" type="s">
       <default>'["catalog","genres","franchises","tags"]'</default>
@@ -73,6 +85,9 @@
       <default>'grid'</default>
       <summary>Bottom sheet style</summary>
       <description>Display style for the navigation bottom sheet: grid (icons) or list (rows)</description>
+      <choices>
+        <choice value='grid'/><choice value='list'/>
+      </choices>
     </key>
     <key name="navbar-sync" type="b">
       <default>true</default>

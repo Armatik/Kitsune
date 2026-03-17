@@ -12,7 +12,7 @@ meson setup _build -Dprefix=$HOME/.local
 meson compile -C _build
 meson install -C _build
 
-# Tests (13 Meson tests: 5 non-GUI + 8 widget via xvfb-run)
+# Tests (19 Meson tests: 7 non-GUI + 9 widget via xvfb-run + 3 validation)
 meson test -C _build
 
 # i18n (ONLY through Meson, never xgettext directly)

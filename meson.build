@@ -8,7 +8,7 @@ i18n = import('i18n')
 gnome = import('gnome')
 python = import('python')
 
-py_installation = python.find_installation('python3', modules: ['gi'])
+py_installation = python.find_installation('python3', modules: ['gi', 'cairo'])
 
 APPLICATION_ID = 'net.armatik.Kitsune'
 
