@@ -50,7 +50,7 @@ _SEARCH_CSS = (
     ' background: alpha(@accent_bg_color, 0.85); }'
     ' .search-episode-btn:active .search-episode-bar {'
     ' background: alpha(@accent_bg_color, 0.7); }'
-    ' .search-dialog-list row { background: none;'
+    ' .search-dialog-list row { background: none; padding: 0;'
     ' transition: background ' + _T + '; }'
     ' .search-dialog-list row:hover .search-result {'
     ' background: alpha(currentColor, 0.07); }'
@@ -577,24 +577,22 @@ class SearchDialog(Adw.Dialog):
         if parts:
             info.append(Gtk.Label(
                 label=' · '.join(parts), xalign=0,
+                ellipsize=3,
                 css_classes=['dim-label', 'caption'],
             ))
 
-        # Genre chips (use pre-loaded genre_map)
+        # Genre label (single ellipsized line)
         genre_ids = entry.get('genres', [])
         if genre_ids and self._genre_map:
-            chips_box = Gtk.Box(spacing=4, margin_top=2)
-            for gid in genre_ids[:3]:
-                name = self._genre_map.get(gid)
-                if name:
-                    chips_box.append(Gtk.Label(
-                        label=name,
-                        css_classes=['caption', 'dim-label'],
-                        margin_start=6, margin_end=6,
-                        margin_top=2, margin_bottom=2,
-                    ))
-            if chips_box.get_first_child():
-                info.append(chips_box)
+            names = [self._genre_map[gid] for gid in genre_ids[:3]
+                     if gid in self._genre_map]
+            if names:
+                info.append(Gtk.Label(
+                    label=' · '.join(names), xalign=0,
+                    ellipsize=3,
+                    css_classes=['caption', 'dim-label'],
+                    margin_top=2,
+                ))
 
         # Tag badges (use pre-loaded all_tags)
         release_id = entry.get('id')

@@ -51,6 +51,7 @@ template $KitsuneSearchDialog: Adw.Dialog {
     // Scrollable content area
     Gtk.Stack stack {
       vexpand: true;
+      hhomogeneous: false;
 
       Gtk.StackPage {
         name: "empty";
@@ -90,17 +91,41 @@ template $KitsuneSearchDialog: Adw.Dialog {
             valign: start;
             row-activated => $on_row_activated();
 
-            styles ["navigation-sidebar", "search-dialog-list"]
+            styles ["search-dialog-list"]
           }
         };
       }
 
       Gtk.StackPage {
         name: "no-results";
-        child: Adw.StatusPage {
-          title: _("No Results");
-          description: _("Try a different search query");
-          icon-name: "system-search-symbolic";
+        child: Gtk.Box {
+          orientation: vertical;
+          halign: center;
+          valign: center;
+          vexpand: true;
+          spacing: 8;
+
+          Gtk.Image {
+            icon-name: "system-search-symbolic";
+            pixel-size: 48;
+            opacity: 0.4;
+          }
+
+          Gtk.Label {
+            label: _("No Results");
+            wrap: true;
+            justify: center;
+
+            styles ["title-3"]
+          }
+
+          Gtk.Label {
+            label: _("Try a different search query");
+            wrap: true;
+            justify: center;
+
+            styles ["dim-label"]
+          }
         };
       }
     }
