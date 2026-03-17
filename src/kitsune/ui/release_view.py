@@ -122,16 +122,6 @@ class ReleaseView(Adw.NavigationPage):
         if self._release.poster:
             self._load_poster(self._release.poster)
 
-        if self._release.episodes:
-            self._populate_episodes()
-            self._apply_episodes_view()
-        else:
-            self.episodes_spinner.set_visible(True)
-
-        self._populate_team()
-        self._populate_torrents()
-        self._load_related()
-
         # Header refresh indicator
         self._header_spinner = Adw.Spinner()
         self._header_check = Gtk.Image(
@@ -142,6 +132,29 @@ class ReleaseView(Adw.NavigationPage):
         self._header_status = Gtk.Box()
         self._header_status.append(self._header_spinner)
         self.header_bar.pack_end(self._header_status)
+
+        # Show spinner until deferred content loads
+        self.episodes_spinner.set_visible(True)
+
+        self.connect('realize', self._on_realize)
+        self.connect('showing', self._on_showing)
+
+        # Defer heavy work to avoid blocking the push animation
+        self._deferred_idle = GLib.idle_add(self._deferred_init)
+
+    def _deferred_init(self):
+        """Populate heavy content after the navigation animation."""
+        self._deferred_idle = 0
+        if self._release.episodes:
+            self._populate_episodes()
+            self._apply_episodes_view()
+            self.episodes_spinner.set_visible(False)
+        else:
+            self.episodes_spinner.set_visible(True)
+
+        self._populate_team()
+        self._populate_torrents()
+        self._load_related()
 
         # Tag SplitButton popover
         from kitsune.ui.tag_popover import TagPopover
@@ -154,9 +167,7 @@ class ReleaseView(Adw.NavigationPage):
 
         # Always refresh from API
         self._start_refresh()
-
-        self.connect('realize', self._on_realize)
-        self.connect('showing', self._on_showing)
+        return GLib.SOURCE_REMOVE
 
     def set_on_episode_play(self, callback):
         self._on_episode_play = callback
@@ -484,6 +495,8 @@ class ReleaseView(Adw.NavigationPage):
         )
 
     def _on_raw_release_loaded(self, data, error):
+        if not self.get_mapped():
+            return
         self.episodes_spinner.set_visible(False)
         if error or not data:
             self._show_refresh_error()
@@ -583,6 +596,8 @@ class ReleaseView(Adw.NavigationPage):
         )
 
     def _on_franchise_found(self, franchise, error):
+        if not self.get_mapped():
+            return
         self.related_spinner.set_visible(False)
         if error:
             return
@@ -893,5 +908,8 @@ class ReleaseView(Adw.NavigationPage):
             if self._refresh_timer:
                 GLib.source_remove(self._refresh_timer)
                 self._refresh_timer = 0
+            if getattr(self, '_deferred_idle', 0):
+                GLib.source_remove(self._deferred_idle)
+                self._deferred_idle = 0
         finally:
             Adw.NavigationPage.do_unmap(self)
