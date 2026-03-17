@@ -194,8 +194,11 @@ class SearchDialog(Adw.Dialog):
         adj = self.scrolled.get_vadjustment()
         if adj is None:
             return
-        coords = row.translate_coordinates(self.listbox, 0, 0)
-        if coords is None:
+        try:
+            coords = row.translate_coordinates(self.listbox, 0, 0)
+        except Exception:
+            return
+        if not coords:
             return
         target_y = coords[-1]
         self._animate_scroll(adj, adj.get_value(), target_y)
@@ -240,8 +243,11 @@ class SearchDialog(Adw.Dialog):
         for cat_id, idx in self._section_indices.items():
             row = self.listbox.get_row_at_index(idx)
             if row:
-                coords = row.translate_coordinates(self.listbox, 0, 0)
-                if coords is not None and coords[-1] < scroll_bottom:
+                try:
+                    coords = row.translate_coordinates(self.listbox, 0, 0)
+                except Exception:
+                    continue
+                if coords and coords[-1] < scroll_bottom:
                     active_cat = cat_id
         if active_cat:
             self._set_active_tab(active_cat)
@@ -372,6 +378,8 @@ class SearchDialog(Adw.Dialog):
     def _on_api_results(self, releases, error):
         if error or not releases:
             return
+        if not self.get_visible():
+            return
 
         # Build lookup from current local/index entries
         local_map = {r['id']: r for r in self._results.get('anime', [])}
@@ -412,9 +420,11 @@ class SearchDialog(Adw.Dialog):
         self._render_results()
 
         # Lazily cache releases not in index (fetches full data with genres)
-        for entry in api_entries:
-            rid = entry['id']
-            if search_index.get_release_meta(rid) is None:
+        uncached = [e['id'] for e in api_entries
+                    if search_index.get_release_meta(e['id']) is None]
+        if uncached:
+            self._lazy_pending = len(uncached)
+            for rid in uncached:
                 self._client.get_release_raw(
                     str(rid),
                     callback=lambda data, err, r=rid:
@@ -423,19 +433,21 @@ class SearchDialog(Adw.Dialog):
                 )
 
     def _on_lazy_cached(self, release_id, data, error):
-        if error or not data:
+        if not error and data:
+            release_cache.save(release_id, data)
+        self._lazy_pending = getattr(self, '_lazy_pending', 1) - 1
+        if not self.get_visible() or self._lazy_pending > 0:
             return
-        release_cache.save(release_id, data)
-        if not self.get_visible():
-            return
-        # Update entry with genres from freshly cached data
-        meta = search_index.get_release_meta(release_id)
-        if meta and meta.get('genres'):
-            for entry in self._results.get('anime', []):
-                if entry.get('id') == release_id and not entry.get('genres'):
+        # All lazy fetches done — update genres in one batch re-render
+        changed = False
+        for entry in self._results.get('anime', []):
+            if not entry.get('genres'):
+                meta = search_index.get_release_meta(entry['id'])
+                if meta and meta.get('genres'):
                     entry['genres'] = meta['genres']
-                    self._render_results()
-                    return
+                    changed = True
+        if changed:
+            self._render_results()
 
     def _clear_results(self):
         self._results = {}
@@ -523,9 +535,9 @@ class SearchDialog(Adw.Dialog):
     def _on_ongoing_refreshed(self, release_id, data, error):
         if error or not data:
             return
+        release_cache.save(release_id, data)
         if not self.get_visible():
             return
-        release_cache.save(release_id, data)
         meta = search_index.get_release_meta(release_id)
         if meta:
             for i, entry in enumerate(self._results.get('anime', [])):
@@ -1075,6 +1087,11 @@ class SearchDialog(Adw.Dialog):
         if self._cancellable:
             self._cancellable.cancel()
             self._cancellable = None
+        if self._scroll_handler_id:
+            adj = self.scrolled.get_vadjustment()
+            if adj:
+                adj.disconnect(self._scroll_handler_id)
+            self._scroll_handler_id = 0
         if not self._closed_by_navigation:
             self.search_entry.set_text('')
             self._clear_results()
