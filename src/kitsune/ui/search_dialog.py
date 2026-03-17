@@ -183,7 +183,6 @@ class SearchDialog(Adw.Dialog):
         if not btn.get_active():
             return
         self._set_active_tab(cat_id)
-        # Smooth scroll to section header
         idx = self._section_indices.get(cat_id)
         if idx is not None:
             row = self.listbox.get_row_at_index(idx)
@@ -195,9 +194,10 @@ class SearchDialog(Adw.Dialog):
         adj = self.scrolled.get_vadjustment()
         if adj is None:
             return
-        ok, target_y = row.translate_coordinates(self.listbox, 0, 0)
-        if not ok:
+        coords = row.translate_coordinates(self.listbox, 0, 0)
+        if coords is None:
             return
+        target_y = coords[-1]
         self._animate_scroll(adj, adj.get_value(), target_y)
 
     def _animate_scroll(self, adj, start, end, duration_ms=200):
@@ -224,6 +224,7 @@ class SearchDialog(Adw.Dialog):
         """Track scroll position to highlight the active category tab."""
         adj = self.scrolled.get_vadjustment()
         if not adj:
+            log.debug('scroll_tracking: no vadjustment')
             return
         if self._scroll_handler_id:
             adj.disconnect(self._scroll_handler_id)
@@ -239,8 +240,8 @@ class SearchDialog(Adw.Dialog):
         for cat_id, idx in self._section_indices.items():
             row = self.listbox.get_row_at_index(idx)
             if row:
-                ok, y = row.translate_coordinates(self.listbox, 0, 0)
-                if ok and y < scroll_bottom:
+                coords = row.translate_coordinates(self.listbox, 0, 0)
+                if coords is not None and coords[-1] < scroll_bottom:
                     active_cat = cat_id
         if active_cat:
             self._set_active_tab(active_cat)
