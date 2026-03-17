@@ -56,6 +56,11 @@
   </supports>
 
   <releases>
+    <release version="0.8.2" date="2026-03-18">
+      <description>
+        <p>Preparing for Flathub publication. Added English README and separate Russian translation for multilingual repository support. Fixed minimum dependency versions in documentation (Libadwaita >= 1.6, GStreamer >= 1.24). Fixed translate URL in metainfo pointing to wrong branch.</p>
+      </description>
+    </release>
     <release version="0.8.1" date="2026-03-17">
       <description>
         <p>Fixed release page not loading content — deferred initialization via GLib.idle_add was cancelled by NavigationView internal map/unmap cycle during push animation. Now uses the showing signal which fires after the transition completes.</p>
