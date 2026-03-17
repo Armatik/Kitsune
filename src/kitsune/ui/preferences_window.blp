@@ -81,6 +81,15 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
     }
 
     Adw.PreferencesGroup {
+      title: _("Episodes");
+
+      Adw.SwitchRow blur_unwatched_row {
+        title: _("Blur Unwatched");
+        subtitle: _("Blur episode preview images until watched");
+      }
+    }
+
+    Adw.PreferencesGroup {
       title: _("Player");
 
       Adw.SwitchRow close_button_row {
@@ -133,24 +142,29 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
         styles ["boxed-list"]
       }
     }
+
+    Adw.PreferencesGroup search_categories_group {
+      title: _("Search Categories");
+      description: _("Order of categories in search results");
+
+      Gtk.ListBox search_categories_list {
+        selection-mode: none;
+
+        styles ["boxed-list"]
+      }
+    }
   }
 
   Adw.PreferencesPage {
-    title: _("Cache");
+    title: _("Storage");
     icon-name: "drive-harddisk-symbolic";
 
     Adw.PreferencesGroup {
-      title: _("Poster Cache");
-      description: _("Cached poster images for offline access");
+      title: _("Cache");
+      description: _("Re-downloadable data from the network");
 
       Adw.ActionRow cache_size_row {
-        title: _("Cache Size");
-      }
-
-      Adw.ActionRow {
-        title: _("Clear Cache");
-        subtitle: _("Remove all cached images");
-        activatable-widget: clear_btn;
+        title: _("Posters");
 
         [suffix]
         Gtk.Button clear_btn {
@@ -161,24 +175,9 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
           styles ["destructive-action"]
         }
       }
-    }
-
-    Adw.PreferencesGroup {
-      title: _("Episode Previews");
-      description: _("Cached episode thumbnail images");
-
-      Adw.ActionRow preview_count_row {
-        title: _("Cached Previews");
-      }
 
       Adw.ActionRow preview_size_row {
-        title: _("Storage Size");
-      }
-
-      Adw.ActionRow {
-        title: _("Clear Previews");
-        subtitle: _("Remove all cached episode thumbnails");
-        activatable-widget: clear_preview_btn;
+        title: _("Episode Previews");
 
         [suffix]
         Gtk.Button clear_preview_btn {
@@ -189,24 +188,9 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
           styles ["destructive-action"]
         }
       }
-    }
-
-    Adw.PreferencesGroup {
-      title: _("Release Cache");
-      description: _("Cached release information for offline access");
-
-      Adw.ActionRow release_count_row {
-        title: _("Cached Releases");
-      }
 
       Adw.ActionRow release_size_row {
-        title: _("Storage Size");
-      }
-
-      Adw.ActionRow {
-        title: _("Clear Release Cache");
-        subtitle: _("Remove all cached release data");
-        activatable-widget: clear_release_btn;
+        title: _("Releases");
 
         [suffix]
         Gtk.Button clear_release_btn {
@@ -220,21 +204,11 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
     }
 
     Adw.PreferencesGroup {
-      title: _("Watch Progress");
-      description: _("Saved playback positions for episodes");
-
-      Adw.ActionRow watch_count_row {
-        title: _("Saved Positions");
-      }
+      title: _("User Data");
+      description: _("Personal data that cannot be restored from the network");
 
       Adw.ActionRow watch_size_row {
-        title: _("Storage Size");
-      }
-
-      Adw.ActionRow {
-        title: _("Clear Progress");
-        subtitle: _("Remove all saved playback positions");
-        activatable-widget: clear_progress_btn;
+        title: _("Watch Progress");
 
         [suffix]
         Gtk.Button clear_progress_btn {
@@ -245,24 +219,9 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
           styles ["destructive-action"]
         }
       }
-    }
-
-    Adw.PreferencesGroup {
-      title: _("Tags & Favorites");
-      description: _("Your custom tags and favorited releases");
-
-      Adw.ActionRow tags_count_row {
-        title: _("Tags");
-      }
 
       Adw.ActionRow tags_size_row {
-        title: _("Storage Size");
-      }
-
-      Adw.ActionRow {
-        title: _("Clear Tags");
-        subtitle: _("Remove all tags and favorites");
-        activatable-widget: clear_tags_btn;
+        title: _("Tags & Favorites");
 
         [suffix]
         Gtk.Button clear_tags_btn {
