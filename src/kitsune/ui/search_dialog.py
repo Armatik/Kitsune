@@ -60,12 +60,15 @@ _SEARCH_CSS = (
 )
 
 
-_ALL_CATEGORIES = {
-    'anime': lambda: _('Anime'),
-    'genres': lambda: _('Genres'),
-    'franchises': lambda: _('Franchises'),
-    'tags': lambda: _('Tags'),
+# xgettext: these must be plain _() calls, not lambdas
+_ALL_CATEGORY_NAMES = {
+    'anime': 'Anime',
+    'genres': 'Genres',
+    'franchises': 'Franchises',
+    'tags': 'Tags',
 }
+# Ensure xgettext sees these strings:
+_CATEGORY_GETTEXT = [_('Anime'), _('Genres'), _('Franchises'), _('Tags')]
 
 _DEFAULT_ORDER = ['anime', 'genres', 'franchises', 'tags']
 
@@ -82,7 +85,7 @@ def _categories(settings=None):
                 order = parsed
         except (json.JSONDecodeError, ValueError):
             pass
-    return [(cid, _ALL_CATEGORIES[cid]()) for cid in order if cid in _ALL_CATEGORIES]
+    return [(cid, _(_ALL_CATEGORY_NAMES[cid])) for cid in order if cid in _ALL_CATEGORY_NAMES]
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/search_dialog.ui')
@@ -218,10 +221,11 @@ class SearchDialog(Adw.Dialog):
             t_ease = 1 - (1 - t) ** 3
             adj.set_value(start + (end - start) * t_ease)
             if t >= 1.0:
+                self._scroll_anim_id = 0
                 return GLib.SOURCE_REMOVE
             return GLib.SOURCE_CONTINUE
 
-        GLib.timeout_add(16, _tick)
+        self._scroll_anim_id = GLib.timeout_add(16, _tick)
 
     def _setup_scroll_tracking(self):
         """Track scroll position to highlight the active category tab."""
@@ -1087,6 +1091,9 @@ class SearchDialog(Adw.Dialog):
         if self._cancellable:
             self._cancellable.cancel()
             self._cancellable = None
+        if getattr(self, '_scroll_anim_id', 0):
+            GLib.source_remove(self._scroll_anim_id)
+            self._scroll_anim_id = 0
         if self._scroll_handler_id:
             adj = self.scrolled.get_vadjustment()
             if adj:

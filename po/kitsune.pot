@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-13 00:10+0300\n"
+"POT-Creation-Date: 2026-03-17 14:00+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,84 +45,120 @@ msgstr ""
 msgid "Uses"
 msgstr ""
 
-#: src/kitsune/window.py:128 src/kitsune/window.py:167
-#: src/kitsune/window.py:483 src/kitsune/ui/preferences_window.py:174
+#: src/kitsune/window.py:139 src/kitsune/window.py:178
+#: src/kitsune/window.py:557 src/kitsune/ui/preferences_window.py:232
 #: src/kitsune/ui/window.blp:108
 msgid "Catalog"
 msgstr ""
 
-#: src/kitsune/window.py:129 src/kitsune/window.py:168
-#: src/kitsune/window.py:484 src/kitsune/ui/filter_dialog.py:148
-#: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:175
+#: src/kitsune/window.py:140 src/kitsune/window.py:179
+#: src/kitsune/window.py:558 src/kitsune/ui/filter_dialog.py:148
+#: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:218
+#: src/kitsune/ui/preferences_window.py:233 src/kitsune/ui/search_dialog.py:71
 msgid "Genres"
 msgstr ""
 
-#: src/kitsune/window.py:130 src/kitsune/window.py:169
-#: src/kitsune/window.py:485 src/kitsune/ui/preferences_window.py:176
+#: src/kitsune/window.py:141 src/kitsune/window.py:180
+#: src/kitsune/window.py:559 src/kitsune/ui/preferences_window.py:219
+#: src/kitsune/ui/preferences_window.py:234 src/kitsune/ui/search_dialog.py:71
 msgid "Franchises"
 msgstr ""
 
-#: src/kitsune/window.py:131 src/kitsune/window.py:486
-#: src/kitsune/ui/preferences_window.py:177
+#: src/kitsune/window.py:142 src/kitsune/window.py:560
+#: src/kitsune/ui/preferences_window.py:235
 msgid "Favorites & Tags"
 msgstr ""
 
-#: src/kitsune/window.py:170
+#: src/kitsune/window.py:181
 msgid "Favorites"
 msgstr ""
 
-#: src/kitsune/window.py:352 src/kitsune/window.py:406
+#: src/kitsune/window.py:266 src/kitsune/window.py:335
+#: src/kitsune/ui/window.blp:263
+msgid "Preferences"
+msgstr ""
+
+#: src/kitsune/window.py:273 src/kitsune/window.py:336
+#: src/kitsune/ui/window.blp:264
+msgid "About Kitsune"
+msgstr ""
+
+#: src/kitsune/window.py:431 src/kitsune/window.py:480
 msgid "Card view"
 msgstr ""
 
-#: src/kitsune/window.py:372 src/kitsune/ui/search_view.blp:7
-#: src/kitsune/ui/window.blp:83 src/kitsune/ui/window.blp:171
-msgid "Search"
-msgstr ""
-
-#: src/kitsune/window.py:373
-msgid "This feature is under development"
-msgstr ""
-
-#: src/kitsune/window.py:375
-msgid "OK"
-msgstr ""
-
-#: src/kitsune/window.py:409 src/kitsune/ui/release_view.py:320
+#: src/kitsune/window.py:483 src/kitsune/ui/release_view.py:331
 msgid "List view"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:49 src/kitsune/ui/window.blp:50
+#: src/kitsune/ui/create_tag_dialog.py:29
+msgid "Blue"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:29
+msgid "Teal"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:29
+msgid "Green"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:29
+msgid "Yellow"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:29
+msgid "Orange"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:30
+msgid "Red"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:30
+msgid "Pink"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:30
+msgid "Purple"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:30
+msgid "Slate"
+msgstr ""
+
+#: src/kitsune/ui/create_tag_dialog.py:54 src/kitsune/ui/window.blp:50
 msgid "New Tag"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:50 src/kitsune/ui/tags_view.py:306
+#: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/tags_view.py:306
+#: src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:51
+#: src/kitsune/ui/create_tag_dialog.py:56
 msgid "Create"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:68
+#: src/kitsune/ui/create_tag_dialog.py:73
 msgid "Emoji"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:69
+#: src/kitsune/ui/create_tag_dialog.py:74
 msgid "Color"
 msgstr ""
 
 #. EntryRow with chooser as prefix
-#: src/kitsune/ui/create_tag_dialog.py:146
-#: src/kitsune/ui/create_tag_dialog.py:236
+#: src/kitsune/ui/create_tag_dialog.py:151
+#: src/kitsune/ui/create_tag_dialog.py:241
 msgid "Tag name"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:161
+#: src/kitsune/ui/create_tag_dialog.py:166
 msgid "A tag with this name already exists"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:242
+#: src/kitsune/ui/create_tag_dialog.py:247
 msgid "Tag name (optional)"
 msgstr ""
 
@@ -178,7 +214,7 @@ msgstr ""
 msgid "By rating"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:470
+#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:481
 msgid "Ongoing"
 msgstr ""
 
@@ -194,11 +230,11 @@ msgstr ""
 msgid "Dubbing completed"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:457
+#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:468
 msgid "Type"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:461
+#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:472
 msgid "Season"
 msgstr ""
 
@@ -214,124 +250,135 @@ msgstr ""
 msgid "Dubbing status"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:487 src/kitsune/ui/player_view.blp:230
+#: src/kitsune/ui/player_view.py:488 src/kitsune/ui/player_view.blp:239
 msgid "Skip Intro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:491
+#: src/kitsune/ui/player_view.py:492
 msgid "Skip Outro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:534
+#: src/kitsune/ui/player_view.py:535
 msgid "Playback error: {}"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.py:20
+#: src/kitsune/ui/preferences_window.py:22
 msgid "Standard layout without background effects"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.py:21
+#: src/kitsune/ui/preferences_window.py:23
 msgid "Gradient background from poster accent colors"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:182 src/kitsune/ui/release_view.py:468
+#. Ensure xgettext sees these strings:
+#: src/kitsune/ui/preferences_window.py:217 src/kitsune/ui/search_dialog.py:71
+msgid "Anime"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.py:220 src/kitsune/ui/search_dialog.py:71
+msgid "Tags"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:193 src/kitsune/ui/release_view.py:479
+#: src/kitsune/ui/preferences_window.blp:84
 msgid "Episodes"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:183
+#: src/kitsune/ui/release_view.py:194
 msgid "Related"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:184
+#: src/kitsune/ui/release_view.py:195
 msgid "Team"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:185
+#: src/kitsune/ui/release_view.py:196
 msgid "Torrents"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:276 src/kitsune/ui/release_view.py:292
+#: src/kitsune/ui/release_view.py:287 src/kitsune/ui/release_view.py:303
 msgid "All"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:277 src/kitsune/ui/release_view.py:292
-#: src/kitsune/ui/release_view_episodes.py:61
+#: src/kitsune/ui/release_view.py:288 src/kitsune/ui/release_view.py:303
+#: src/kitsune/ui/release_view_episodes.py:57
+#: src/kitsune/ui/release_view_episodes.py:59
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:278 src/kitsune/ui/release_view.py:292
+#: src/kitsune/ui/release_view.py:289 src/kitsune/ui/release_view.py:303
 msgid "Unwatched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:307 src/kitsune/ui/release_view.py:397
+#: src/kitsune/ui/release_view.py:318 src/kitsune/ui/release_view.py:408
 msgid "Newest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:324
+#: src/kitsune/ui/release_view.py:335
 msgid "Grid view"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:334
+#: src/kitsune/ui/release_view.py:345
 msgid "Mark all as watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:339
+#: src/kitsune/ui/release_view.py:350
 msgid "Unmark all"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:394
+#: src/kitsune/ui/release_view.py:405
 msgid "Oldest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:459
+#: src/kitsune/ui/release_view.py:470
 msgid "Year"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:464
+#: src/kitsune/ui/release_view.py:475
 msgid "Age rating"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:470
+#: src/kitsune/ui/release_view.py:481
 msgid "Completed"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:471
+#: src/kitsune/ui/release_view.py:482
 msgid "Status"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:651
+#: src/kitsune/ui/release_view.py:666
 #, python-format
 msgid "Episodes: %s"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:666
+#: src/kitsune/ui/release_view.py:681
 msgid "Hardsub"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:678
+#: src/kitsune/ui/release_view.py:693
 msgid "Download torrent"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:687
+#: src/kitsune/ui/release_view.py:702
 msgid "Open magnet link"
 msgstr ""
 
-#: src/kitsune/ui/release_view_episodes.py:53
-#: src/kitsune/ui/release_view_episodes.py:223
-#: src/kitsune/ui/release_view_episodes.py:237
+#: src/kitsune/ui/release_view_episodes.py:48
+#: src/kitsune/ui/release_view_episodes.py:221
+#: src/kitsune/ui/release_view_episodes.py:235
 msgid "Episode {}"
 msgstr ""
 
-#: src/kitsune/ui/release_view_episodes.py:61
-#: src/kitsune/ui/release_view_episodes.py:69
+#: src/kitsune/ui/release_view_episodes.py:57
+#: src/kitsune/ui/release_view_episodes.py:67
 msgid "min"
 msgstr ""
 
-#: src/kitsune/ui/release_view_episodes.py:66
+#: src/kitsune/ui/release_view_episodes.py:64
 msgid "Remaining: {} min of {} min"
 msgstr ""
 
-#: src/kitsune/ui/release_view_episodes.py:247
+#: src/kitsune/ui/release_view_episodes.py:245
 msgid "Remaining: {} min"
 msgstr ""
 
@@ -348,6 +395,32 @@ msgstr ""
 
 #: src/kitsune/ui/release_view_related.py:56
 msgid "1 season"
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.py:124
+msgid "Search anime, genres, franchises and tags"
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.py:631
+msgid "ep."
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.py:633
+msgid "ongoing"
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.py:777
+msgid "Episode"
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.py:805
+msgid "New episode"
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.py:907
+#: src/kitsune/ui/widgets/franchise_card.py:39
+#: src/kitsune/ui/widgets/genre_card.py:34
+msgid "titles"
 msgstr ""
 
 #: src/kitsune/ui/tag_popover.py:38
@@ -383,33 +456,61 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: src/kitsune/ui/widgets/franchise_card.py:39
-#: src/kitsune/ui/widgets/genre_card.py:34
-msgid "titles"
-msgstr ""
-
-#: src/kitsune/ui/filter_dialog.blp:17
+#: src/kitsune/ui/filter_dialog.blp:17 src/kitsune/ui/player_view.blp:65
 msgid "Close"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:38
+#: src/kitsune/ui/filter_dialog.blp:40
 msgid "Sorting"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:53
+#: src/kitsune/ui/filter_dialog.blp:55
 msgid "Release period"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:64
+#: src/kitsune/ui/filter_dialog.blp:66
 msgid "from"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:73
+#: src/kitsune/ui/filter_dialog.blp:75
 msgid "to"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.blp:91
+#: src/kitsune/ui/filter_dialog.blp:93
 msgid "Reset"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:42 src/kitsune/ui/window.blp:114
+#: src/kitsune/ui/window.blp:163
+msgid "Back"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:55
+msgid "Fullscreen"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:84
+msgid "Rewind 10 seconds"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:94
+msgid "Play / Pause"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:104
+msgid "Forward 10 seconds"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:119
+msgid "Previous episode"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:132
+msgid "Next episode"
+msgstr ""
+
+#: src/kitsune/ui/player_view.blp:196
+msgid "Volume"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:8
@@ -433,7 +534,7 @@ msgid "Accent Colors Settings"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:47
-msgid "Mobile Mode ⚠"
+msgid "Mobile Mode"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:48
@@ -441,7 +542,7 @@ msgid "Enable accent gradient in narrow layout (experimental)"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:52
-msgid "Glass Effect ⚠"
+msgid "Glass Effect"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:53
@@ -464,183 +565,128 @@ msgstr ""
 msgid "Animation duration in milliseconds"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:84
-msgid "Player"
-msgstr ""
-
 #: src/kitsune/ui/preferences_window.blp:87
-msgid "Close Button"
+msgid "Blur Unwatched"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:88
+msgid "Blur episode preview images until watched"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:93
+msgid "Player"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:96
+msgid "Close Button"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:97
 msgid "Show window close button in player top bar"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:94
+#: src/kitsune/ui/preferences_window.blp:103
 msgid "Navigation"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:98
+#: src/kitsune/ui/preferences_window.blp:107
 msgid "General"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:101
+#: src/kitsune/ui/preferences_window.blp:110
 msgid "Sync mobile with desktop"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:102
+#: src/kitsune/ui/preferences_window.blp:111
 msgid "Mobile navigation uses the same tab order as desktop"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:106
+#: src/kitsune/ui/preferences_window.blp:115
 msgid "Expanded menu style"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:107
+#: src/kitsune/ui/preferences_window.blp:116
 msgid "How to display tabs in the bottom sheet"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:110
+#: src/kitsune/ui/preferences_window.blp:119
 msgid "Grid"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:110
+#: src/kitsune/ui/preferences_window.blp:119
 msgid "List"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:116
+#: src/kitsune/ui/preferences_window.blp:125
 msgid "Desktop Tabs"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:117
+#: src/kitsune/ui/preferences_window.blp:126
 msgid "Visible tabs and their order in the sidebar"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:127
+#: src/kitsune/ui/preferences_window.blp:136
 msgid "Mobile Tabs"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:128
+#: src/kitsune/ui/preferences_window.blp:137
 msgid "Visible tabs and their order in the bottom bar"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:139
+#: src/kitsune/ui/preferences_window.blp:147
+msgid "Search Categories"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:148
+msgid "Order of categories in search results"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:159
+msgid "Storage"
+msgstr ""
+
+#: src/kitsune/ui/preferences_window.blp:163
 msgid "Cache"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:143
-msgid "Poster Cache"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:144
-msgid "Cached poster images for offline access"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:147
-msgid "Cache Size"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:151
-msgid "Clear Cache"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:152
-msgid "Remove all cached images"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:157
-#: src/kitsune/ui/preferences_window.blp:185
-#: src/kitsune/ui/preferences_window.blp:213
-#: src/kitsune/ui/preferences_window.blp:241
-#: src/kitsune/ui/preferences_window.blp:269
-msgid "Clear"
+#: src/kitsune/ui/preferences_window.blp:164
+msgid "Re-downloadable data from the network"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:167
-msgid "Episode Previews"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:168
-msgid "Cached episode thumbnail images"
+msgid "Posters"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:171
-msgid "Cached Previews"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:175
-#: src/kitsune/ui/preferences_window.blp:203
-#: src/kitsune/ui/preferences_window.blp:231
-#: src/kitsune/ui/preferences_window.blp:259
-msgid "Storage Size"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:179
-msgid "Clear Previews"
+#: src/kitsune/ui/preferences_window.blp:184
+#: src/kitsune/ui/preferences_window.blp:197
+#: src/kitsune/ui/preferences_window.blp:215
+#: src/kitsune/ui/preferences_window.blp:228
+msgid "Clear"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:180
-msgid "Remove all cached episode thumbnails"
+msgid "Episode Previews"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:195
-msgid "Release Cache"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:196
-msgid "Cached release information for offline access"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:199
-msgid "Cached Releases"
+#: src/kitsune/ui/preferences_window.blp:193
+msgid "Releases"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:207
-msgid "Clear Release Cache"
+msgid "User Data"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:208
-msgid "Remove all cached release data"
+msgid "Personal data that cannot be restored from the network"
 msgstr ""
 
-#: src/kitsune/ui/preferences_window.blp:223
+#: src/kitsune/ui/preferences_window.blp:211
 msgid "Watch Progress"
 msgstr ""
 
 #: src/kitsune/ui/preferences_window.blp:224
-msgid "Saved playback positions for episodes"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:227
-msgid "Saved Positions"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:235
-msgid "Clear Progress"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:236
-msgid "Remove all saved playback positions"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:251
 msgid "Tags & Favorites"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:252
-msgid "Your custom tags and favorited releases"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:255
-msgid "Tags"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:263
-msgid "Clear Tags"
-msgstr ""
-
-#: src/kitsune/ui/preferences_window.blp:264
-msgid "Remove all tags and favorites"
 msgstr ""
 
 #: src/kitsune/ui/release_view.blp:25
@@ -663,32 +709,21 @@ msgstr ""
 msgid "No torrents available"
 msgstr ""
 
-#: src/kitsune/ui/search_view.blp:14
+#: src/kitsune/ui/search_dialog.blp:9 src/kitsune/ui/window.blp:83
+#: src/kitsune/ui/window.blp:171
+msgid "Search"
+msgstr ""
+
+#: src/kitsune/ui/search_dialog.blp:26
 msgid "Search anime..."
 msgstr ""
 
-#: src/kitsune/ui/search_view.blp:27
-msgid "Search for Anime"
-msgstr ""
-
-#: src/kitsune/ui/search_view.blp:28
-msgid "Enter a title name to find it"
-msgstr ""
-
-#: src/kitsune/ui/search_view.blp:62
+#: src/kitsune/ui/search_dialog.blp:115
 msgid "No Results"
 msgstr ""
 
-#: src/kitsune/ui/search_view.blp:63
+#: src/kitsune/ui/search_dialog.blp:123
 msgid "Try a different search query"
-msgstr ""
-
-#: src/kitsune/ui/search_view.blp:69
-msgid "Connection Error"
-msgstr ""
-
-#: src/kitsune/ui/search_view.blp:70
-msgid "Check your internet connection and try again"
 msgstr ""
 
 #: src/kitsune/ui/widgets/content_grid.blp:44
@@ -711,28 +746,16 @@ msgstr ""
 msgid "Delete Tag"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:91 src/kitsune/ui/window.blp:179
+#: src/kitsune/ui/window.blp:91
 msgid "Main Menu"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:114 src/kitsune/ui/window.blp:163
-msgid "Back"
-msgstr ""
-
-#: src/kitsune/ui/window.blp:251
+#: src/kitsune/ui/window.blp:243
 msgid "No internet connection. App is working in limited mode."
 msgstr ""
 
-#: src/kitsune/ui/window.blp:252
+#: src/kitsune/ui/window.blp:244
 msgid "Retry"
-msgstr ""
-
-#: src/kitsune/ui/window.blp:271
-msgid "Preferences"
-msgstr ""
-
-#: src/kitsune/ui/window.blp:272
-msgid "About Kitsune"
 msgstr ""
 
 #: data/net.armatik.Kitsune.desktop.in:3

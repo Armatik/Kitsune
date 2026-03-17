@@ -24,6 +24,11 @@ _COLOR_NAME_KEYS = {
     'purple': 'Purple',
     'slate': 'Slate',
 }
+# Ensure xgettext can extract color names:
+_COLOR_GETTEXT = [
+    _('Blue'), _('Teal'), _('Green'), _('Yellow'), _('Orange'),
+    _('Red'), _('Pink'), _('Purple'), _('Slate'),
+]
 
 
 def _color_display_name(key: str) -> str:
