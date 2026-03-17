@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -97,20 +99,28 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.accent_group.set_visible(style == 'accent')
 
     def _update_cache_size(self):
-        count = get_cache_count('posters')
-        size = get_cache_size('posters')
+        try:
+            count = get_cache_count('posters')
+            size = get_cache_size('posters')
+        except OSError:
+            count, size = 0, 0
         self.cache_size_row.set_subtitle(
             f'{count} — {format_size(size)}')
 
     def _update_preview_cache(self):
-        count = get_cache_count('previews')
-        size = get_cache_size('previews')
+        try:
+            count = get_cache_count('previews')
+            size = get_cache_size('previews')
+        except OSError:
+            count, size = 0, 0
         self.preview_size_row.set_subtitle(
             f'{count} — {format_size(size)}')
 
     @Gtk.Template.Callback()
     def on_style_changed(self, toggle_group, _pspec):
         name = toggle_group.get_active_name()
+        if not name:
+            return
         self._settings.set_string('release-page-style', name)
         self._update_style_description(name)
         self._update_accent_group_visibility(name)
@@ -134,46 +144,70 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._settings.set_boolean('player-show-close-button', row.get_active())
 
     def _update_watch_progress(self):
-        count = watch_positions.get_count()
-        size = watch_positions.get_size()
+        try:
+            count = watch_positions.get_count()
+            size = watch_positions.get_size()
+        except OSError:
+            count, size = 0, 0
         self.watch_size_row.set_subtitle(
             f'{count} — {format_size(size)}')
 
     def _update_release_cache(self):
-        count = release_cache.get_count()
-        size = release_cache.get_size()
+        try:
+            count = release_cache.get_count()
+            size = release_cache.get_size()
+        except OSError:
+            count, size = 0, 0
         self.release_size_row.set_subtitle(
             f'{count} — {format_size(size)}')
 
     @Gtk.Template.Callback()
     def on_clear_release_clicked(self, _button):
-        release_cache.clear_all()
+        try:
+            release_cache.clear_all()
+        except OSError:
+            pass
         self._update_release_cache()
 
     @Gtk.Template.Callback()
     def on_clear_clicked(self, _button):
-        clear_cache('posters')
+        try:
+            clear_cache('posters')
+        except OSError:
+            pass
         self._update_cache_size()
 
     @Gtk.Template.Callback()
     def on_clear_preview_clicked(self, _button):
-        clear_cache('previews')
+        try:
+            clear_cache('previews')
+        except OSError:
+            pass
         self._update_preview_cache()
 
     @Gtk.Template.Callback()
     def on_clear_progress_clicked(self, _button):
-        watch_positions.clear_all()
+        try:
+            watch_positions.clear_all()
+        except OSError:
+            pass
         self._update_watch_progress()
 
     def _update_tags(self):
-        count = tags_store.get_count()
-        size = tags_store.get_size()
+        try:
+            count = tags_store.get_count()
+            size = tags_store.get_size()
+        except OSError:
+            count, size = 0, 0
         self.tags_size_row.set_subtitle(
             f'{count} — {format_size(size)}')
 
     @Gtk.Template.Callback()
     def on_clear_tags_clicked(self, _button):
-        tags_store.clear_all()
+        try:
+            tags_store.clear_all()
+        except OSError:
+            pass
         self._update_tags()
 
     # --- Search Categories ---
@@ -297,7 +331,11 @@ class PreferencesWindow(Adw.PreferencesDialog):
         entries = self._navbar_entries.get(settings_key, [])
         visible = [tid for tid, sw in entries if sw.get_active()]
         if not visible:
-            visible = [ALL_TAB_IDS[0]]
+            fallback = ALL_TAB_IDS[0]
+            for tid, sw in entries:
+                if tid == fallback:
+                    sw.set_active(True)
+                    return
             if entries:
                 entries[0][1].set_active(True)
                 return
@@ -344,12 +382,18 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._rebuild_search_categories()
 
     def _parse_search_order(self):
-        import json
         try:
             raw = self._settings.get_string('search-category-order')
             parsed = json.loads(raw)
             if isinstance(parsed, list):
-                return [c for c in parsed if c in self._ALL_SEARCH_CATEGORIES]
+                seen = set()
+                result = []
+                for c in parsed:
+                    if c in self._ALL_SEARCH_CATEGORIES and c not in seen:
+                        seen.add(c)
+                        result.append(c)
+                if result:
+                    return result
         except (json.JSONDecodeError, ValueError):
             pass
         return list(self._ALL_SEARCH_CATEGORIES)
@@ -407,11 +451,14 @@ class PreferencesWindow(Adw.PreferencesDialog):
             self._search_cat_entries.append((cid, switch))
 
     def _save_search_order(self):
-        import json
         visible = [cid for cid, sw in self._search_cat_entries
                    if sw.get_active()]
         if not visible:
-            visible = [self._ALL_SEARCH_CATEGORIES[0]]
+            fallback = self._ALL_SEARCH_CATEGORIES[0]
+            for cid, sw in self._search_cat_entries:
+                if cid == fallback:
+                    sw.set_active(True)
+                    return
             if self._search_cat_entries:
                 self._search_cat_entries[0][1].set_active(True)
                 return
@@ -444,7 +491,6 @@ class PreferencesWindow(Adw.PreferencesDialog):
             insert_idx += 1
         visible.insert(insert_idx, source_id)
 
-        import json
         self._settings.set_string('search-category-order',
                                   json.dumps(visible))
         self._rebuild_search_categories()
