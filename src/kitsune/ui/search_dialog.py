@@ -13,6 +13,7 @@ from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.storage import search_index, tags_store, watch_positions, release_cache
+from kitsune.storage.watch_positions import is_completed
 from kitsune.models import Release
 from kitsune.models.release import Genre, ReleaseName
 from kitsune.models.franchise import Franchise
@@ -74,10 +75,13 @@ def _categories(settings=None):
     order = _DEFAULT_ORDER
     if settings:
         import json
-        raw = settings.get_string('search-category-order')
-        parsed = json.loads(raw)
-        if isinstance(parsed, list):
-            order = parsed
+        try:
+            raw = settings.get_string('search-category-order')
+            parsed = json.loads(raw)
+            if isinstance(parsed, list):
+                order = parsed
+        except (json.JSONDecodeError, ValueError):
+            pass
     return [(cid, _ALL_CATEGORIES[cid]()) for cid in order if cid in _ALL_CATEGORIES]
 
 
@@ -111,6 +115,7 @@ class SearchDialog(Adw.Dialog):
         self._suppress_tab_toggle = False
         self._scroll_connected = False
         self._closed_by_navigation = False
+        self._refreshed_ids: set[int] = set()
 
         self.empty_subtitle.set_label(
             _('Search anime, genres, franchises and tags')
@@ -403,6 +408,11 @@ class SearchDialog(Adw.Dialog):
             self.listbox.remove(row)
         self._section_indices = {}
 
+        # Pre-load shared data once per render (avoid N+1 disk reads)
+        cached_genres = search_index.get_genres()
+        self._genre_map = {g['id']: g['name'] for g in cached_genres} if cached_genres else {}
+        self._all_tags = tags_store.get_all_tags()
+
         total = 0
         idx = 0
         for cat_id, label in _categories(self._settings):
@@ -427,10 +437,61 @@ class SearchDialog(Adw.Dialog):
             if not self._scroll_connected:
                 self._scroll_connected = True
                 GLib.idle_add(self._setup_scroll_tracking)
-            # Log row sizes after layout settles
-            GLib.idle_add(self._debug_log_sizes)
+            if log.isEnabledFor(logging.DEBUG):
+                GLib.idle_add(self._debug_log_sizes)
+            # Check if ongoing releases need API refresh
+            self._check_ongoing_refresh()
         else:
             self.stack.set_visible_child_name('no-results')
+
+    def _check_ongoing_refresh(self):
+        """For ongoing releases where all episodes are watched, refresh from API."""
+        anime = self._results.get('anime', [])
+        for entry in anime:
+            rid = entry.get('id')
+            if not rid or not entry.get('is_ongoing'):
+                continue
+            if rid in self._refreshed_ids:
+                continue
+            positions = watch_positions.get_all_for_release(rid)
+            if not positions:
+                continue
+            episodes = search_index.get_episodes(rid)
+            if not episodes:
+                continue
+            all_completed = True
+            for ep in episodes:
+                ordinal = ep.get('ordinal', 0)
+                pos = positions.get(ordinal, 0)
+                if pos == 0:
+                    all_completed = False
+                    break
+                if not is_completed(pos, ep.get('duration')):
+                    all_completed = False
+                    break
+            if all_completed:
+                self._refreshed_ids.add(rid)
+                log.debug('ongoing refresh: fetching release %d', rid)
+                self._client.get_release_raw(
+                    str(rid),
+                    callback=lambda data, err, r=rid:
+                        self._on_ongoing_refreshed(r, data, err),
+                    cancellable=self._cancellable,
+                )
+
+    def _on_ongoing_refreshed(self, release_id, data, error):
+        if error or not data:
+            return
+        if not self.get_visible():
+            return
+        release_cache.save(release_id, data)
+        meta = search_index.get_release_meta(release_id)
+        if meta:
+            for i, entry in enumerate(self._results.get('anime', [])):
+                if entry.get('id') == release_id:
+                    self._results['anime'][i] = {**meta, 'id': release_id}
+                    break
+        self._render_results()
 
     def _debug_log_sizes(self):
         idx = 0
@@ -491,11 +552,9 @@ class SearchDialog(Adw.Dialog):
         # --- Top: poster + info ---
         top = Gtk.Box(spacing=12)
 
-        # Poster — reuse the same CSS-constrained thumbnail
         top.append(self._make_fixed_thumbnail(
             entry.get('poster_preview'), 56, 80))
 
-        # Info column
         info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
                         hexpand=True, valign=Gtk.Align.CENTER)
 
@@ -521,29 +580,27 @@ class SearchDialog(Adw.Dialog):
                 css_classes=['dim-label', 'caption'],
             ))
 
-        # Genre chips
+        # Genre chips (use pre-loaded genre_map)
         genre_ids = entry.get('genres', [])
-        if genre_ids:
-            cached_genres = search_index.get_genres()
-            if cached_genres:
-                genre_map = {g['id']: g['name'] for g in cached_genres}
-                chips_box = Gtk.Box(spacing=4, margin_top=2)
-                for gid in genre_ids[:3]:
-                    name = genre_map.get(gid)
-                    if name:
-                        chips_box.append(Gtk.Label(
-                            label=name,
-                            css_classes=['caption', 'dim-label'],
-                            margin_start=6, margin_end=6,
-                            margin_top=2, margin_bottom=2,
-                        ))
-                if chips_box.get_first_child():
-                    info.append(chips_box)
+        if genre_ids and self._genre_map:
+            chips_box = Gtk.Box(spacing=4, margin_top=2)
+            for gid in genre_ids[:3]:
+                name = self._genre_map.get(gid)
+                if name:
+                    chips_box.append(Gtk.Label(
+                        label=name,
+                        css_classes=['caption', 'dim-label'],
+                        margin_start=6, margin_end=6,
+                        margin_top=2, margin_bottom=2,
+                    ))
+            if chips_box.get_first_child():
+                info.append(chips_box)
 
-        # Tag badges
+        # Tag badges (use pre-loaded all_tags)
         release_id = entry.get('id')
-        if release_id:
-            tags = tags_store.get_tags_for_release(release_id)
+        if release_id and self._all_tags:
+            tags = [t for t in self._all_tags
+                    if release_id in t.get('releases', [])]
             if tags:
                 tags_box = Gtk.Box(spacing=4, margin_top=2)
                 for tag in tags[:4]:
@@ -562,102 +619,94 @@ class SearchDialog(Adw.Dialog):
 
         top.append(info)
 
-        # Progress label (right-aligned)
+        # Load positions and episodes once per row
+        positions = {}
+        idx_eps = []
         if release_id:
             positions = watch_positions.get_all_for_release(release_id)
-            if positions and ep_total and ep_total > 0:
-                completed = sum(1 for p in positions.values() if p == -1)
-                all_done = completed >= ep_total
-                progress_lbl = Gtk.Label(
-                    label=f'{completed} / {ep_total}' + (' ✓' if all_done else ''),
-                    css_classes=['caption', 'dim-label'],
-                    valign=Gtk.Align.START,
-                )
-                top.append(progress_lbl)
+            idx_eps = search_index.get_episodes(release_id) or []
+
+        # Progress label (right-aligned)
+        if release_id and positions and ep_total and ep_total > 0:
+            dur_map = {e['ordinal']: e.get('duration') for e in idx_eps}
+            completed = sum(1 for o, p in positions.items()
+                            if is_completed(p, dur_map.get(o, 0)))
+            all_done = completed >= ep_total
+            progress_lbl = Gtk.Label(
+                label=f'{completed} / {ep_total}' + (' ✓' if all_done else ''),
+                css_classes=['caption', 'dim-label'],
+                valign=Gtk.Align.START,
+            )
+            top.append(progress_lbl)
 
         outer.append(top)
 
         # --- Bottom: episode block (below poster+info) ---
         if release_id:
-            self._add_episode_block(outer, release_id, ep_total, entry)
+            self._add_episode_block(outer, release_id, ep_total, entry,
+                                     positions, idx_eps)
 
         row = Gtk.ListBoxRow(child=outer)
         row._search_type = 'anime'
         row._search_data = entry
         return row
 
-    def _add_episode_block(self, outer, release_id, ep_total, entry):
+    def _add_episode_block(self, outer, release_id, ep_total, entry,
+                            positions=None, episodes=None):
         """Add episode continue/new block below the main card content."""
-        positions = watch_positions.get_all_for_release(release_id)
+        if positions is None:
+            positions = watch_positions.get_all_for_release(release_id)
         if not positions:
             return
+        if episodes is None:
+            episodes = search_index.get_episodes(release_id) or []
 
-        # Classify episodes: treat near-end (within 120s of duration) as completed
-        raw = release_cache.get(release_id)
         ep_durations = {}
-        if raw:
-            for ep in raw.get('episodes', []):
-                d = ep.get('duration')
-                if d:
-                    ep_durations[ep.get('ordinal', 0)] = d
+        for ep in episodes:
+            d = ep.get('duration')
+            if d:
+                ep_durations[ep.get('ordinal', 0)] = d
 
         completed_ordinals = set()
         watching_ordinal = None
         watching_position = 0
 
         for ordinal, pos in positions.items():
-            if pos == -1:
+            duration = ep_durations.get(ordinal, 0)
+            if is_completed(pos, duration):
                 completed_ordinals.add(ordinal)
             elif pos > 0:
-                duration = ep_durations.get(ordinal, 0)
-                if duration > 0 and pos >= duration - 120:
-                    # Within 2 minutes of end — treat as completed
-                    completed_ordinals.add(ordinal)
-                else:
-                    # Partially watched — candidate for "continue"
-                    if watching_ordinal is None or ordinal > watching_ordinal:
-                        watching_ordinal = ordinal
-                        watching_position = pos
+                if watching_ordinal is None or ordinal > watching_ordinal:
+                    watching_ordinal = ordinal
+                    watching_position = pos
 
         max_completed = max(completed_ordinals, default=0)
 
-        # New episode: first unwatched after max completed (from cache)
-        new_ep = self._find_new_episode_from(
-            raw, max_completed, positions, completed_ordinals)
+        new_ep = self._find_new_episode(
+            episodes, max_completed, positions, completed_ordinals)
 
         # Priority: continue > new episode
-        # (if user has a started episode, show that first)
         if watching_ordinal is not None:
-            episode_data = self._get_episode_data(release_id, watching_ordinal)
+            ep_data = next((e for e in episodes
+                            if e.get('ordinal') == watching_ordinal), None)
             self._add_continue_block(outer, release_id, watching_ordinal,
-                                     watching_position, episode_data, entry)
+                                     watching_position, ep_data, entry)
         elif new_ep:
             self._add_new_episode_block(outer, release_id, new_ep, entry)
 
-    def _get_episode_data(self, release_id, ordinal):
-        raw = release_cache.get(release_id)
-        if not raw:
-            return None
-        for ep in raw.get('episodes', []):
-            if ep.get('ordinal') == ordinal:
-                return ep
-        return None
-
-    def _find_new_episode_from(self, raw, max_completed, positions,
-                                completed_ordinals):
+    @staticmethod
+    def _find_new_episode(episodes, max_completed, positions,
+                           completed_ordinals):
         """Find first unwatched episode after max completed ordinal."""
-        if not raw:
-            return None
-        episodes = sorted(raw.get('episodes', []),
-                          key=lambda e: e.get('sort_order', 0))
-        for ep in episodes:
+        sorted_eps = sorted(episodes, key=lambda e: e.get('sort_order', 0))
+        for ep in sorted_eps:
             ordinal = ep.get('ordinal', 0)
             if ordinal <= max_completed:
                 continue
             if ordinal in completed_ordinals:
                 continue
             if ordinal in positions:
-                continue  # started but not near-end — skip
+                continue
             return ep
         return None
 
@@ -921,6 +970,7 @@ class SearchDialog(Adw.Dialog):
 
     def _setup_keyboard(self):
         ctrl = Gtk.EventControllerKey()
+        ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         ctrl.connect('key-pressed', self._on_key_pressed)
         self.add_controller(ctrl)
 
@@ -930,7 +980,8 @@ class SearchDialog(Adw.Dialog):
             return True
 
         focus = self.get_focus()
-        in_entry = isinstance(focus, Gtk.SearchEntry) or focus == self.search_entry
+        in_entry = (focus == self.search_entry
+                    or (focus is not None and focus.is_ancestor(self.search_entry)))
 
         if not in_entry:
             if keyval == Gdk.KEY_Left:
