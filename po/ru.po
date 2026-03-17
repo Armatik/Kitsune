@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: kitsune 0.5.0\n"
+"Project-Id-Version: kitsune 0.7.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-17 14:00+0300\n"
-"PO-Revision-Date: 2026-03-08 08:30+0300\n"
+"PO-Revision-Date: 2026-03-17 15:00+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
 "Language: ru\n"
@@ -93,41 +93,39 @@ msgstr "Список"
 
 #: src/kitsune/ui/create_tag_dialog.py:29
 msgid "Blue"
-msgstr ""
+msgstr "Синий"
 
 #: src/kitsune/ui/create_tag_dialog.py:29
 msgid "Teal"
-msgstr ""
+msgstr "Бирюзовый"
 
 #: src/kitsune/ui/create_tag_dialog.py:29
 msgid "Green"
-msgstr ""
+msgstr "Зелёный"
 
 #: src/kitsune/ui/create_tag_dialog.py:29
 msgid "Yellow"
-msgstr ""
+msgstr "Жёлтый"
 
 #: src/kitsune/ui/create_tag_dialog.py:29
 msgid "Orange"
-msgstr ""
+msgstr "Оранжевый"
 
 #: src/kitsune/ui/create_tag_dialog.py:30
-#, fuzzy
 msgid "Red"
-msgstr "Связанные"
+msgstr "Красный"
 
 #: src/kitsune/ui/create_tag_dialog.py:30
 msgid "Pink"
-msgstr ""
+msgstr "Розовый"
 
 #: src/kitsune/ui/create_tag_dialog.py:30
 msgid "Purple"
-msgstr ""
+msgstr "Фиолетовый"
 
 #: src/kitsune/ui/create_tag_dialog.py:30
-#, fuzzy
 msgid "Slate"
-msgstr "Связанные"
+msgstr "Серый"
 
 #: src/kitsune/ui/create_tag_dialog.py:54 src/kitsune/ui/window.blp:50
 msgid "New Tag"
@@ -275,7 +273,7 @@ msgstr "Градиентный фон из акцентных цветов по�
 #. Ensure xgettext sees these strings:
 #: src/kitsune/ui/preferences_window.py:217 src/kitsune/ui/search_dialog.py:71
 msgid "Anime"
-msgstr ""
+msgstr "Аниме"
 
 #: src/kitsune/ui/preferences_window.py:220 src/kitsune/ui/search_dialog.py:71
 msgid "Tags"
@@ -401,25 +399,23 @@ msgstr "1 сезон"
 
 #: src/kitsune/ui/search_dialog.py:124
 msgid "Search anime, genres, franchises and tags"
-msgstr ""
+msgstr "Поиск аниме, жанров, франшиз и тегов"
 
 #: src/kitsune/ui/search_dialog.py:631
 msgid "ep."
-msgstr ""
+msgstr "эп."
 
 #: src/kitsune/ui/search_dialog.py:633
-#, fuzzy
 msgid "ongoing"
-msgstr "Онгоинг"
+msgstr "онгоинг"
 
 #: src/kitsune/ui/search_dialog.py:777
 msgid "Episode"
 msgstr "Серия"
 
 #: src/kitsune/ui/search_dialog.py:805
-#, fuzzy
 msgid "New episode"
-msgstr "%d серий"
+msgstr "Новая серия"
 
 #: src/kitsune/ui/search_dialog.py:907
 #: src/kitsune/ui/widgets/franchise_card.py:39
@@ -491,32 +487,31 @@ msgstr "Назад"
 
 #: src/kitsune/ui/player_view.blp:55
 msgid "Fullscreen"
-msgstr ""
+msgstr "Полный экран"
 
 #: src/kitsune/ui/player_view.blp:84
 msgid "Rewind 10 seconds"
-msgstr ""
+msgstr "Перемотать на 10 секунд назад"
 
 #: src/kitsune/ui/player_view.blp:94
 msgid "Play / Pause"
-msgstr ""
+msgstr "Воспроизведение / Пауза"
 
 #: src/kitsune/ui/player_view.blp:104
 msgid "Forward 10 seconds"
-msgstr ""
+msgstr "Перемотать на 10 секунд вперёд"
 
 #: src/kitsune/ui/player_view.blp:119
 msgid "Previous episode"
-msgstr ""
+msgstr "Предыдущая серия"
 
 #: src/kitsune/ui/player_view.blp:132
-#, fuzzy
 msgid "Next episode"
-msgstr "%d серий"
+msgstr "Следующая серия"
 
 #: src/kitsune/ui/player_view.blp:196
 msgid "Volume"
-msgstr ""
+msgstr "Громкость"
 
 #: src/kitsune/ui/preferences_window.blp:8
 msgid "Appearance"
@@ -539,18 +534,16 @@ msgid "Accent Colors Settings"
 msgstr "Настройки акцентных цветов"
 
 #: src/kitsune/ui/preferences_window.blp:47
-#, fuzzy
 msgid "Mobile Mode"
-msgstr "Мобильный режим ⚠"
+msgstr "Мобильный режим"
 
 #: src/kitsune/ui/preferences_window.blp:48
 msgid "Enable accent gradient in narrow layout (experimental)"
 msgstr "Включить акцентный градиент в узком режиме (экспериментально)"
 
 #: src/kitsune/ui/preferences_window.blp:52
-#, fuzzy
 msgid "Glass Effect"
-msgstr "Эффект стекла ⚠"
+msgstr "Эффект стекла"
 
 #: src/kitsune/ui/preferences_window.blp:53
 msgid "Frosted glass noise overlay (may reduce performance)"
@@ -573,13 +566,12 @@ msgid "Animation duration in milliseconds"
 msgstr "Длительность анимации в миллисекундах"
 
 #: src/kitsune/ui/preferences_window.blp:87
-#, fuzzy
 msgid "Blur Unwatched"
-msgstr "Непросмотренные"
+msgstr "Размытие непросмотренных"
 
 #: src/kitsune/ui/preferences_window.blp:88
 msgid "Blur episode preview images until watched"
-msgstr ""
+msgstr "Размывать превью серий до просмотра"
 
 #: src/kitsune/ui/preferences_window.blp:93
 msgid "Player"
@@ -643,18 +635,16 @@ msgid "Visible tabs and their order in the bottom bar"
 msgstr "Видимые вкладки и их порядок в нижней панели"
 
 #: src/kitsune/ui/preferences_window.blp:147
-#, fuzzy
 msgid "Search Categories"
-msgstr "Поиск аниме"
+msgstr "Категории поиска"
 
 #: src/kitsune/ui/preferences_window.blp:148
 msgid "Order of categories in search results"
-msgstr ""
+msgstr "Порядок категорий в результатах поиска"
 
 #: src/kitsune/ui/preferences_window.blp:159
-#, fuzzy
 msgid "Storage"
-msgstr "Размер хранилища"
+msgstr "Хранилище"
 
 #: src/kitsune/ui/preferences_window.blp:163
 msgid "Cache"
@@ -662,12 +652,11 @@ msgstr "Кэш"
 
 #: src/kitsune/ui/preferences_window.blp:164
 msgid "Re-downloadable data from the network"
-msgstr ""
+msgstr "Данные, которые можно загрузить повторно из сети"
 
 #: src/kitsune/ui/preferences_window.blp:167
-#, fuzzy
 msgid "Posters"
-msgstr "Кэш постеров"
+msgstr "Постеры"
 
 #: src/kitsune/ui/preferences_window.blp:171
 #: src/kitsune/ui/preferences_window.blp:184
@@ -682,17 +671,16 @@ msgid "Episode Previews"
 msgstr "Превью серий"
 
 #: src/kitsune/ui/preferences_window.blp:193
-#, fuzzy
 msgid "Releases"
-msgstr "Нет релизов"
+msgstr "Релизы"
 
 #: src/kitsune/ui/preferences_window.blp:207
 msgid "User Data"
-msgstr ""
+msgstr "Данные пользователя"
 
 #: src/kitsune/ui/preferences_window.blp:208
 msgid "Personal data that cannot be restored from the network"
-msgstr ""
+msgstr "Личные данные, которые невозможно восстановить из сети"
 
 #: src/kitsune/ui/preferences_window.blp:211
 msgid "Watch Progress"
@@ -806,6 +794,9 @@ msgid ""
 "pages during push transitions, which caused the playback idle source to be "
 "cancelled before it could fire."
 msgstr ""
+"Исправлен незапуск видеоплеера — NavigationView внутренне монтирует и "
+"размонтирует страницы во время push-переходов, что приводило к отмене idle-"
+"источника воспроизведения до его срабатывания."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:51
 msgid ""
@@ -813,6 +804,9 @@ msgid ""
 "the same map/unmap cycle was aborting in-flight API requests and clearing "
 "pending data."
 msgstr ""
+"Исправлены бесконечные спиннеры в каталоге и других видах при первом "
+"запуске — тот же цикл монтирования/размонтирования прерывал текущие API-"
+"запросы и очищал ожидающие данные."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:56
 msgid ""
