@@ -113,7 +113,7 @@ class SearchDialog(Adw.Dialog):
         self._section_indices: dict[str, int] = {}
         self._results: dict[str, list] = {}
         self._suppress_tab_toggle = False
-        self._scroll_connected = False
+        self._scroll_handler_id = 0
         self._closed_by_navigation = False
         self._refreshed_ids: set[int] = set()
 
@@ -188,18 +188,17 @@ class SearchDialog(Adw.Dialog):
         if idx is not None:
             row = self.listbox.get_row_at_index(idx)
             if row:
-                GLib.idle_add(self._smooth_scroll_to_row, row)
+                self._smooth_scroll_to_row(row)
 
     def _smooth_scroll_to_row(self, row):
         """Animate scroll so that row appears at the top."""
         adj = self.scrolled.get_vadjustment()
         if adj is None:
-            return GLib.SOURCE_REMOVE
+            return
         ok, target_y = row.translate_coordinates(self.listbox, 0, 0)
         if not ok:
-            return GLib.SOURCE_REMOVE
+            return
         self._animate_scroll(adj, adj.get_value(), target_y)
-        return GLib.SOURCE_REMOVE
 
     def _animate_scroll(self, adj, start, end, duration_ms=200):
         """Smooth scroll animation using GLib.timeout_add."""
@@ -224,8 +223,12 @@ class SearchDialog(Adw.Dialog):
     def _setup_scroll_tracking(self):
         """Track scroll position to highlight the active category tab."""
         adj = self.scrolled.get_vadjustment()
-        if adj:
-            adj.connect('value-changed', self._on_scroll_changed)
+        if not adj:
+            return
+        if self._scroll_handler_id:
+            adj.disconnect(self._scroll_handler_id)
+        self._scroll_handler_id = adj.connect(
+            'value-changed', self._on_scroll_changed)
 
     def _on_scroll_changed(self, adj):
         """Highlight tab whose section occupies the bottom of visible area."""
@@ -407,6 +410,32 @@ class SearchDialog(Adw.Dialog):
         self._results['anime'] = api_entries + local_only
         self._render_results()
 
+        # Lazily cache releases not in index (fetches full data with genres)
+        for entry in api_entries:
+            rid = entry['id']
+            if search_index.get_release_meta(rid) is None:
+                self._client.get_release_raw(
+                    str(rid),
+                    callback=lambda data, err, r=rid:
+                        self._on_lazy_cached(r, data, err),
+                    cancellable=self._cancellable,
+                )
+
+    def _on_lazy_cached(self, release_id, data, error):
+        if error or not data:
+            return
+        release_cache.save(release_id, data)
+        if not self.get_visible():
+            return
+        # Update entry with genres from freshly cached data
+        meta = search_index.get_release_meta(release_id)
+        if meta and meta.get('genres'):
+            for entry in self._results.get('anime', []):
+                if entry.get('id') == release_id and not entry.get('genres'):
+                    entry['genres'] = meta['genres']
+                    self._render_results()
+                    return
+
     def _clear_results(self):
         self._results = {}
         while row := self.listbox.get_first_child():
@@ -447,9 +476,7 @@ class SearchDialog(Adw.Dialog):
             self.stack.set_visible_child_name('results')
             log.debug('render: %d results across %d categories',
                       total, len(self._section_indices))
-            if not self._scroll_connected:
-                self._scroll_connected = True
-                GLib.idle_add(self._setup_scroll_tracking)
+            self._setup_scroll_tracking()
             if log.isEnabledFor(logging.DEBUG):
                 GLib.idle_add(self._debug_log_sizes)
             # Check if ongoing releases need API refresh
