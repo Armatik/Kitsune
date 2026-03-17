@@ -34,7 +34,7 @@ def create_color_circle(color_name: str, size: int = 28) -> Gtk.Box:
     css.load_from_string(
         f'box {{ background: {hex_color}; border-radius: 50%;'
         f' min-width: {size}px; min-height: {size}px;'
-        f' border: 1.5px solid alpha(white, 0.25); }}'
+        f' border: 1.5px solid alpha(currentColor, 0.2); }}'
     )
     circle.get_style_context().add_provider(
         css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -51,7 +51,7 @@ _TAG_CARD_CSS = (
     ' .tag-card-icon { font-size: 36px; }'
     ' .tag-card-color-circle { min-width: 36px; min-height: 36px;'
     '   border-radius: 50%;'
-    '   border: 1.5px solid alpha(white, 0.25); }'
+    '   border: 1.5px solid alpha(currentColor, 0.2); }'
     ' .tag-card-rounded { border-radius: 12px; }'
 )
 

@@ -26,7 +26,7 @@ def create_full_tag_pill(tag: dict) -> Gtk.Button:
         css.load_from_string(
             f'box {{ background: {hex_c}; border-radius: 50%;'
             f' min-width: 14px; min-height: 14px;'
-            f' border: 1px solid alpha(white, 0.3); }}'
+            f' border: 1px solid alpha(currentColor, 0.2); }}'
         )
         circle.get_style_context().add_provider(
             css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
@@ -50,7 +50,7 @@ def create_compact_tag_pill(tag: dict) -> Gtk.Button:
         css.load_from_string(
             f'box {{ background: {hex_c}; border-radius: 50%;'
             f' min-width: 14px; min-height: 14px;'
-            f' border: 1px solid alpha(white, 0.3); }}'
+            f' border: 1px solid alpha(currentColor, 0.2); }}'
         )
         child.get_style_context().add_provider(
             css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,

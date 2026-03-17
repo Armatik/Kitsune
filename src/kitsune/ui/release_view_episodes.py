@@ -28,7 +28,7 @@ _EPISODE_CSS = (
     '   min-width: 24px; min-height: 24px; padding: 2px;'
     '   color: @accent_color; text-shadow: none; }'
     ' .episode-separator { min-height: 1px;'
-    '   background-color: rgba(200, 200, 200, 0.6); padding: 0; margin: 0; }'
+    '   background-color: alpha(currentColor, 0.15); padding: 0; margin: 0; }'
     ' .list-progress { margin-top: 4px; }'
     ' .list-progress trough { min-height: 4px; }'
     ' .list-progress progress { min-height: 4px; background: @accent_bg_color; }'
@@ -37,14 +37,8 @@ _EPISODE_CSS = (
 _EP_CARD_W = 240
 _EP_CARD_H = 135  # 16:9
 
-_css_registered = False
-
-
 def _ensure_css():
-    global _css_registered
-    if not _css_registered:
-        register_css(_EPISODE_CSS)
-        _css_registered = True
+    register_css(_EPISODE_CSS)
 
 
 def episode_title(episode: Episode) -> str:
