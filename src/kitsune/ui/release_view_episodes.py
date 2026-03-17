@@ -10,6 +10,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, Gio, Gtk
 
 from kitsune.models import Episode
+from kitsune.storage.watch_positions import is_completed
 from kitsune.ui.image_cache import load_image
 from kitsune.ui import register_css
 
@@ -56,9 +57,12 @@ def episode_title(episode: Episode) -> str:
 def episode_subtitle(episode: Episode, watch_data: dict) -> str:
     parts = []
     pos = watch_data.get(episode.ordinal, 0)
-    if pos == -1 and episode.duration:
-        mins = episode.duration // 60
-        parts.append(_('Watched') + f' ({mins} ' + _('min') + ')')
+    if is_completed(pos, episode.duration):
+        if episode.duration:
+            mins = episode.duration // 60
+            parts.append(_('Watched') + f' ({mins} ' + _('min') + ')')
+        else:
+            parts.append(_('Watched'))
     elif pos > 0 and episode.duration:
         remaining = max(0, episode.duration - pos)
         rem_min = int(remaining) // 60
@@ -89,13 +93,13 @@ def get_filtered_episodes(episodes, watch_filter: str, search_text: str,
         result = [ep for ep in result
                   if watch_data.get(ep.ordinal, 0) == 0]
     if search_text:
-        query = search_text
+        query = search_text.casefold()
         filtered = []
         for ep in result:
             ordinal = int(ep.ordinal) if ep.ordinal == int(ep.ordinal) else ep.ordinal
             if query in str(ordinal):
                 filtered.append(ep)
-            elif ep.name and query in ep.name.lower():
+            elif ep.name and query in ep.name.casefold():
                 filtered.append(ep)
         result = filtered
     if sort_newest_first:
@@ -117,7 +121,7 @@ def populate_episode_list(list_widget, episodes, watch_data: dict, on_play):
             activatable=True,
             use_markup=False,
         )
-        if pos == -1:
+        if is_completed(pos, episode.duration):
             check = Gtk.Image(
                 icon_name='object-select-symbolic',
                 css_classes=['accent'],
@@ -240,7 +244,7 @@ def build_episode_card(episode: Episode, watch_data: dict,
         )
         label_box.append(ep_label)
 
-    if pos > 0 and episode.duration:
+    if pos > 0 and episode.duration and not is_completed(pos, episode.duration):
         remaining = max(0, episode.duration - pos)
         rem_min = int(remaining) // 60
         rem_label = Gtk.Label(
@@ -262,7 +266,7 @@ def build_episode_card(episode: Episode, watch_data: dict,
 
     # Progress bar at bottom with 1px separator
     if pos != 0 and episode.duration and episode.duration > 0:
-        fraction = 1.0 if pos == -1 else min(1.0, max(0.0, pos / episode.duration))
+        fraction = 1.0 if is_completed(pos, episode.duration) else min(1.0, max(0.0, pos / episode.duration))
         progress_box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             valign=Gtk.Align.END,
@@ -280,8 +284,8 @@ def build_episode_card(episode: Episode, watch_data: dict,
         progress_box.append(progress_bar)
         overlay.add_overlay(progress_box)
 
-    # Checkmark for completed
-    if pos == -1:
+    # Checkmark for completed (including near-end)
+    if is_completed(pos, episode.duration):
         check_box = Gtk.Box(
             halign=Gtk.Align.END, valign=Gtk.Align.START,
             margin_top=6, margin_end=6,

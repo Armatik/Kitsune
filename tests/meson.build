@@ -21,6 +21,7 @@ endforeach
 xvfb_run = find_program('xvfb-run', required: false)
 
 widget_test_files = [
+  'test_episode_logic.py',
   'test_content_grid.py',
   'test_tags_view_widget.py',
   'test_catalog_view_widget.py',
