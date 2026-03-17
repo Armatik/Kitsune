@@ -369,8 +369,21 @@ class SearchDialog(Adw.Dialog):
         if error or not releases:
             return
 
+        # Build lookup from current local/index entries
+        local_map = {r['id']: r for r in self._results.get('anime', [])}
+
         api_entries = []
         for release in releases:
+            genres = [g.id for g in release.genres]
+            # API search may return releases without genres — preserve from index
+            if not genres:
+                local = local_map.get(release.id)
+                if local:
+                    genres = local.get('genres', [])
+                else:
+                    meta = search_index.get_release_meta(release.id)
+                    if meta:
+                        genres = meta.get('genres', [])
             entry = {
                 'id': release.id,
                 'main': release.name.main,
@@ -382,7 +395,7 @@ class SearchDialog(Adw.Dialog):
                 'year': release.year,
                 'is_ongoing': release.is_ongoing,
                 'episodes_total': release.episodes_total,
-                'genres': [g.id for g in release.genres],
+                'genres': genres,
             }
             api_entries.append(entry)
 
