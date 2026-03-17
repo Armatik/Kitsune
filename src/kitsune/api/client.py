@@ -30,7 +30,7 @@ class AniLibriaClient:
 
     def __init__(self):
         self._session = Soup.Session()
-        self._session.set_user_agent('Kitsune/0.1')
+        self._session.set_user_agent('Kitsune/0.7.1')
         self._on_network_error = None
         self._on_network_ok = None
         self._offline = False
@@ -84,8 +84,9 @@ class AniLibriaClient:
             gbytes = session.send_and_read_finish(result)
             status = msg.get_status()
             if status != Soup.Status.OK:
-                self._handle_error(state, timeout_id, callback,
-                                   f'HTTP {status.value_nick}')
+                state[0] = True
+                GLib.source_remove(timeout_id)
+                callback(None, f'HTTP {status.value_nick}')
                 return
             if gbytes is None:
                 self._handle_error(state, timeout_id, callback,
