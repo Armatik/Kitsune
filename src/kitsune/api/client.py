@@ -30,7 +30,7 @@ class AniLibriaClient:
 
     def __init__(self):
         self._session = Soup.Session()
-        self._session.set_user_agent('Kitsune/0.8.2')
+        self._session.set_user_agent('Kitsune/0.8.3')
         self._on_network_error = None
         self._on_network_ok = None
         self._offline = False
