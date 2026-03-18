@@ -10,7 +10,7 @@
   <a href="https://altlinux.space/alt-gnome/Kitsune/src/branch/main/LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg" alt="License"></a>
 </p>
 
-> Kitsune is an unofficial client. All content is provided by the [AniLiberty](https://anilibria.top) team through their public API.
+> Kitsune is an unofficial client. All content (catalog, descriptions, and subtitles) is provided in Russian by the [AniLiberty](https://anilibria.top) team through their public API.
 
 ## Features
 
