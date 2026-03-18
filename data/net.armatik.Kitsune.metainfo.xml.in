@@ -11,7 +11,17 @@
       Kitsune is a Libadwaita client for watching anime translated by the AniLiberty team.
       Browse the catalog, search for titles, and watch episodes with the built-in player.
     </p>
+    <p>
+      Content (catalog, descriptions, and subtitles) is provided in Russian by the AniLiberty API.
+    </p>
   </description>
+
+  <keywords>
+    <keyword>anime</keyword>
+    <keyword>russian</keyword>
+    <keyword>anilibria</keyword>
+    <keyword>aniliberty</keyword>
+  </keywords>
 
   <launchable type="desktop-id">net.armatik.Kitsune.desktop</launchable>
 
