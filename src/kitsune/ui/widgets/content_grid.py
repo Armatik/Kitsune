@@ -19,6 +19,7 @@ class ContentGrid(Gtk.Box):
     __gtype_name__ = 'KitsuneContentGrid'
 
     scrolled = Gtk.Template.Child()
+    content_box = Gtk.Template.Child()
     flowbox = Gtk.Template.Child()
     spinner = Gtk.Template.Child()
     initial_spinner = Gtk.Template.Child()
@@ -38,9 +39,11 @@ class ContentGrid(Gtk.Box):
         if narrow:
             self.flowbox.set_min_children_per_line(1)
             self.flowbox.set_max_children_per_line(1)
+            self.content_box.set_margin_bottom(52)
         else:
             self.flowbox.set_min_children_per_line(2)
             self.flowbox.set_max_children_per_line(6)
+            self.content_box.set_margin_bottom(0)
 
     def set_on_scroll_near_end(self, callback):
         self._on_scroll_near_end = callback

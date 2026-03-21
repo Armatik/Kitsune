@@ -94,6 +94,7 @@ class TagsView(Gtk.Box):
     def set_narrow(self, narrow: bool):
         self._narrow = narrow
         self._card_grid.set_narrow(narrow)
+        self._list_container.set_margin_bottom(64 if narrow else 12)
         releases = self._nav_stack.get_child_by_name('releases')
         if releases and isinstance(releases, TagReleasesView):
             releases.set_narrow(narrow)
