@@ -117,7 +117,7 @@ class ItemsGridView(Gtk.Box):
         if self._pending_items:
             self._batch_idle = GLib.idle_add(self._add_pending_batch)
         else:
-            self._grid.set_spinner_visible(False)
+            self._grid.show_end()
 
     def _on_child_activated(self, child):
         item = self._get_item_from_card(child)
