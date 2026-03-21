@@ -142,6 +142,7 @@ class ReleaseView(Adw.NavigationPage):
 
         self.connect('realize', self._on_realize)
         self.connect('showing', self._on_showing)
+        self.connect('shown', self._on_shown)
 
     def _deferred_init(self):
         """Populate heavy content after the navigation animation."""
@@ -189,14 +190,17 @@ class ReleaseView(Adw.NavigationPage):
             self._on_home()
 
     def _on_showing(self, _page):
-        """First call: deferred init. Subsequent: refresh progress."""
+        """Refresh progress on subsequent visits."""
+        if self._deferred_done:
+            self._refresh_episodes()
+            if self._episodes_view == 'grid':
+                self._refresh_episodes_grid()
+
+    def _on_shown(self, _page):
+        """Populate heavy content after the navigation animation completes."""
         if not self._deferred_done:
             self._deferred_done = True
             self._deferred_init()
-            return
-        self._refresh_episodes()
-        if self._episodes_view == 'grid':
-            self._refresh_episodes_grid()
 
     # --- Tabs (ToggleGroup + Carousel) ---
 
@@ -858,7 +862,7 @@ class ReleaseView(Adw.NavigationPage):
             h = texture.get_height()
             if w > 0:
                 self.poster.set_size_request(250, int(250 * h / w))
-            self._apply_page_style(texture)
+            GLib.idle_add(self._apply_page_style, texture)
 
     def _apply_page_style(self, texture: Gdk.Texture):
         style = self._settings.get_string('release-page-style')
