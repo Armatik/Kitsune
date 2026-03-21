@@ -19,6 +19,13 @@ template $KitsuneReleaseView: Adw.NavigationPage {
       Adw.HeaderBar header_bar {
         show-title: false;
 
+        [start]
+        Gtk.Button home_btn {
+          icon-name: "net.armatik.Kitsune.home-symbolic";
+          tooltip-text: _("Home");
+          clicked => $on_home_clicked();
+        }
+
         [end]
         Adw.SplitButton tag_split_btn {
           icon-name: "non-starred-symbolic";

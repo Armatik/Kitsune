@@ -80,6 +80,7 @@ class ReleaseView(Adw.NavigationPage):
     torrents_list = Gtk.Template.Child()
 
     tag_split_btn = Gtk.Template.Child()
+    home_btn = Gtk.Template.Child()
 
     _TAB_PAGES = ('episodes', 'related', 'team', 'torrents')
 
@@ -91,6 +92,7 @@ class ReleaseView(Adw.NavigationPage):
         self._on_genre_navigate = None
         self._on_tag_navigate = None
         self._on_tags_changed_ext = None
+        self._on_home = None
         self._narrow_mode = False
         self._fade_anim = None
         self._accent_mode = False
@@ -177,6 +179,14 @@ class ReleaseView(Adw.NavigationPage):
 
     def set_on_tags_changed(self, callback):
         self._on_tags_changed_ext = callback
+
+    def set_on_home_clicked(self, callback):
+        self._on_home = callback
+
+    @Gtk.Template.Callback()
+    def on_home_clicked(self, _button):
+        if self._on_home:
+            self._on_home()
 
     def _on_showing(self, _page):
         """First call: deferred init. Subsequent: refresh progress."""

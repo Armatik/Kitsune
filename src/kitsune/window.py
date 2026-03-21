@@ -595,6 +595,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
         prefs = PreferencesWindow()
         prefs.present(self)
 
+    def _go_home(self):
+        self.nav_view.pop_to_tag('main')
+
     def _show_release_detail(self, release):
         from kitsune.ui.release_view import ReleaseView
         view = ReleaseView(release=release, client=self._client)
@@ -602,6 +605,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
         view.set_on_genre_clicked(self._navigate_to_genre)
         view.set_on_tag_clicked(self._navigate_to_tag)
         view.set_on_tags_changed(self._on_release_tags_changed)
+        view.set_on_home_clicked(self._go_home)
+        at_main = self.nav_view.get_visible_page().get_tag() == 'main'
+        view.home_btn.set_visible(not at_main)
         self.nav_view.push(view)
 
     def _on_release_tags_changed(self, release_id):
@@ -637,6 +643,16 @@ class KitsuneWindow(Adw.ApplicationWindow):
                     child.refresh_tag_badges()
                 child = child.get_next_sibling()
 
+    def _make_nav_header(self):
+        header = Adw.HeaderBar()
+        home_btn = Gtk.Button(
+            icon_name='net.armatik.Kitsune.home-symbolic',
+            tooltip_text=_('Home'),
+        )
+        home_btn.connect('clicked', lambda *_: self._go_home())
+        header.pack_start(home_btn)
+        return header
+
     def _navigate_to_genre(self, genre):
         from kitsune.ui.genre_releases_view import GenreReleasesView
         releases_view = GenreReleasesView(
@@ -651,7 +667,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 content=releases_view,
             ),
         )
-        page.get_child().add_top_bar(Adw.HeaderBar())
+        page.get_child().add_top_bar(self._make_nav_header())
         self.nav_view.push(page)
 
     def _open_search_dialog(self):
@@ -680,7 +696,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 content=releases_view,
             ),
         )
-        page.get_child().add_top_bar(Adw.HeaderBar())
+        page.get_child().add_top_bar(self._make_nav_header())
         self.nav_view.push(page)
 
     def _navigate_to_tag(self, tag):
@@ -697,7 +713,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 content=releases_view,
             ),
         )
-        page.get_child().add_top_bar(Adw.HeaderBar())
+        page.get_child().add_top_bar(self._make_nav_header())
         self.nav_view.push(page)
 
     def _on_network_error(self):

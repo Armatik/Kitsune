@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-21 16:27+0300\n"
+"POT-Creation-Date: 2026-03-21 17:23+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -87,8 +87,12 @@ msgstr ""
 msgid "Card view"
 msgstr ""
 
-#: src/kitsune/window.py:483 src/kitsune/ui/release_view.py:332
+#: src/kitsune/window.py:483 src/kitsune/ui/release_view.py:342
 msgid "List view"
+msgstr ""
+
+#: src/kitsune/window.py:648 src/kitsune/ui/release_view.blp:25
+msgid "Home"
 msgstr ""
 
 #: src/kitsune/ui/create_tag_dialog.py:29
@@ -131,7 +135,7 @@ msgstr ""
 msgid "New Tag"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/tags_view.py:306
+#: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/tags_view.py:307
 #: src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr ""
@@ -214,7 +218,7 @@ msgstr ""
 msgid "By rating"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:482
+#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:492
 msgid "Ongoing"
 msgstr ""
 
@@ -230,11 +234,11 @@ msgstr ""
 msgid "Dubbing completed"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:469
+#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:479
 msgid "Type"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:473
+#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:483
 msgid "Season"
 msgstr ""
 
@@ -279,87 +283,87 @@ msgstr ""
 msgid "Tags"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:194 src/kitsune/ui/release_view.py:480
+#: src/kitsune/ui/release_view.py:204 src/kitsune/ui/release_view.py:490
 #: src/kitsune/ui/preferences_window.blp:84
 msgid "Episodes"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:195
+#: src/kitsune/ui/release_view.py:205
 msgid "Related"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:196
+#: src/kitsune/ui/release_view.py:206
 msgid "Team"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:197
+#: src/kitsune/ui/release_view.py:207
 msgid "Torrents"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:288 src/kitsune/ui/release_view.py:304
+#: src/kitsune/ui/release_view.py:298 src/kitsune/ui/release_view.py:314
 msgid "All"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:289 src/kitsune/ui/release_view.py:304
+#: src/kitsune/ui/release_view.py:299 src/kitsune/ui/release_view.py:314
 #: src/kitsune/ui/release_view_episodes.py:57
 #: src/kitsune/ui/release_view_episodes.py:59
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:290 src/kitsune/ui/release_view.py:304
+#: src/kitsune/ui/release_view.py:300 src/kitsune/ui/release_view.py:314
 msgid "Unwatched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:319 src/kitsune/ui/release_view.py:409
+#: src/kitsune/ui/release_view.py:329 src/kitsune/ui/release_view.py:419
 msgid "Newest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:336
+#: src/kitsune/ui/release_view.py:346
 msgid "Grid view"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:346
+#: src/kitsune/ui/release_view.py:356
 msgid "Mark all as watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:351
+#: src/kitsune/ui/release_view.py:361
 msgid "Unmark all"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:406
+#: src/kitsune/ui/release_view.py:416
 msgid "Oldest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:471
+#: src/kitsune/ui/release_view.py:481
 msgid "Year"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:476
+#: src/kitsune/ui/release_view.py:486
 msgid "Age rating"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:482
+#: src/kitsune/ui/release_view.py:492
 msgid "Completed"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:483
+#: src/kitsune/ui/release_view.py:493
 msgid "Status"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:667
+#: src/kitsune/ui/release_view.py:677
 #, python-format
 msgid "Episodes: %s"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:682
+#: src/kitsune/ui/release_view.py:692
 msgid "Hardsub"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:694
+#: src/kitsune/ui/release_view.py:704
 msgid "Download torrent"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:703
+#: src/kitsune/ui/release_view.py:713
 msgid "Open magnet link"
 msgstr ""
 
@@ -435,24 +439,24 @@ msgstr ""
 msgid "Press + to create it"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:148
+#: src/kitsune/ui/tags_view.py:149
 msgid "New tag"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:216
+#: src/kitsune/ui/tags_view.py:217
 msgid "No releases"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:303
+#: src/kitsune/ui/tags_view.py:304
 msgid "Delete Tag?"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:304
+#: src/kitsune/ui/tags_view.py:305
 #, python-format
 msgid "Tag \"%s\" will be removed. This cannot be undone."
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:307
+#: src/kitsune/ui/tags_view.py:308
 msgid "Delete"
 msgstr ""
 
@@ -689,23 +693,23 @@ msgstr ""
 msgid "Tags & Favorites"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:25
+#: src/kitsune/ui/release_view.blp:32
 msgid "Add to favorites"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:129
+#: src/kitsune/ui/release_view.blp:136
 msgid "Enter name or number…"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:171
+#: src/kitsune/ui/release_view.blp:178
 msgid "No related releases"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:201
+#: src/kitsune/ui/release_view.blp:208
 msgid "No team information"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:222
+#: src/kitsune/ui/release_view.blp:229
 msgid "No torrents available"
 msgstr ""
 
