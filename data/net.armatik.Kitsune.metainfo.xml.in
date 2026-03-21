@@ -37,9 +37,120 @@
   <url type="contact">https://t.me/kitsune_linux_chat</url>
 
   <screenshots>
-    <screenshot type="default">
-      <image>https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/Kitsune-1.png</image>
+    <!-- Catalog -->
+    <screenshot type="default" environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-light.png</image>
       <caption>Browse the anime catalog</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-dark.png</image>
+      <caption>Browse the anime catalog</caption>
+    </screenshot>
+
+    <!-- Release page (classic style) -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-classic-light.png</image>
+      <caption>Release details with episodes, genres and tags</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-classic-dark.png</image>
+      <caption>Release details with episodes, genres and tags</caption>
+    </screenshot>
+
+    <!-- Release page (accent color style) -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-accent-light.png</image>
+      <caption>Release page with accent colors from the poster</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-accent-dark.png</image>
+      <caption>Release page with accent colors from the poster</caption>
+    </screenshot>
+
+    <!-- Video player -->
+    <screenshot>
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/player.png</image>
+      <caption>Built-in video player with quality selection</caption>
+    </screenshot>
+
+    <!-- Search -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/search-light.png</image>
+      <caption>Search across anime, genres, franchises and tags</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/search-dark.png</image>
+      <caption>Search across anime, genres, franchises and tags</caption>
+    </screenshot>
+
+    <!-- Genres -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/genres-light.png</image>
+      <caption>Browse releases by genre</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/genres-dark.png</image>
+      <caption>Browse releases by genre</caption>
+    </screenshot>
+
+    <!-- Franchises -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/franchises-light.png</image>
+      <caption>Explore anime franchises and series</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/franchises-dark.png</image>
+      <caption>Explore anime franchises and series</caption>
+    </screenshot>
+
+    <!-- Favorites and tags -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/tags-light.png</image>
+      <caption>Organize your library with custom tags and favorites</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/tags-dark.png</image>
+      <caption>Organize your library with custom tags and favorites</caption>
+    </screenshot>
+
+    <!-- Filters -->
+    <screenshot environment="gnome">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/filters-light.png</image>
+      <caption>Filter catalog by genre, year, type and rating</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/filters-dark.png</image>
+      <caption>Filter catalog by genre, year, type and rating</caption>
+    </screenshot>
+
+    <!-- Mobile layout -->
+    <screenshot environment="gnome">
+      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-mobile-light.png</image>
+      <caption>Adaptive mobile layout</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-mobile-dark.png</image>
+      <caption>Adaptive mobile layout</caption>
+    </screenshot>
+
+    <!-- Mobile release page -->
+    <screenshot environment="gnome">
+      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-mobile-light.png</image>
+      <caption>Release page on mobile</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-mobile-dark.png</image>
+      <caption>Release page on mobile</caption>
+    </screenshot>
+
+    <!-- Mobile bottom sheet -->
+    <screenshot environment="gnome">
+      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/sheet-mobile-light.png</image>
+      <caption>Navigation sheet on mobile</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/sheet-mobile-dark.png</image>
+      <caption>Navigation sheet on mobile</caption>
     </screenshot>
   </screenshots>
 
