@@ -28,9 +28,9 @@ def _make_callback(callback, parser):
 
 class AniLibriaClient:
 
-    def __init__(self):
+    def __init__(self, version='0.0.0'):
         self._session = Soup.Session()
-        self._session.set_user_agent('Kitsune/0.8.3')
+        self._session.set_user_agent(f'Kitsune/{version}')
         self._on_network_error = None
         self._on_network_ok = None
         self._offline = False

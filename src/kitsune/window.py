@@ -56,7 +56,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._client = AniLibriaClient()
+        app = self.get_application() or kwargs.get('application')
+        version = app._version if app else '0.0.0'
+        self._client = AniLibriaClient(version=version)
         self._client.set_on_network_error(self._on_network_error)
         self._client.set_on_network_ok(self._on_network_ok)
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')

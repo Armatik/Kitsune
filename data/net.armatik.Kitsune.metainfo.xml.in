@@ -177,6 +177,15 @@
   </supports>
 
   <releases>
+    <release version="0.8.4" date="2026-03-21">
+      <description>
+        <p>Home button on nested navigation pages — quickly return to the main screen from deep release, genre, franchise or tag drill-downs. Hidden on the first level where back already leads home.</p>
+        <p>Fixed bottom bar overlapping the last card in mobile layout. Genres and franchises now show an end-of-list indicator after all items load.</p>
+        <p>Card labels clamped to 252px and the grid wrapped in Adw.Clamp(1600) so titles stay close to posters on wide screens.</p>
+        <p>Smoother release page transitions — heavy widget construction deferred to the shown signal instead of blocking during the animation. Accent color extraction moved to idle callback. Loading spinner fills the viewport until episodes appear, preventing poster resize jumps.</p>
+        <p>Added 23 screenshots to metainfo covering all views in light and dark themes, desktop and mobile layouts.</p>
+      </description>
+    </release>
     <release version="0.8.3" date="2026-03-18">
       <description>
         <p>Added Russian content notice to description and keywords to metainfo. Clarified in README that API content is in Russian.</p>
