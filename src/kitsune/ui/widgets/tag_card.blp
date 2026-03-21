@@ -44,20 +44,28 @@ template $KitsuneTagCard: Gtk.FlowBoxChild {
       }
     }
 
-    Gtk.Label title_label {
-      wrap: true;
-      max-width-chars: 20;
-      lines: 1;
-      ellipsize: end;
-      halign: center;
+    Adw.Clamp {
+      maximum-size: 252;
 
-      styles ["heading"]
-    }
+      Gtk.Box {
+        orientation: vertical;
 
-    Gtk.Label count_label {
-      halign: center;
+        Gtk.Label title_label {
+          wrap: true;
+          max-width-chars: 20;
+          lines: 1;
+          ellipsize: end;
+          halign: center;
 
-      styles ["dim-label", "caption"]
+          styles ["heading"]
+        }
+
+        Gtk.Label count_label {
+          halign: center;
+
+          styles ["dim-label", "caption"]
+        }
+      }
     }
   }
 }

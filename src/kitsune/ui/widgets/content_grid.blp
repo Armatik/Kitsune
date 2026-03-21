@@ -13,40 +13,45 @@ template $KitsuneContentGrid: Gtk.Box {
       vexpand: true;
       hscrollbar-policy: never;
 
-      Gtk.Box content_box {
-        orientation: vertical;
+      Adw.Clamp {
+        maximum-size: 1600;
+        tightening-threshold: 1000;
 
-        Gtk.FlowBox flowbox {
-          homogeneous: true;
-          min-children-per-line: 2;
-          max-children-per-line: 6;
-          column-spacing: 12;
-          row-spacing: 12;
-          margin-start: 12;
-          margin-end: 12;
-          margin-top: 12;
-          margin-bottom: 12;
-          selection-mode: none;
-          activate-on-single-click: true;
-          child-activated => $on_activated();
-        }
+        Gtk.Box content_box {
+          orientation: vertical;
 
-        Adw.Spinner spinner {
-          halign: center;
-          width-request: 48;
-          height-request: 48;
-          margin-top: 24;
-          margin-bottom: 24;
-          visible: false;
-        }
+          Gtk.FlowBox flowbox {
+            homogeneous: true;
+            min-children-per-line: 2;
+            max-children-per-line: 6;
+            column-spacing: 12;
+            row-spacing: 12;
+            margin-start: 12;
+            margin-end: 12;
+            margin-top: 12;
+            margin-bottom: 12;
+            selection-mode: none;
+            activate-on-single-click: true;
+            child-activated => $on_activated();
+          }
 
-        Gtk.Label end_label {
-          label: _("That\'s all!");
-          visible: false;
-          margin-top: 24;
-          margin-bottom: 24;
+          Adw.Spinner spinner {
+            halign: center;
+            width-request: 48;
+            height-request: 48;
+            margin-top: 24;
+            margin-bottom: 24;
+            visible: false;
+          }
 
-          styles ["dim-label", "title-3"]
+          Gtk.Label end_label {
+            label: _("That\'s all!");
+            visible: false;
+            margin-top: 24;
+            margin-bottom: 24;
+
+            styles ["dim-label", "title-3"]
+          }
         }
       }
     }
