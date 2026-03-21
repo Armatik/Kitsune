@@ -54,6 +54,8 @@ class ReleaseView(Adw.NavigationPage):
     description_label = Gtk.Template.Child()
     gradient_bg = Gtk.Template.Child()
 
+    loading_spinner = Gtk.Template.Child()
+    tabs_scroll = Gtk.Template.Child()
     tabs_header = Gtk.Template.Child()
     tabs_carousel = Gtk.Template.Child()
 
@@ -146,6 +148,10 @@ class ReleaseView(Adw.NavigationPage):
 
     def _deferred_init(self):
         """Populate heavy content after the navigation animation."""
+        self.loading_spinner.set_visible(False)
+        self.tabs_scroll.set_visible(True)
+        self.tabs_carousel.set_visible(True)
+
         if self._release.episodes:
             self._populate_episodes()
             self._apply_episodes_view()
@@ -764,10 +770,12 @@ class ReleaseView(Adw.NavigationPage):
 
     def _on_realize(self, _widget):
         root = self.get_root()
-        if root and root.get_width() <= 500:
-            self._narrow_mode = True
-            self.toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
-            self.toolbar.set_extend_content_to_top_edge(True)
+        if root:
+            self.loading_spinner.set_size_request(-1, root.get_height())
+            if root.get_width() <= 500:
+                self._narrow_mode = True
+                self.toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
+                self.toolbar.set_extend_content_to_top_edge(True)
 
     def _update_toolbar(self):
         hero_h = self.hero.get_height()
@@ -858,16 +866,12 @@ class ReleaseView(Adw.NavigationPage):
         if texture:
             self.poster.set_paintable(texture)
             self.bg_poster.set_paintable(texture)
-            w = texture.get_width()
-            h = texture.get_height()
-            if w > 0:
-                self.poster.set_size_request(250, int(250 * h / w))
             GLib.idle_add(self._apply_page_style, texture)
 
     def _apply_page_style(self, texture: Gdk.Texture):
         style = self._settings.get_string('release-page-style')
         if style != 'accent':
-            return
+            return GLib.SOURCE_REMOVE
 
         n_points = self._settings.get_int('accent-color-points')
         glass = self._settings.get_boolean('accent-glass-effect')
@@ -885,6 +889,7 @@ class ReleaseView(Adw.NavigationPage):
                 self._on_gradient_ready, gradient_data)
 
         threading.Thread(target=_generate, daemon=True).start()
+        return GLib.SOURCE_REMOVE
 
     def _on_gradient_ready(self, gradient_data):
         self._gradient_idle = 0

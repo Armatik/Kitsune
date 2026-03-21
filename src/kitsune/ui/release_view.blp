@@ -103,10 +103,18 @@ template $KitsuneReleaseView: Adw.NavigationPage {
                 margin-end: 24;
               }
 
+              Adw.Spinner loading_spinner {
+                halign: center;
+                valign: center;
+                width-request: 48;
+                height-request: 48;
+              }
+
               Gtk.ScrolledWindow tabs_scroll {
                 hscrollbar-policy: external;
                 vscrollbar-policy: never;
                 hexpand: true;
+                visible: false;
                 margin-start: 24;
                 margin-end: 24;
 
@@ -121,6 +129,7 @@ template $KitsuneReleaseView: Adw.NavigationPage {
                 allow-mouse-drag: false;
                 allow-scroll-wheel: false;
                 hexpand: true;
+                visible: false;
 
                 Gtk.Box episodes_page {
                   orientation: vertical;
