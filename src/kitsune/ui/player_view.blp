@@ -156,6 +156,11 @@ template $KitsunePlayerView: Adw.NavigationPage {
             styles ["title-4", "player-text"]
           }
 
+          Gtk.DropDown speed_dropdown {
+            focusable: false;
+            notify::selected => $on_speed_changed();
+          }
+
           Gtk.DropDown quality_dropdown {
             visible: false;
             focusable: false;

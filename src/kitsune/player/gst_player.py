@@ -42,8 +42,11 @@ class GstPlayer(GObject.Object):
 
         self._paintable = None
         self._setup_video_sink()
+        self._setup_audio_filter()
         self._target_state = Gst.State.NULL
         self._is_buffering = False
+        self._rate = 1.0
+        self._target_rate = 1.0
 
         bus = self._playbin.get_bus()
         bus.add_signal_watch()
@@ -72,6 +75,29 @@ class GstPlayer(GObject.Object):
         else:
             log.warning('gtk4paintablesink not available')
 
+    def _setup_audio_filter(self):
+        elements = [
+            "audioconvert", "audioresample", "scaletempo",
+            "audioconvert", "audioresample"
+        ]
+        bins = [Gst.ElementFactory.make(n, None) for n in elements]
+        if None in bins:
+            log.warning("scaletempo pipeline unavailable, pitch may distort")
+            return
+
+        filter_bin = Gst.Bin.new("audiofilterbin")
+        for e in bins:
+            filter_bin.add(e)
+
+        for i in range(len(bins) - 1):
+            bins[i].link(bins[i + 1])
+
+        filter_bin.add_pad(Gst.GhostPad.new("sink", bins[0].get_static_pad("sink")))
+        filter_bin.add_pad(Gst.GhostPad.new("src", bins[-1].get_static_pad("src")))
+
+        self._playbin.set_property("audio-filter", filter_bin)
+        log.debug("audio filter: audioconvert ! audioresample ! scaletempo ! audioconvert ! audioresample")
+
     @property
     def paintable(self):
         return self._paintable
@@ -86,6 +112,7 @@ class GstPlayer(GObject.Object):
         self._playbin.set_property('uri', uri)
         self._target_state = Gst.State.PLAYING
         self._is_buffering = False
+        self._rate = 1.0
         self._playbin.set_state(Gst.State.PLAYING)
         self._start_position_timer()
 
@@ -106,6 +133,7 @@ class GstPlayer(GObject.Object):
         self._stop_position_timer()
         self._target_state = Gst.State.NULL
         self._is_buffering = False
+        self._rate = 1.0
         self._playbin.set_state(Gst.State.NULL)
 
     def toggle_play_pause(self):
@@ -117,12 +145,15 @@ class GstPlayer(GObject.Object):
 
     def seek(self, position_seconds: float):
         position_seconds = max(0.0, position_seconds)
-        log.debug('seek → %.1fs', position_seconds)
-        self._playbin.seek_simple(
+        log.debug('seek → %.1fs (rate=%.2f)', position_seconds, self._target_rate)
+        self._playbin.seek(
+            self._target_rate,
             Gst.Format.TIME,
             Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
-            int(position_seconds * Gst.SECOND),
+            Gst.SeekType.SET, int(position_seconds * Gst.SECOND),
+            Gst.SeekType.NONE, -1,
         )
+        self._rate = self._target_rate
 
     def get_position(self) -> float:
         ok, pos = self._playbin.query_position(Gst.Format.TIME)
@@ -190,7 +221,21 @@ class GstPlayer(GObject.Object):
         sn = state_names.get
         log.debug('state: %s → %s (pending: %s)',
                   sn(old, '?'), sn(new, '?'), sn(pending, 'none'))
+        if self._rate != self._target_rate and new in (Gst.State.PLAYING, Gst.State.PAUSED):
+            log.debug('applying pending rate → %.2f', self._target_rate)
+            self._apply_rate()
         self.emit('state-changed', state_names.get(new, 'unknown'))
+
+    def _apply_rate(self):
+        log.debug('rate: %.2f → %.2f', self._rate, self._target_rate)
+        self._playbin.seek(
+            self._target_rate,
+            Gst.Format.TIME,
+            Gst.SeekFlags.FLUSH,
+            Gst.SeekType.NONE, 0,
+            Gst.SeekType.NONE, -1,
+        )
+        self._rate = self._target_rate
 
     def get_buffered_end(self) -> float:
         try:
@@ -212,6 +257,11 @@ class GstPlayer(GObject.Object):
 
     def set_volume(self, volume: float):
         self._playbin.set_property('volume', max(0.0, min(1.0, volume)))
+
+    def set_rate(self, rate: float):
+        self._target_rate = max(0.25, min(3.0, rate))
+        if self._playbin.get_state(0)[1] in (Gst.State.PLAYING, Gst.State.PAUSED):
+            self._apply_rate()
 
     def cleanup(self):
         if self._cleaned_up:
