@@ -156,6 +156,16 @@ template $KitsunePlayerView: Adw.NavigationPage {
             styles ["title-4", "player-text"]
           }
 
+          Gtk.Button rotate_btn {
+            icon-name: "net.armatik.Kitsune.angled-arrows-symbolic";
+            tooltip-text: _("Rotate screen");
+            visible: false;
+            focusable: false;
+            clicked => $on_rotate_clicked();
+
+            styles ["player-rotate-btn"]
+          }
+
           Gtk.DropDown speed_dropdown {
             focusable: false;
             notify::selected => $on_speed_changed();

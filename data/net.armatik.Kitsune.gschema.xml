@@ -50,6 +50,11 @@
       <summary>Show close button in player</summary>
       <description>Show close window button in the video player top bar</description>
     </key>
+    <key name="player-show-rotate-button" type="b">
+      <default>false</default>
+      <summary>Always show rotate button in player</summary>
+      <description>Show the screen rotation button in the video player regardless of device type</description>
+    </key>
     <key name="episodes-view" type="s">
       <default>'list'</default>
       <summary>Episodes view mode</summary>

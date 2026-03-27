@@ -16,6 +16,7 @@ from kitsune import ADW_TRANSITION, watch_positions
 from kitsune.models import Episode, Release
 from kitsune.player.gst_player import GstPlayer
 from kitsune.ui import register_css
+from kitsune.player.display_rotate import check_available, DisplayRotator
 
 log = logging.getLogger('kitsune.ui.player')
 
@@ -60,6 +61,12 @@ _PLAYER_CSS = (
     '   background: alpha(white, 0.25); }'
     ' .player-shade dropdown button:checked {'
     '   background: alpha(white, 0.3); }'
+    ' .player-rotate-btn {'
+    '   color: white; background: alpha(white, 0.15);'
+    '   border: none;'
+    '   transition: background ' + _T + '; }'
+    ' .player-rotate-btn:hover {'
+    '   background: alpha(white, 0.25); }'
 )
 
 
@@ -84,6 +91,7 @@ class PlayerView(Adw.NavigationPage):
     volume_btn = Gtk.Template.Child()
     volume_scale = Gtk.Template.Child()
     speed_dropdown = Gtk.Template.Child()
+    rotate_btn = Gtk.Template.Child()
     quality_dropdown = Gtk.Template.Child()
     seek_label = Gtk.Template.Child()
     skip_btn = Gtk.Template.Child()
@@ -114,6 +122,7 @@ class PlayerView(Adw.NavigationPage):
         self._seek_base = 0
         self._seek_debounce = 0
         self._ignore_speed_change = False
+        self._rotator = None
         self._last_known_position = 0
         self._restore_position = None
         self._buffering = False
@@ -131,6 +140,7 @@ class PlayerView(Adw.NavigationPage):
 
         self._setup_title()
         self._setup_paintable()
+        self._setup_rotation()
         self._setup_speed()
         self._setup_quality()
         self._setup_volume()
@@ -156,6 +166,18 @@ class PlayerView(Adw.NavigationPage):
     def _setup_paintable(self):
         if self._player.paintable:
             self.picture.set_paintable(self._player.paintable)
+
+    def _setup_rotation(self):
+        if self._settings.get_boolean('player-show-rotate-button'):
+            self.rotate_btn.set_visible(True)
+            self._rotator = DisplayRotator()
+        else:
+            check_available(self._on_rotate_available)
+
+    def _on_rotate_available(self, available):
+        if available:
+            self.rotate_btn.set_visible(True)
+            self._rotator = DisplayRotator()
 
     def _setup_speed(self):
         self._ignore_speed_change = True
@@ -600,6 +622,8 @@ class PlayerView(Adw.NavigationPage):
         self._save_watch_position()
         if self._fullscreen:
             self._toggle_fullscreen()
+        if self._rotator and self._rotator.is_rotated:
+            self._rotator.restore()
         self._player.cleanup()
         nav = self.get_ancestor(Adw.NavigationView)
         if nav:
@@ -687,6 +711,11 @@ class PlayerView(Adw.NavigationPage):
             speed = self._speeds[idx]
             log.debug('speed changed → %s', speed)
             self._player.set_rate(speed)
+
+    @Gtk.Template.Callback()
+    def on_rotate_clicked(self, _button):
+        if self._rotator:
+            self._rotator.toggle()
 
     @Gtk.Template.Callback()
     def on_quality_changed(self, dropdown, _pspec):

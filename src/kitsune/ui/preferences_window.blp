@@ -96,6 +96,12 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
         title: _("Close Button");
         subtitle: _("Show window close button in player top bar");
       }
+
+      Adw.SwitchRow rotate_button_row {
+        title: _("Rotate Button");
+        subtitle: _("Always show screen rotation button in player");
+        visible: false;
+      }
     }
   }
 

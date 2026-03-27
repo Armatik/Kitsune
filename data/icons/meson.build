@@ -20,6 +20,7 @@ action_icons = [
   'sidebar-collapse-right-symbolic',
   'plus-circle-symbolic',
   'home-symbolic',
+  'angled-arrows-symbolic',
 ]
 
 foreach icon : action_icons

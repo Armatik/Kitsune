@@ -60,4 +60,5 @@ def test_has_controls():
     assert view.progress is not None
     assert view.volume_scale is not None
     assert view.speed_dropdown is not None
+    assert view.rotate_btn is not None
     assert view.quality_dropdown is not None

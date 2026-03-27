@@ -11,6 +11,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gdk, Gio, GObject, Gtk
 
+from kitsune.player.display_rotate import check_available
 from kitsune.ui import format_size
 from kitsune.ui.image_cache import get_cache_size, get_cache_count, clear_cache
 from kitsune import release_cache, watch_positions, tags_store
@@ -43,6 +44,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
     fade_duration_row = Gtk.Template.Child()
     blur_unwatched_row = Gtk.Template.Child()
     close_button_row = Gtk.Template.Child()
+    rotate_button_row = Gtk.Template.Child()
     navbar_sync_row = Gtk.Template.Child()
     navbar_sheet_style_row = Gtk.Template.Child()
     navbar_desktop_group = Gtk.Template.Child()
@@ -81,6 +83,11 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self.close_button_row.set_active(
             self._settings.get_boolean('player-show-close-button'))
         self.close_button_row.connect('notify::active', self._on_close_button_changed)
+
+        self.rotate_button_row.set_active(
+            self._settings.get_boolean('player-show-rotate-button'))
+        self.rotate_button_row.connect('notify::active', self._on_rotate_button_changed)
+        check_available(self._on_rotate_check)
 
         self._update_cache_size()
         self._update_preview_cache()
@@ -142,6 +149,13 @@ class PreferencesWindow(Adw.PreferencesDialog):
 
     def _on_close_button_changed(self, row, _pspec):
         self._settings.set_boolean('player-show-close-button', row.get_active())
+
+    def _on_rotate_button_changed(self, row, _pspec):
+        self._settings.set_boolean('player-show-rotate-button', row.get_active())
+
+    def _on_rotate_check(self, available):
+        if available:
+            self.rotate_button_row.set_visible(True)
 
     def _update_watch_progress(self):
         try:
