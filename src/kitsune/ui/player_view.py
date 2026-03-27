@@ -83,6 +83,7 @@ class PlayerView(Adw.NavigationPage):
     duration_label = Gtk.Template.Child()
     volume_btn = Gtk.Template.Child()
     volume_scale = Gtk.Template.Child()
+    speed_dropdown = Gtk.Template.Child()
     quality_dropdown = Gtk.Template.Child()
     seek_label = Gtk.Template.Child()
     skip_btn = Gtk.Template.Child()
@@ -112,6 +113,7 @@ class PlayerView(Adw.NavigationPage):
         self._seek_accum = 0
         self._seek_base = 0
         self._seek_debounce = 0
+        self._ignore_speed_change = False
         self._last_known_position = 0
         self._restore_position = None
         self._buffering = False
@@ -129,6 +131,7 @@ class PlayerView(Adw.NavigationPage):
 
         self._setup_title()
         self._setup_paintable()
+        self._setup_speed()
         self._setup_quality()
         self._setup_volume()
         self._setup_nav_buttons()
@@ -153,6 +156,14 @@ class PlayerView(Adw.NavigationPage):
     def _setup_paintable(self):
         if self._player.paintable:
             self.picture.set_paintable(self._player.paintable)
+
+    def _setup_speed(self):
+        self._ignore_speed_change = True
+        self._speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5]
+        model = Gtk.StringList.new([f'{s}x' for s in self._speeds])
+        self.speed_dropdown.set_model(model)
+        self.speed_dropdown.set_selected(self._speeds.index(1.0))
+        self._ignore_speed_change = False
 
     def _setup_quality(self):
         self._ignore_quality_change = True
@@ -416,6 +427,16 @@ class PlayerView(Adw.NavigationPage):
             self._toggle_mute()
             self._reveal_controls()
             return True
+        if keyval in (Gdk.KEY_greater, Gdk.KEY_bracketright):
+            new_idx = max(0, min(len(self._speeds) - 1, self.speed_dropdown.get_selected() + 1))
+            self.speed_dropdown.set_selected(new_idx)
+            self._reveal_controls()
+            return True
+        if keyval in (Gdk.KEY_less, Gdk.KEY_bracketleft):
+            new_idx = max(0, min(len(self._speeds) - 1, self.speed_dropdown.get_selected() - 1))
+            self.speed_dropdown.set_selected(new_idx)
+            self._reveal_controls()
+            return True
         return False
 
     def _toggle_mute(self):
@@ -656,6 +677,16 @@ class PlayerView(Adw.NavigationPage):
     def on_seek(self, _scale, _scroll_type, value):
         self._do_seek(value)
         return False
+
+    @Gtk.Template.Callback()
+    def on_speed_changed(self, dropdown, _pspec):
+        if self._ignore_speed_change:
+            return
+        idx = dropdown.get_selected()
+        if idx < len(self._speeds):
+            speed = self._speeds[idx]
+            log.debug('speed changed → %s', speed)
+            self._player.set_rate(speed)
 
     @Gtk.Template.Callback()
     def on_quality_changed(self, dropdown, _pspec):
