@@ -9,6 +9,11 @@ test_files = [
   'test_storage.py',
   'test_search_index.py',
   'test_release_cache.py',
+  'test_user_model.py',
+  'test_collection_model.py',
+  'test_token_store.py',
+  'test_session.py',
+  'test_sync_manager.py',
 ]
 
 foreach test_file : test_files
