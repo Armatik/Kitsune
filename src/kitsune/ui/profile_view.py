@@ -39,19 +39,16 @@ _HERO_IMAGES = [
 ]
 
 _PROFILE_CSS = (
-    # Card container
-    ' .profile-card { background: @card_bg_color;'
-    ' border-radius: 20px; overflow: hidden;'
-    ' border: 1px solid alpha(currentColor, 0.06);'
-    ' box-shadow: 0 4px 24px alpha(black, 0.15); }'
-    # Hero gradient
+    # Hero image rounded top (on the picture itself)
+    ' .profile-hero picture { border-radius: 16px 16px 0 0; }'
+    # Hero gradient — fades to window bg
     ' .profile-hero-gradient { background:'
     ' linear-gradient(to bottom, transparent 0%,'
-    ' alpha(@card_bg_color, 0.25) 40%,'
-    ' alpha(@card_bg_color, 0.65) 65%,'
-    ' @card_bg_color 100%); }'
-    # Avatar overlap
-    ' .profile-avatar-box { margin-top: -44px; }'
+    ' transparent 30%,'
+    ' alpha(@window_bg_color, 0.25) 50%,'
+    ' alpha(@window_bg_color, 0.6) 70%,'
+    ' alpha(@window_bg_color, 0.85) 85%,'
+    ' @window_bg_color 100%); }'
     # Collection card
     ' .collection-card { border-radius: 14px; padding: 14px 8px;'
     ' border: 1px solid alpha(currentColor, 0.06); }'
@@ -59,8 +56,8 @@ _PROFILE_CSS = (
     ' .total-card { border-radius: 12px; padding: 14px 16px;'
     ' background: alpha(@accent_bg_color, 0.08);'
     ' border: 1px solid alpha(@accent_bg_color, 0.10); }'
-    # Remove flowbox child padding
-    ' .profile-card flowboxchild { padding: 0; background: none; }'
+    # FlowBox child padding
+    ' flowboxchild { padding: 0; background: none; }'
 )
 
 
@@ -75,7 +72,6 @@ def _hex_to_rgba(hex_color, alpha):
 class ProfileView(Gtk.Box):
     __gtype_name__ = 'KitsuneProfileView'
 
-    profile_card = Gtk.Template.Child()
     hero_picture = Gtk.Template.Child()
     avatar = Gtk.Template.Child()
     nickname_label = Gtk.Template.Child()
@@ -220,6 +216,11 @@ class ProfileView(Gtk.Box):
             tag = tags_store._find_tag(data, tag_id)
             if tag:
                 self._on_navigate_tag(tag)
+
+    def refresh_hero(self):
+        """Load a new random hero image."""
+        self.hero_picture.set_opacity(0)
+        self._load_hero_image()
 
     def update_profile(self, user):
         if user is None:

@@ -626,6 +626,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
         elif name == 'profile':
             if not self._profile_view:
                 self._create_profile_view()
+            else:
+                self._profile_view.refresh_hero()
         self.content_stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)

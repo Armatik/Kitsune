@@ -17,83 +17,77 @@ template $KitsuneProfileView: Gtk.Box {
       margin-top: 20;
       margin-bottom: 20;
 
-      child: Gtk.Box profile_card {
+      child: Gtk.Box {
         orientation: vertical;
 
-        styles ["profile-card"]
-
-        // Hero image with gradient
+        // Hero image + avatar + info — all inside one overlay
         Gtk.Overlay {
+          styles ["profile-hero"]
+
           Gtk.Picture hero_picture {
-            height-request: 220;
+            height-request: 450;
             content-fit: cover;
             opacity: 0;
           }
 
           [overlay]
           Gtk.Box {
-            height-request: 220;
+            height-request: 450;
             orientation: vertical;
 
             styles ["profile-hero-gradient"]
           }
-        }
 
-        // Avatar overlapping hero
-        Gtk.Box {
-          halign: center;
-
-          styles ["profile-avatar-box"]
-
-          Adw.Avatar avatar {
-            size: 80;
+          [overlay]
+          Gtk.Box {
+            orientation: vertical;
             halign: center;
-          }
-        }
+            valign: end;
+            spacing: 4;
+            margin-bottom: 8;
 
-        // Name + email + member since
-        Gtk.Box {
-          orientation: vertical;
-          halign: center;
-          spacing: 4;
-          margin-top: 8;
+            Adw.Avatar avatar {
+              size: 80;
+              halign: center;
+            }
 
-          Gtk.Label nickname_label {
-            halign: center;
+            Gtk.Label nickname_label {
+              halign: center;
+              margin-top: 8;
 
-            styles ["title-1"]
-          }
+              styles ["title-1"]
+            }
 
-          Gtk.Label email_label {
-            halign: center;
+            Gtk.Label email_label {
+              halign: center;
 
-            styles ["dim-label"]
-          }
+              styles ["dim-label"]
+            }
 
-          Gtk.Label member_since_label {
-            halign: center;
+            Gtk.Label member_since_label {
+              halign: center;
 
-            styles ["dim-label", "caption"]
-          }
-        }
+              styles ["dim-label", "caption"]
+            }
 
-        // Sync
-        Gtk.Box {
-          halign: center;
-          spacing: 6;
-          margin-top: 4;
-          margin-bottom: 14;
+            // Sync inside hero overlay
+            Gtk.Box {
+              halign: center;
+              spacing: 6;
+              margin-top: 8;
 
-          Gtk.Label sync_time_label {
-            styles ["dim-label", "caption"]
-          }
+              Gtk.Label sync_time_label {
+                styles ["dim-label", "caption"]
+              }
 
-          Gtk.Button sync_button {
-            icon-name: "emblem-synchronizing-symbolic";
-            tooltip-text: _("Sync now");
-            clicked => $on_sync_clicked();
+              Gtk.Button sync_button {
+                icon-name: "emblem-synchronizing-symbolic";
+                tooltip-text: _("Sync now");
+                clicked => $on_sync_clicked();
 
-            styles ["flat", "circular"]
+                styles ["flat", "circular"]
+              }
+            }
           }
         }
 
@@ -105,16 +99,12 @@ template $KitsuneProfileView: Gtk.Box {
           selection-mode: none;
           row-spacing: 8;
           column-spacing: 8;
-          margin-start: 16;
-          margin-end: 16;
           margin-bottom: 12;
         }
 
         // Total stats
         Gtk.Box totals_box {
           spacing: 8;
-          margin-start: 16;
-          margin-end: 16;
           margin-bottom: 12;
           homogeneous: true;
         }
