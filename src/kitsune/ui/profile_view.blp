@@ -22,31 +22,40 @@ template $KitsuneProfileView: Gtk.Box {
 
         styles ["profile-card"]
 
-        // Hero image + avatar + info — all inside one overlay
-        Gtk.Overlay {
-          styles ["profile-hero"]
+        // Hero image inside Revealer
+        Gtk.Revealer hero_revealer {
+          transition-type: slide_down;
+          transition-duration: 800;
+          reveal-child: false;
 
-          Gtk.Picture hero_picture {
-            height-request: 450;
-            content-fit: cover;
-            opacity: 0;
-          }
+          child: Gtk.Overlay {
+            styles ["profile-hero"]
 
-          [overlay]
-          Gtk.Box {
-            height-request: 450;
-            orientation: vertical;
+            Gtk.Picture hero_picture {
+              height-request: 520;
+              content-fit: cover;
+            }
 
-            styles ["profile-hero-gradient"]
-          }
+            [overlay]
+            Gtk.Box {
+              height-request: 520;
+              orientation: vertical;
 
-          [overlay]
+              styles ["profile-hero-gradient"]
+            }
+          };
+        }
+
+        // Everything below hero — all in one block, margin animated together
+        Gtk.Box info_block {
+          orientation: vertical;
+          margin-top: 16;
+
+          // Avatar + name
           Gtk.Box {
             orientation: vertical;
             halign: center;
-            valign: end;
             spacing: 4;
-            margin-bottom: 8;
 
             Adw.Avatar avatar {
               size: 80;
@@ -71,69 +80,70 @@ template $KitsuneProfileView: Gtk.Box {
 
               styles ["dim-label", "caption"]
             }
+          }
 
-            // Sync inside hero overlay
-            Gtk.Box {
-              halign: center;
-              spacing: 6;
-              margin-top: 8;
+          // Sync
+          Gtk.Box {
+            halign: center;
+            spacing: 6;
+            margin-top: 4;
+            margin-bottom: 14;
 
-              Gtk.Label sync_time_label {
-                styles ["dim-label", "caption"]
-              }
+            Gtk.Label sync_time_label {
+              styles ["dim-label", "caption"]
+            }
 
-              Gtk.Button sync_button {
-                icon-name: "emblem-synchronizing-symbolic";
-                tooltip-text: _("Sync now");
-                clicked => $on_sync_clicked();
+            Gtk.Button sync_button {
+              icon-name: "emblem-synchronizing-symbolic";
+              tooltip-text: _("Sync now");
+              clicked => $on_sync_clicked();
 
-                styles ["flat", "circular"]
-              }
+              styles ["flat", "circular"]
             }
           }
-        }
 
-        // Collection cards
-        Gtk.FlowBox collections_flow {
-          homogeneous: true;
-          min-children-per-line: 3;
-          max-children-per-line: 3;
-          selection-mode: none;
-          row-spacing: 8;
-          column-spacing: 8;
-          margin-start: 16;
-          margin-end: 16;
-          margin-bottom: 8;
-        }
-
-        // Total stats
-        Gtk.Box totals_box {
-          spacing: 8;
-          margin-start: 16;
-          margin-end: 16;
-          margin-bottom: 16;
-          homogeneous: true;
-        }
-
-        // Actions
-        Gtk.Box {
-          orientation: vertical;
-          spacing: 8;
-          halign: center;
-          margin-bottom: 20;
-
-          Gtk.Button {
-            label: _("Account settings ↗");
-            clicked => $on_settings_site_clicked();
-
-            styles ["flat"]
+          // Collection cards
+          Gtk.FlowBox collections_flow {
+            homogeneous: true;
+            min-children-per-line: 3;
+            max-children-per-line: 3;
+            selection-mode: none;
+            row-spacing: 8;
+            column-spacing: 8;
+            margin-start: 16;
+            margin-end: 16;
+            margin-bottom: 8;
           }
 
-          Gtk.Button logout_button {
-            label: _("Log out");
-            clicked => $on_logout_clicked();
+          // Total stats
+          Gtk.Box totals_box {
+            spacing: 8;
+            margin-start: 16;
+            margin-end: 16;
+            margin-bottom: 16;
+            homogeneous: true;
+          }
 
-            styles ["destructive-action", "pill"]
+          // Actions
+          Gtk.Box {
+            orientation: vertical;
+            spacing: 8;
+            halign: center;
+            margin-bottom: 20;
+
+            Gtk.Button {
+              label: _("Account settings ↗");
+              clicked => $on_settings_site_clicked();
+
+              styles ["flat"]
+            }
+
+            Gtk.Button logout_button {
+              label: _("Log out");
+              clicked => $on_logout_clicked();
+
+              styles ["destructive-action", "pill"]
+            }
           }
         }
       };

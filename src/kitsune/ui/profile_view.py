@@ -39,12 +39,12 @@ _HERO_IMAGES = [
 ]
 
 _PROFILE_CSS = (
-    # Profile card wrapper
+    # Card wrapper
     ' .profile-card { background: @card_bg_color;'
     ' border-radius: 16px;'
     ' border: 1px solid alpha(currentColor, 0.08);'
     ' box-shadow: 0 2px 12px alpha(black, 0.08); }'
-    # Hero image rounded top inside card
+    # Hero image rounded top
     ' .profile-hero picture { border-radius: 15px 15px 0 0; }'
     # Hero gradient — fades to card bg
     ' .profile-hero-gradient { background:'
@@ -54,19 +54,19 @@ _PROFILE_CSS = (
     ' alpha(@card_bg_color, 0.6) 70%,'
     ' alpha(@card_bg_color, 0.85) 85%,'
     ' @card_bg_color 100%); }'
+    # Info block — margin animated in Python (16 → -180)
     # Collection card
     ' .collection-card { border-radius: 14px; padding: 14px 8px;'
     ' border: 1px solid alpha(currentColor, 0.06);'
     ' transition: border-color 200ms, box-shadow 200ms; }'
     ' .collection-card:hover { border-color: alpha(currentColor, 0.15);'
     ' box-shadow: 0 2px 8px alpha(black, 0.1); }'
-    ' .collection-card:active { box-shadow: none;'
-    ' opacity: 0.85; }'
-    # Total card — same height as collection cards
+    ' .collection-card:active { box-shadow: none; opacity: 0.85; }'
+    # Total card
     ' .total-card { border-radius: 14px; padding: 20px 16px;'
     ' background: alpha(@accent_bg_color, 0.08);'
     ' border: 1px solid alpha(@accent_bg_color, 0.10); }'
-    # FlowBox child — no padding or highlight
+    # FlowBox
     ' flowboxchild { padding: 0; background: none; }'
     ' flowboxchild:hover { background: none; }'
     ' flowboxchild:active { background: none; }'
@@ -87,7 +87,9 @@ def _hex_to_rgba(hex_color, alpha):
 class ProfileView(Gtk.Box):
     __gtype_name__ = 'KitsuneProfileView'
 
+    hero_revealer = Gtk.Template.Child()
     hero_picture = Gtk.Template.Child()
+    info_block = Gtk.Template.Child()
     avatar = Gtk.Template.Child()
     nickname_label = Gtk.Template.Child()
     email_label = Gtk.Template.Child()
@@ -205,19 +207,34 @@ class ProfileView(Gtk.Box):
                 if gbytes and gbytes.get_size() > 0:
                     texture = Gdk.Texture.new_from_bytes(gbytes)
                     self.hero_picture.set_paintable(texture)
-                    self._fade_in_hero()
+                    self._reveal_hero()
             except Exception as e:
                 log.debug('Profile hero: failed: %s', e)
 
         session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, None, on_image)
 
-    def _fade_in_hero(self):
-        opacity = [0.0]
+    _MARGIN_START = 16
+    _MARGIN_END = -180
+    _ANIM_DURATION_MS = 800
+
+    def _reveal_hero(self):
+        """Reveal hero + animate info block margin in parallel."""
+        self.hero_revealer.set_reveal_child(True)
+        self._animate_margin(self._MARGIN_START, self._MARGIN_END)
+
+    def _animate_margin(self, from_val, to_val):
+        """Animate info_block margin-top over _ANIM_DURATION_MS."""
+        progress = [0.0]
+        step = 16.0 / self._ANIM_DURATION_MS  # ~60fps
 
         def tick():
-            opacity[0] = min(1.0, opacity[0] + 0.015)
-            self.hero_picture.set_opacity(opacity[0])
-            if opacity[0] >= 1.0:
+            progress[0] = min(1.0, progress[0] + step)
+            # Ease-out cubic
+            t = progress[0]
+            eased = 1.0 - (1.0 - t) ** 3
+            margin = int(from_val + (to_val - from_val) * eased)
+            self.info_block.set_margin_top(margin)
+            if progress[0] >= 1.0:
                 return GLib.SOURCE_REMOVE
             return GLib.SOURCE_CONTINUE
 
@@ -231,8 +248,9 @@ class ProfileView(Gtk.Box):
                 self._on_navigate_tag(tag)
 
     def refresh_hero(self):
-        """Load a new random hero image."""
-        self.hero_picture.set_opacity(0)
+        """Collapse hero, reset margin, load new image."""
+        self.hero_revealer.set_reveal_child(False)
+        self.info_block.set_margin_top(self._MARGIN_START)
         self._load_hero_image()
 
     def update_profile(self, user):
