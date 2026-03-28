@@ -1,0 +1,106 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+using Gtk 4.0;
+using Adw 1;
+
+template $KitsuneProfileView: Gtk.Box {
+  orientation: vertical;
+
+  Gtk.ScrolledWindow {
+    hscrollbar-policy: never;
+    vexpand: true;
+
+    child: Gtk.Box {
+      orientation: vertical;
+      margin-start: 16;
+      margin-end: 16;
+      margin-top: 16;
+      margin-bottom: 16;
+      spacing: 24;
+
+      // Avatar section
+      Gtk.Box {
+        orientation: vertical;
+        spacing: 8;
+        halign: center;
+
+        Adw.Avatar avatar {
+          size: 80;
+          halign: center;
+        }
+
+        Gtk.Label nickname_label {
+          halign: center;
+
+          styles ["title-2"]
+        }
+
+        Gtk.Label email_label {
+          halign: center;
+
+          styles ["dim-label"]
+        }
+      }
+
+      // Sync group
+      Adw.PreferencesGroup {
+        title: _("Sync");
+
+        Adw.ActionRow sync_time_row {
+          title: _("Last sync");
+          subtitle: _("No data");
+        }
+
+        Adw.ActionRow sync_now_row {
+          title: _("Sync now");
+          activatable: true;
+          activated => $on_sync_clicked();
+
+          [suffix]
+          Gtk.Image {
+            icon-name: "emblem-synchronizing-symbolic";
+            valign: center;
+          }
+        }
+      }
+
+      // Collections group
+      Adw.PreferencesGroup collections_group {
+        title: _("Collections");
+
+        [header-suffix]
+        Gtk.Label total_label {
+          valign: center;
+
+          styles ["dim-label", "caption"]
+        }
+      }
+
+      // Account group
+      Adw.PreferencesGroup {
+        title: _("Account");
+
+        Adw.ActionRow {
+          title: _("Settings on site");
+          activatable: true;
+          activated => $on_settings_site_clicked();
+
+          [suffix]
+          Gtk.Image {
+            icon-name: "external-link-symbolic";
+            valign: center;
+          }
+        }
+      }
+
+      // Logout button
+      Gtk.Button logout_button {
+        label: _("Log out");
+        halign: center;
+        clicked => $on_logout_clicked();
+
+        styles ["destructive-action", "pill"]
+      }
+    };
+  }
+}
