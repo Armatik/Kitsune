@@ -56,13 +56,23 @@ _PROFILE_CSS = (
     ' @card_bg_color 100%); }'
     # Collection card
     ' .collection-card { border-radius: 14px; padding: 14px 8px;'
-    ' border: 1px solid alpha(currentColor, 0.06); }'
+    ' border: 1px solid alpha(currentColor, 0.06);'
+    ' transition: border-color 200ms, box-shadow 200ms; }'
+    ' .collection-card:hover { border-color: alpha(currentColor, 0.15);'
+    ' box-shadow: 0 2px 8px alpha(black, 0.1); }'
+    ' .collection-card:active { box-shadow: none;'
+    ' opacity: 0.85; }'
     # Total card — same height as collection cards
     ' .total-card { border-radius: 14px; padding: 20px 16px;'
     ' background: alpha(@accent_bg_color, 0.08);'
     ' border: 1px solid alpha(@accent_bg_color, 0.10); }'
-    # FlowBox child padding
+    # FlowBox child — no padding or highlight
     ' flowboxchild { padding: 0; background: none; }'
+    ' flowboxchild:hover { background: none; }'
+    ' flowboxchild:active { background: none; }'
+    ' .profile-card flowboxchild button.flat { background: none; }'
+    ' .profile-card flowboxchild button.flat:hover { background: none; }'
+    ' .profile-card flowboxchild button.flat:active { background: none; }'
 )
 
 
