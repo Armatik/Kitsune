@@ -69,6 +69,54 @@ class StubClient:
     def set_on_network_ok(self, cb):
         pass
 
+    def set_token_getter(self, getter):
+        pass
+
+    def login(self, *args, **kwargs):
+        pass
+
+    def logout(self, **kwargs):
+        pass
+
+    def get_otp(self, *args, **kwargs):
+        pass
+
+    def login_otp(self, *args, **kwargs):
+        pass
+
+    def get_social_login_url(self, *args, **kwargs):
+        pass
+
+    def poll_social_auth(self, *args, **kwargs):
+        pass
+
+    def get_profile(self, **kwargs):
+        pass
+
+    def get_favorite_ids(self, **kwargs):
+        pass
+
+    def add_favorites(self, *args, **kwargs):
+        pass
+
+    def remove_favorites(self, *args, **kwargs):
+        pass
+
+    def get_collection_ids(self, **kwargs):
+        pass
+
+    def add_to_collection(self, *args, **kwargs):
+        pass
+
+    def remove_from_collection(self, *args, **kwargs):
+        pass
+
+    def get_timecodes(self, **kwargs):
+        pass
+
+    def save_timecodes(self, *args, **kwargs):
+        pass
+
 
 @pytest.fixture
 def mock_client():
