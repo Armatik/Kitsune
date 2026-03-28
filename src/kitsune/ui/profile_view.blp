@@ -20,6 +20,8 @@ template $KitsuneProfileView: Gtk.Box {
       child: Gtk.Box {
         orientation: vertical;
 
+        styles ["profile-card"]
+
         // Hero image + avatar + info — all inside one overlay
         Gtk.Overlay {
           styles ["profile-hero"]
@@ -99,13 +101,17 @@ template $KitsuneProfileView: Gtk.Box {
           selection-mode: none;
           row-spacing: 8;
           column-spacing: 8;
-          margin-bottom: 12;
+          margin-start: 16;
+          margin-end: 16;
+          margin-bottom: 8;
         }
 
         // Total stats
         Gtk.Box totals_box {
           spacing: 8;
-          margin-bottom: 12;
+          margin-start: 16;
+          margin-end: 16;
+          margin-bottom: 16;
           homogeneous: true;
         }
 

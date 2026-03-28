@@ -39,21 +39,26 @@ _HERO_IMAGES = [
 ]
 
 _PROFILE_CSS = (
-    # Hero image rounded top (on the picture itself)
-    ' .profile-hero picture { border-radius: 16px 16px 0 0; }'
-    # Hero gradient — fades to window bg
+    # Profile card wrapper
+    ' .profile-card { background: @card_bg_color;'
+    ' border-radius: 16px;'
+    ' border: 1px solid alpha(currentColor, 0.08);'
+    ' box-shadow: 0 2px 12px alpha(black, 0.08); }'
+    # Hero image rounded top inside card
+    ' .profile-hero picture { border-radius: 15px 15px 0 0; }'
+    # Hero gradient — fades to card bg
     ' .profile-hero-gradient { background:'
     ' linear-gradient(to bottom, transparent 0%,'
     ' transparent 30%,'
-    ' alpha(@window_bg_color, 0.25) 50%,'
-    ' alpha(@window_bg_color, 0.6) 70%,'
-    ' alpha(@window_bg_color, 0.85) 85%,'
-    ' @window_bg_color 100%); }'
+    ' alpha(@card_bg_color, 0.25) 50%,'
+    ' alpha(@card_bg_color, 0.6) 70%,'
+    ' alpha(@card_bg_color, 0.85) 85%,'
+    ' @card_bg_color 100%); }'
     # Collection card
     ' .collection-card { border-radius: 14px; padding: 14px 8px;'
     ' border: 1px solid alpha(currentColor, 0.06); }'
-    # Total card
-    ' .total-card { border-radius: 12px; padding: 14px 16px;'
+    # Total card — same height as collection cards
+    ' .total-card { border-radius: 14px; padding: 20px 16px;'
     ' background: alpha(@accent_bg_color, 0.08);'
     ' border: 1px solid alpha(@accent_bg_color, 0.10); }'
     # FlowBox child padding
@@ -148,7 +153,6 @@ class ProfileView(Gtk.Box):
 
         box1 = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
-            halign=Gtk.Align.CENTER,
             css_classes=['total-card'],
         )
         self._total_label = Gtk.Label()
@@ -163,7 +167,6 @@ class ProfileView(Gtk.Box):
 
         box2 = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
-            halign=Gtk.Align.CENTER,
             css_classes=['total-card'],
         )
         self._episodes_label = Gtk.Label()
