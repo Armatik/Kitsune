@@ -19,9 +19,10 @@ def _use_temp_file(tmp_path):
 def test_initial_state_has_favorites(tmp_path):
     _use_temp_file(tmp_path)
     tags = tags_store.get_all_tags()
-    assert len(tags) == 1
-    assert tags[0]['id'] == 'favorites'
-    assert tags[0]['builtin'] is True
+    ids = [t['id'] for t in tags]
+    assert 'favorites' in ids
+    fav = next(t for t in tags if t['id'] == 'favorites')
+    assert fav['builtin'] is True
 
 
 def test_create_emoji_tag(tmp_path):
@@ -125,9 +126,10 @@ def test_update_tag(tmp_path):
 
 def test_stats(tmp_path):
     _use_temp_file(tmp_path)
-    assert tags_store.get_count() == 1
+    initial = tags_store.get_count()
+    assert initial == 6
     tags_store.create_tag('A', 'emoji', '🎯')
-    assert tags_store.get_count() == 2
+    assert tags_store.get_count() == initial + 1
 
 
 def test_clear_all(tmp_path):
@@ -136,5 +138,33 @@ def test_clear_all(tmp_path):
     tags_store.add_release('favorites', 42)
     tags_store.clear_all()
     tags = tags_store.get_all_tags()
-    assert len(tags) == 1
-    assert tags[0]['releases'] == []
+    assert len(tags) == 6
+    for tag in tags:
+        assert tag['releases'] == []
+
+
+def test_builtin_collection_tags_exist(mock_tags):
+    tags = tags_store.get_all_tags()
+    ids = [t['id'] for t in tags]
+    assert 'favorites' in ids
+    assert 'watching' in ids
+    assert 'watched' in ids
+    assert 'planned' in ids
+    assert 'postponed' in ids
+    assert 'abandoned' in ids
+
+
+def test_cannot_delete_builtin_tags(mock_tags):
+    for tag_id in ('favorites', 'watching', 'watched', 'planned', 'postponed', 'abandoned'):
+        tags_store.delete_tag(tag_id)
+    tags = tags_store.get_all_tags()
+    ids = [t['id'] for t in tags]
+    assert 'favorites' in ids
+    assert 'watching' in ids
+
+
+def test_builtin_tags_have_colors(mock_tags):
+    tags = tags_store.get_all_tags()
+    for tag in tags:
+        if tag.get('builtin'):
+            assert 'color' in tag

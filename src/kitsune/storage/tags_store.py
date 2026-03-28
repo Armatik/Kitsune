@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import secrets
@@ -13,14 +14,76 @@ _TAGS_FILE = Path(
     os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
 ) / 'kitsune' / 'tags.json'
 
-_DEFAULT_FAVORITES = {
-    'id': 'favorites',
-    'name': 'Избранное',
-    'icon_type': 'emoji',
-    'icon_value': '⭐',
-    'builtin': True,
-    'order': 0,
-    'releases': [],
+_BUILTIN_TAGS = [
+    {
+        'id': 'favorites',
+        'name': 'Favorites',
+        'icon_type': 'emoji',
+        'icon_value': '⭐',
+        'builtin': True,
+        'order': 0,
+        'releases': [],
+        'color': '#f5c211',
+    },
+    {
+        'id': 'watching',
+        'name': 'Watching',
+        'icon_type': 'emoji',
+        'icon_value': '▶',
+        'builtin': True,
+        'order': 1,
+        'releases': [],
+        'color': '#9141ac',
+    },
+    {
+        'id': 'watched',
+        'name': 'Watched',
+        'icon_type': 'emoji',
+        'icon_value': '✓',
+        'builtin': True,
+        'order': 2,
+        'releases': [],
+        'color': '#26a269',
+    },
+    {
+        'id': 'planned',
+        'name': 'Planned',
+        'icon_type': 'emoji',
+        'icon_value': '📋',
+        'builtin': True,
+        'order': 3,
+        'releases': [],
+        'color': '#3584e4',
+    },
+    {
+        'id': 'postponed',
+        'name': 'Postponed',
+        'icon_type': 'emoji',
+        'icon_value': '⏸',
+        'builtin': True,
+        'order': 4,
+        'releases': [],
+        'color': '#e66100',
+    },
+    {
+        'id': 'abandoned',
+        'name': 'Abandoned',
+        'icon_type': 'emoji',
+        'icon_value': '✕',
+        'builtin': True,
+        'order': 5,
+        'releases': [],
+        'color': '#e01b24',
+    },
+]
+
+# Map collection API types to local tag IDs
+COLLECTION_TYPE_MAP = {
+    'WATCHING': 'watching',
+    'WATCHED': 'watched',
+    'PLANNED': 'planned',
+    'POSTPONED': 'postponed',
+    'ABANDONED': 'abandoned',
 }
 
 TAG_COLORS = (
@@ -30,13 +93,22 @@ TAG_COLORS = (
 
 
 def _load() -> dict:
-    try:
-        data = json.loads(_TAGS_FILE.read_text())
-        if 'tags' in data:
-            return data
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
-    return {'tags': [{**_DEFAULT_FAVORITES, 'releases': []}]}
+    if _TAGS_FILE.exists():
+        try:
+            with open(_TAGS_FILE) as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            data = {'tags': []}
+    else:
+        data = {'tags': []}
+
+    # Ensure all builtin tags exist (migration for existing installs)
+    existing_ids = {t['id'] for t in data['tags']}
+    for bt in _BUILTIN_TAGS:
+        if bt['id'] not in existing_ids:
+            data['tags'].insert(bt['order'], copy.deepcopy(bt))
+
+    return data
 
 
 def _save(data: dict):
@@ -71,9 +143,10 @@ def create_tag(name: str, icon_type: str, icon_value: str) -> dict:
 
 
 def delete_tag(tag_id: str):
-    if tag_id == 'favorites':
-        return
     data = _load()
+    tag = _find_tag(data, tag_id)
+    if not tag or tag.get('builtin'):
+        return
     data['tags'] = [t for t in data['tags'] if t['id'] != tag_id]
     _save(data)
 
@@ -149,4 +222,4 @@ def get_size() -> int:
 
 
 def clear_all():
-    _save({'tags': [{**_DEFAULT_FAVORITES, 'releases': []}]})
+    _save({'tags': copy.deepcopy(_BUILTIN_TAGS)})
