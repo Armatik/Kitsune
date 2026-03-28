@@ -9,8 +9,11 @@ from gi.repository import Adw, Gdk, Gtk, Gio
 
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
+from kitsune.auth import SessionManager
 from kitsune.navbar import get_tab, get_visible_tabs
+from kitsune.storage.sync_manager import SyncManager
 from kitsune.ui import register_css
+from kitsune.ui.auth_dialog import AuthDialog
 from kitsune.ui.catalog_view import CatalogView
 
 _T = ADW_TRANSITION
@@ -54,13 +57,19 @@ class KitsuneWindow(Adw.ApplicationWindow):
     narrow_tabs_box = Gtk.Template.Child()
     narrow_sheet_box = Gtk.Template.Child()
 
-    def __init__(self, **kwargs):
+    def __init__(self, client=None, session_manager=None, **kwargs):
         super().__init__(**kwargs)
-        app = self.get_application() or kwargs.get('application')
-        version = app._version if app else '0.0.0'
-        self._client = AniLibriaClient(version=version)
+        if client:
+            self._client = client
+        else:
+            app = self.get_application() or kwargs.get('application')
+            version = app._version if app else '0.0.0'
+            self._client = AniLibriaClient(version=version)
         self._client.set_on_network_error(self._on_network_error)
         self._client.set_on_network_ok(self._on_network_ok)
+        self._session = session_manager
+        self._sync = SyncManager(self._client)
+        self._profile_view = None
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
         register_css(_NAV_CSS)
         self._active_player = None
@@ -68,6 +77,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._setup_actions()
         self._setup_views()
         self.nav_view.connect('popped', self._on_nav_popped)
+
+        if self._session:
+            self._session.connect_logged_in(self._on_logged_in)
+            self._session.connect_logged_out(self._on_logged_out)
+            if self._session.is_logged_in():
+                self._session.validate_session(self._on_session_validated)
 
     def _setup_window_state(self):
         self.set_default_size(
@@ -120,6 +135,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
         self._build_sidebar()
         self._build_bottom_bar()
+        self._setup_auth_sidebar()
 
         for key in ('navbar-desktop', 'navbar-mobile',
                     'navbar-sync', 'navbar-sheet-style'):
@@ -259,6 +275,21 @@ class KitsuneWindow(Adw.ApplicationWindow):
         listbox.connect('row-activated', self._on_sheet_row_activated)
         self.narrow_sheet_box.append(listbox)
 
+        # Separator + auth row
+        self.narrow_sheet_box.append(Gtk.Separator(
+            margin_top=4, margin_bottom=4))
+        auth_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
+        auth_list.add_css_class('navigation-sidebar')
+        self._narrow_auth_row = Adw.ActionRow(
+            icon_name='avatar-default-symbolic',
+            activatable=True,
+        )
+        self._narrow_auth_row._action = 'auth'
+        self._update_narrow_auth_row()
+        auth_list.append(self._narrow_auth_row)
+        auth_list.connect('row-activated', self._on_sheet_menu_activated)
+        self.narrow_sheet_box.append(auth_list)
+
         # Separator + app menu items
         self.narrow_sheet_box.append(Gtk.Separator(
             margin_top=4, margin_bottom=4))
@@ -316,6 +347,43 @@ class KitsuneWindow(Adw.ApplicationWindow):
             btn.connect('clicked', self._on_sheet_grid_clicked, tab_id)
             flow.append(btn)
         self.narrow_sheet_box.append(flow)
+
+        # Separator + auth button
+        self.narrow_sheet_box.append(Gtk.Separator(
+            margin_start=12, margin_end=12))
+        auth_flow = Gtk.FlowBox(
+            selection_mode=Gtk.SelectionMode.NONE,
+            homogeneous=True,
+            max_children_per_line=4,
+            min_children_per_line=3,
+            row_spacing=8,
+            column_spacing=8,
+            margin_top=12,
+            margin_bottom=12,
+            margin_start=12,
+            margin_end=12,
+        )
+        auth_flow.add_css_class('sheet-grid')
+        self._narrow_auth_btn = Gtk.Button()
+        self._narrow_auth_btn.add_css_class('flat')
+        self._narrow_auth_btn.add_css_class('sheet-grid-item')
+        auth_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=4, halign=Gtk.Align.CENTER,
+            valign=Gtk.Align.CENTER,
+        )
+        self._narrow_auth_icon = Gtk.Image(
+            icon_name='avatar-default-symbolic')
+        auth_box.append(self._narrow_auth_icon)
+        self._narrow_auth_label = Gtk.Label(label=_('Login'))
+        self._narrow_auth_label.add_css_class('caption')
+        auth_box.append(self._narrow_auth_label)
+        self._narrow_auth_btn.set_child(auth_box)
+        self._narrow_auth_btn.connect(
+            'clicked', self._on_sheet_menu_clicked, 'auth')
+        auth_flow.append(self._narrow_auth_btn)
+        self._update_narrow_auth_grid()
+        self.narrow_sheet_box.append(auth_flow)
 
         # Separator + app menu items
         self.narrow_sheet_box.append(Gtk.Separator(
@@ -378,11 +446,17 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._on_preferences(None, None)
         elif action == 'about':
             self.get_application().activate_action('about', None)
+        elif action == 'auth':
+            if self._session and self._session.is_logged_in():
+                self._switch_tab('profile')
+            else:
+                self._show_auth_dialog()
 
     def _on_navbar_settings_changed(self, _settings, _key):
         """Rebuild navigation when settings change."""
         self._build_sidebar()
         self._build_bottom_bar()
+        self._setup_auth_sidebar()
         tab_ids = get_visible_tabs(self._settings, is_narrow=self._narrow)
         if tab_ids:
             self._switch_tab(tab_ids[0])
@@ -466,6 +540,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def on_sidebar_row_selected(self, listbox, row):
         if not row:
             return
+        if hasattr(self, '_auth_row') and row is self._auth_row:
+            if self._session and self._session.is_logged_in():
+                self._switch_tab('profile')
+            else:
+                self._show_auth_dialog()
+                # Deselect so clicking again re-triggers the signal
+                self.sidebar_list.unselect_row(row)
+            return
         index = row.get_index()
         if 0 <= index < len(self._sidebar_tab_ids):
             self._switch_tab(self._sidebar_tab_ids[index])
@@ -541,6 +623,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._create_tags_view()
             if self._tags_view:
                 self._tags_view.refresh()
+        elif name == 'profile':
+            if not self._profile_view:
+                self._create_profile_view()
         self.content_stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)
@@ -560,6 +645,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             'genres': _('Genres'),
             'franchises': _('Franchises'),
             'tags': _('Favorites & Tags'),
+            'profile': _('Profile'),
         }
         title = titles.get(tab, '')
 
@@ -717,6 +803,106 @@ class KitsuneWindow(Adw.ApplicationWindow):
         )
         page.get_child().add_top_bar(self._make_nav_header())
         self.nav_view.push(page)
+
+    # --- Auth integration ---
+
+    def _setup_auth_sidebar(self):
+        """Add login/profile row at the bottom of sidebar."""
+        if hasattr(self, '_auth_row') and self._auth_row.get_parent():
+            self.sidebar_list.remove(self._auth_row)
+        self._auth_row = Adw.ActionRow(icon_name='avatar-default-symbolic')
+        self.sidebar_list.append(self._auth_row)
+
+        self._update_auth_sidebar()
+
+    def _update_auth_sidebar(self):
+        if self._session and self._session.is_logged_in():
+            user = self._session.get_user()
+            nick = user.nickname if user else '...'
+            self._auth_row.set_title(nick)
+            self._auth_row.set_icon_name('system-users-symbolic')
+        else:
+            self._auth_row.set_title(_('Login'))
+            self._auth_row.set_icon_name('avatar-default-symbolic')
+        self._update_narrow_auth_row()
+        self._update_narrow_auth_grid()
+
+    def _update_narrow_auth_row(self):
+        """Update the narrow sheet list auth row."""
+        if not hasattr(self, '_narrow_auth_row'):
+            return
+        if self._session and self._session.is_logged_in():
+            user = self._session.get_user()
+            nick = user.nickname if user else '...'
+            self._narrow_auth_row.set_title(nick)
+            self._narrow_auth_row.set_icon_name('system-users-symbolic')
+        else:
+            self._narrow_auth_row.set_title(_('Login'))
+            self._narrow_auth_row.set_icon_name('avatar-default-symbolic')
+
+    def _update_narrow_auth_grid(self):
+        """Update the narrow sheet grid auth button."""
+        if not hasattr(self, '_narrow_auth_label'):
+            return
+        if self._session and self._session.is_logged_in():
+            user = self._session.get_user()
+            nick = user.nickname if user else '...'
+            self._narrow_auth_label.set_label(nick)
+            self._narrow_auth_icon.set_from_icon_name(
+                'system-users-symbolic')
+        else:
+            self._narrow_auth_label.set_label(_('Login'))
+            self._narrow_auth_icon.set_from_icon_name(
+                'avatar-default-symbolic')
+
+    def _create_profile_view(self):
+        from kitsune.ui.profile_view import ProfileView
+        self._profile_view = ProfileView(
+            session_manager=self._session,
+            on_navigate_tag=self._navigate_to_tag,
+            sync_manager=self._sync,
+        )
+        self.content_stack.add_named(self._profile_view, 'profile')
+        user = self._session.get_user() if self._session else None
+        if user:
+            self._profile_view.update_profile(user)
+        self._profile_view.refresh_counts()
+
+    def _on_logged_in(self):
+        if self._session:
+            self._session.fetch_profile(
+                lambda user, err: self._on_profile_loaded(user))
+        self._update_auth_sidebar()
+        self._sync.initial_sync(self._on_sync_complete)
+
+    def _on_sync_complete(self, ok, error):
+        if self._profile_view:
+            import datetime
+            now = datetime.datetime.now().strftime('%H:%M')
+            self._profile_view.set_sync_time(now)
+            self._profile_view.refresh_counts()
+
+    def _on_logged_out(self):
+        self._update_auth_sidebar()
+        if self._profile_view:
+            self._profile_view.update_profile(None)
+        if self.content_stack.get_visible_child_name() == 'profile':
+            self._switch_tab('catalog')
+
+    def _on_session_validated(self, valid, error):
+        if valid:
+            self._on_logged_in()
+
+    def _on_profile_loaded(self, user):
+        self._update_auth_sidebar()
+        if self._profile_view:
+            self._profile_view.update_profile(user)
+
+    def _show_auth_dialog(self):
+        if not self._session:
+            return
+        dialog = AuthDialog(self._session)
+        dialog.present(self)
 
     def _on_network_error(self):
         self.offline_banner.set_revealed(True)

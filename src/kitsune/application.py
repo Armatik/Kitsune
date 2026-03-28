@@ -8,6 +8,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, Gio, GLib, Gtk
 
 from kitsune import SITE_URL, API_BASE_URL, ADW_TRANSITION
+from kitsune.auth import SessionManager
 from kitsune.window import KitsuneWindow
 
 
@@ -20,11 +21,19 @@ class KitsuneApplication(Adw.Application):
             **kwargs,
         )
         self._version = version
+        self._session = None
 
     def do_activate(self):
         win = self.props.active_window
         if not win:
-            win = KitsuneWindow(application=self)
+            from kitsune.api import AniLibriaClient
+            client = AniLibriaClient(version=self._version)
+            self._session = SessionManager(client)
+            win = KitsuneWindow(
+                application=self,
+                client=client,
+                session_manager=self._session,
+            )
         win.present()
 
     def do_startup(self):
