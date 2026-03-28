@@ -11,6 +11,8 @@ from kitsune.models.release import (
 )
 from kitsune.models.catalog import CatalogResponse, PaginationMeta
 from kitsune.models.franchise import Franchise
+from kitsune.models.user import User
+from kitsune.models.collection import CollectionEntry, Timecode
 
 __all__ = [
     'Episode',
@@ -23,4 +25,7 @@ __all__ = [
     'Torrent',
     'CatalogResponse',
     'PaginationMeta',
+    'User',
+    'CollectionEntry',
+    'Timecode',
 ]
