@@ -10,15 +10,33 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk
 
 from kitsune import tags_store
+from kitsune.ui import register_css
 
 _COLLECTION_TAGS = [
-    ('favorites', 'Favorites'),
-    ('watching', 'Watching'),
-    ('watched', 'Watched'),
-    ('planned', 'Planned'),
-    ('postponed', 'Postponed'),
-    ('abandoned', 'Abandoned'),
+    ('favorites', 'Favorites', '⭐', '#f5c211'),
+    ('watching', 'Watching', '▶', '#9141ac'),
+    ('watched', 'Watched', '✓', '#26a269'),
+    ('planned', 'Planned', '📋', '#3584e4'),
+    ('postponed', 'Postponed', '⏸', '#e66100'),
+    ('abandoned', 'Abandoned', '✕', '#e01b24'),
 ]
+
+_PROFILE_CSS = (
+    '.profile-hero-bg { background:'
+    ' linear-gradient(135deg, #e01b24 0%, #9141ac 100%); }'
+    ' .profile-hero-gradient { background:'
+    ' linear-gradient(to bottom, alpha(@window_bg_color, 0) 40%,'
+    ' @window_bg_color 100%); }'
+    ' .profile-hero-bg + .profile-hero-gradient + box label'
+    ' { color: white; text-shadow: 0 1px 3px alpha(black, 0.3); }'
+    ' .profile-content { margin-top: -60px; }'
+    ' .collection-card { background: @card_bg_color;'
+    ' border-radius: 12px; padding: 16px;'
+    ' border: 1px solid alpha(currentColor, 0.08); }'
+    ' .collection-card:hover { background: alpha(@accent_bg_color, 0.08); }'
+    ' .collection-emoji { font-size: 24px; }'
+    ' .collection-count { font-size: 22px; font-weight: bold; }'
+)
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/profile_view.ui')
@@ -28,45 +46,59 @@ class ProfileView(Gtk.Box):
     avatar = Gtk.Template.Child()
     nickname_label = Gtk.Template.Child()
     email_label = Gtk.Template.Child()
-    sync_time_row = Gtk.Template.Child()
-    sync_now_row = Gtk.Template.Child()
-    collections_group = Gtk.Template.Child()
-    total_label = Gtk.Template.Child()
+    sync_time_label = Gtk.Template.Child()
+    sync_button = Gtk.Template.Child()
+    collections_flow = Gtk.Template.Child()
     logout_button = Gtk.Template.Child()
 
     def __init__(self, session_manager, on_navigate_tag, sync_manager=None, **kwargs):
         super().__init__(**kwargs)
+        register_css(_PROFILE_CSS)
         self._session = session_manager
         self._on_navigate_tag = on_navigate_tag
         self._sync_manager = sync_manager
-        self._count_labels = {}
-        self._setup_collection_rows()
+        self._cards = {}
+        self._setup_collection_cards()
 
-    def _setup_collection_rows(self):
-        for tag_id, label in _COLLECTION_TAGS:
-            row = Adw.ActionRow(
-                title=_(label),
-                activatable=True,
+    def _setup_collection_cards(self):
+        for tag_id, label, emoji, color in _COLLECTION_TAGS:
+            count = len(tags_store.get_release_ids_for_tag(tag_id))
+
+            card = Gtk.Button(css_classes=['flat'])
+            card.connect('clicked', self._on_collection_clicked, tag_id)
+
+            card_box = Gtk.Box(
+                orientation=Gtk.Orientation.VERTICAL,
+                spacing=4,
+                css_classes=['collection-card'],
             )
 
+            # Emoji
+            emoji_label = Gtk.Label(label=emoji, css_classes=['collection-emoji'])
+            card_box.append(emoji_label)
+
+            # Count
             count_label = Gtk.Label(
-                label='0',
-                css_classes=['dim-label'],
-                valign=Gtk.Align.CENTER,
+                label=str(count),
+                css_classes=['collection-count'],
             )
-            row.add_suffix(count_label)
-            self._count_labels[tag_id] = count_label
-
-            icon = Gtk.Image(
-                icon_name='go-next-symbolic',
-                valign=Gtk.Align.CENTER,
+            count_label.set_markup(
+                f'<span color="{color}">{count}</span>'
             )
-            row.add_suffix(icon)
+            card_box.append(count_label)
 
-            row.connect('activated', self._on_collection_activated, tag_id)
-            self.collections_group.add(row)
+            # Title
+            title_label = Gtk.Label(
+                label=_(label),
+                css_classes=['caption', 'dim-label'],
+            )
+            card_box.append(title_label)
 
-    def _on_collection_activated(self, _row, tag_id):
+            card.set_child(card_box)
+            self.collections_flow.append(card)
+            self._cards[tag_id] = count_label
+
+    def _on_collection_clicked(self, _button, tag_id):
         if self._on_navigate_tag:
             data = tags_store._load()
             tag = tags_store._find_tag(data, tag_id)
@@ -85,21 +117,22 @@ class ProfileView(Gtk.Box):
         self.email_label.set_label(user.email or '')
 
     def refresh_counts(self):
-        total = 0
-        for tag_id, _label in _COLLECTION_TAGS:
+        for tag_id, _label, _emoji, color in _COLLECTION_TAGS:
             ids = tags_store.get_release_ids_for_tag(tag_id)
             count = len(ids)
-            total += count
-            label_widget = self._count_labels.get(tag_id)
+            label_widget = self._cards.get(tag_id)
             if label_widget:
-                label_widget.set_label(str(count))
-        self.total_label.set_label(str(total))
+                label_widget.set_markup(
+                    f'<span color="{color}">{count}</span>'
+                )
 
     def set_sync_time(self, time_str):
-        self.sync_time_row.set_subtitle(time_str or _('No data'))
+        self.sync_time_label.set_label(
+            _('Synced at %s') % time_str if time_str else ''
+        )
 
     @Gtk.Template.Callback()
-    def on_sync_clicked(self, _row):
+    def on_sync_clicked(self, _button):
         if self._sync_manager:
             self._sync_manager.sync_now(self._on_sync_done)
 
@@ -109,7 +142,7 @@ class ProfileView(Gtk.Box):
         self.refresh_counts()
 
     @Gtk.Template.Callback()
-    def on_settings_site_clicked(self, _row):
+    def on_settings_site_clicked(self, _button):
         launcher = Gtk.UriLauncher(uri='https://anilibria.top/app/settings/')
         launcher.launch(self.get_root(), None, None)
 
