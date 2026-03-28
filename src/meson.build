@@ -16,6 +16,8 @@ ui_blueprints = [
   'release_view',
   'filter_dialog',
   'player_view',
+  'auth_dialog',
+  'profile_view',
 ]
 
 widget_blueprints = [
