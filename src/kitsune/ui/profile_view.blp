@@ -10,37 +10,53 @@ template $KitsuneProfileView: Gtk.Box {
     hscrollbar-policy: never;
     vexpand: true;
 
-    child: Gtk.Box {
-      orientation: vertical;
+    child: Adw.Clamp {
+      maximum-size: 520;
+      margin-start: 16;
+      margin-end: 16;
+      margin-top: 20;
+      margin-bottom: 20;
 
-      // Hero area: accent background + avatar + name
-      Gtk.Overlay {
-        Gtk.Box {
-          orientation: vertical;
-          height-request: 280;
+      child: Gtk.Box profile_card {
+        orientation: vertical;
 
-          styles ["profile-hero-bg"]
+        styles ["profile-card"]
+
+        // Hero image with gradient
+        Gtk.Overlay {
+          Gtk.Picture hero_picture {
+            height-request: 220;
+            content-fit: cover;
+            opacity: 0;
+          }
+
+          [overlay]
+          Gtk.Box {
+            height-request: 220;
+            orientation: vertical;
+
+            styles ["profile-hero-gradient"]
+          }
         }
 
-        [overlay]
+        // Avatar overlapping hero
         Gtk.Box {
-          orientation: vertical;
-          height-request: 280;
+          halign: center;
 
-          styles ["profile-hero-gradient"]
+          styles ["profile-avatar-box"]
+
+          Adw.Avatar avatar {
+            size: 80;
+            halign: center;
+          }
         }
 
-        [overlay]
+        // Name + email + member since
         Gtk.Box {
           orientation: vertical;
           halign: center;
-          valign: center;
-          spacing: 8;
-
-          Adw.Avatar avatar {
-            size: 96;
-            halign: center;
-          }
+          spacing: 4;
+          margin-top: 8;
 
           Gtk.Label nickname_label {
             halign: center;
@@ -53,27 +69,22 @@ template $KitsuneProfileView: Gtk.Box {
 
             styles ["dim-label"]
           }
+
+          Gtk.Label member_since_label {
+            halign: center;
+
+            styles ["dim-label", "caption"]
+          }
         }
-      }
 
-      // Content — overlaps hero via CSS
-      Gtk.Box {
-        orientation: vertical;
-        spacing: 16;
-        margin-start: 16;
-        margin-end: 16;
-        margin-bottom: 24;
-
-        styles ["profile-content"]
-
-        // Sync row — compact
+        // Sync
         Gtk.Box {
-          spacing: 8;
           halign: center;
+          spacing: 6;
+          margin-top: 4;
+          margin-bottom: 14;
 
           Gtk.Label sync_time_label {
-            label: "";
-
             styles ["dim-label", "caption"]
           }
 
@@ -86,53 +97,50 @@ template $KitsuneProfileView: Gtk.Box {
           }
         }
 
-        // Collections — visual cards grid
-        Gtk.Label {
-          label: _("Collections");
-          halign: start;
-
-          styles ["title-4"]
-        }
-
+        // Collection cards
         Gtk.FlowBox collections_flow {
           homogeneous: true;
-          min-children-per-line: 2;
+          min-children-per-line: 3;
           max-children-per-line: 3;
           selection-mode: none;
           row-spacing: 8;
           column-spacing: 8;
+          margin-start: 16;
+          margin-end: 16;
+          margin-bottom: 12;
         }
 
-        // Account
-        Gtk.Separator {
-          margin-top: 4;
-          margin-bottom: 4;
+        // Total stats
+        Gtk.Box totals_box {
+          spacing: 8;
+          margin-start: 16;
+          margin-end: 16;
+          margin-bottom: 12;
+          homogeneous: true;
         }
 
-        Gtk.Button {
-          clicked => $on_settings_site_clicked();
-
-          child: Gtk.Box {
-            spacing: 8;
-            halign: center;
-
-            Gtk.Label {
-              label: _("Account settings ↗");
-            }
-          };
-
-          styles ["flat"]
-        }
-
-        // Logout
-        Gtk.Button logout_button {
-          label: _("Log out");
+        // Actions
+        Gtk.Box {
+          orientation: vertical;
+          spacing: 8;
           halign: center;
-          clicked => $on_logout_clicked();
+          margin-bottom: 20;
 
-          styles ["destructive-action", "pill"]
+          Gtk.Button {
+            label: _("Account settings ↗");
+            clicked => $on_settings_site_clicked();
+
+            styles ["flat"]
+          }
+
+          Gtk.Button logout_button {
+            label: _("Log out");
+            clicked => $on_logout_clicked();
+
+            styles ["destructive-action", "pill"]
+          }
         }
-      }
+      };
     };
   }
 }
