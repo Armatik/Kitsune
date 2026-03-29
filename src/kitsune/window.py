@@ -70,6 +70,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._client.set_on_network_ok(self._on_network_ok)
         self._session = session_manager
         self._sync = SyncManager(self._client)
+        self._sync_timer_id = 0
         self._profile_view = None
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
         register_css(_NAV_CSS)
@@ -94,6 +95,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_close_request(self, _window):
         self._stop_active_player()
+        # Flush watch positions to server before closing
+        if self._sync and self._sync.is_logged_in():
+            self._sync.flush_timecodes()
         size = self.get_default_size()
         self._settings.set_int('window-width', size[0])
         self._settings.set_int('window-height', size[1])
@@ -946,8 +950,34 @@ class KitsuneWindow(Adw.ApplicationWindow):
             now = datetime.datetime.now().strftime('%H:%M')
             self._profile_view.set_sync_time(now)
             self._profile_view.refresh_counts()
+        # Start periodic sync if not already running
+        if ok and not self._sync_timer_id:
+            self._start_periodic_sync()
+        if not ok and error and error != 'already_syncing':
+            import logging
+            logging.getLogger('kitsune.sync').warning(
+                'Sync failed: %s', error)
+
+    def _start_periodic_sync(self):
+        """Pull from server every 5 minutes."""
+        self._stop_periodic_sync()
+        self._sync_timer_id = GLib.timeout_add(
+            5 * 60 * 1000, self._periodic_sync)
+
+    def _stop_periodic_sync(self):
+        if self._sync_timer_id:
+            GLib.source_remove(self._sync_timer_id)
+            self._sync_timer_id = 0
+
+    def _periodic_sync(self):
+        if self._session and self._session.is_logged_in():
+            self._sync.pull_from_server(self._on_sync_complete)
+            return GLib.SOURCE_CONTINUE
+        self._sync_timer_id = 0
+        return GLib.SOURCE_REMOVE
 
     def _on_logged_out(self):
+        self._stop_periodic_sync()
         self._update_auth_sidebar()
         if self._profile_view:
             self._profile_view.update_profile(None)
@@ -1010,6 +1040,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _play_episode(self, release, episode):
         from kitsune.ui.player_view import PlayerView
-        view = PlayerView(release=release, episode=episode)
+        view = PlayerView(release=release, episode=episode,
+                          sync_manager=self._sync)
         self._active_player = view._player
         self.nav_view.push(view)
