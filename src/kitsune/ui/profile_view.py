@@ -26,7 +26,6 @@ _COLLECTION_TAGS = [
     ('abandoned', 'Abandoned', '✕', '#e01b24'),
 ]
 
-# Hero images from AniLibria CDN
 _HERO_IMAGES = [
     'SD01.BK-zeZze.jpg', 'SD02.CFb2ug4g.jpg', 'SD03.Big5uXdC.jpg',
     'SD04.iDB17XuA.jpg', 'SD05.xSIf8EKO.jpg', 'SD06.DzSKOZiB.jpg',
@@ -38,23 +37,30 @@ _HERO_IMAGES = [
     'REG02.CQ9KlpWV.jpg', 'REG03.CTS9TmSc.jpg', 'REG04.BDVfGboN.jpg',
 ]
 
+# Animation constants
+_HERO_HEIGHT = 520
+_HERO_MARGIN_START = -340   # hero hidden above card
+_HERO_MARGIN_END = 0        # hero fully visible
+_CONTENT_MARGIN_START = 16  # content at top with padding
+_CONTENT_MARGIN_END = 220   # content pushed down (overlaps hero by 520-220=300px)
+_ANIM_DURATION_MS = 900
+
 _PROFILE_CSS = (
-    # Card wrapper
-    ' .profile-card { background: @card_bg_color;'
+    # Card wrapper — uses window_bg_color to match gradient exactly
+    ' .profile-card { background: @window_bg_color;'
     ' border-radius: 16px;'
-    ' border: 1px solid alpha(currentColor, 0.08);'
-    ' box-shadow: 0 2px 12px alpha(black, 0.08); }'
+    ' border: 1px solid alpha(currentColor, 0.1);'
+    ' box-shadow: 0 2px 12px alpha(black, 0.1); }'
     # Hero image rounded top
-    ' .profile-hero picture { border-radius: 15px 15px 0 0; }'
-    # Hero gradient — fades to card bg
+    ' .profile-hero-image { border-radius: 15px 15px 0 0; }'
+    # Hero gradient — matches card bg (@window_bg_color)
     ' .profile-hero-gradient { background:'
     ' linear-gradient(to bottom, transparent 0%,'
-    ' transparent 30%,'
-    ' alpha(@card_bg_color, 0.25) 50%,'
-    ' alpha(@card_bg_color, 0.6) 70%,'
-    ' alpha(@card_bg_color, 0.85) 85%,'
-    ' @card_bg_color 100%); }'
-    # Info block — margin animated in Python (16 → -180)
+    ' transparent 15%,'
+    ' alpha(@window_bg_color, 0.3) 35%,'
+    ' alpha(@window_bg_color, 0.65) 50%,'
+    ' alpha(@window_bg_color, 0.92) 72%,'
+    ' @window_bg_color 91%); }'
     # Collection card
     ' .collection-card { border-radius: 14px; padding: 14px 8px;'
     ' border: 1px solid alpha(currentColor, 0.06);'
@@ -87,9 +93,11 @@ def _hex_to_rgba(hex_color, alpha):
 class ProfileView(Gtk.Box):
     __gtype_name__ = 'KitsuneProfileView'
 
-    hero_revealer = Gtk.Template.Child()
+    card_box = Gtk.Template.Child()
+    profile_overlay = Gtk.Template.Child()
+    content_box = Gtk.Template.Child()
+    hero_box = Gtk.Template.Child()
     hero_picture = Gtk.Template.Child()
-    info_block = Gtk.Template.Child()
     avatar = Gtk.Template.Child()
     nickname_label = Gtk.Template.Child()
     email_label = Gtk.Template.Child()
@@ -107,6 +115,17 @@ class ProfileView(Gtk.Box):
         self._on_navigate_tag = on_navigate_tag
         self._sync_manager = sync_manager
         self._cards = {}
+        self._anim = None
+
+        # Clip card content
+        self.card_box.set_overflow(Gtk.Overflow.HIDDEN)
+
+        # Content overlay determines card sizing (not hero)
+        self.profile_overlay.set_measure_overlay(self.content_box, True)
+
+        # Initial state: hero hidden, content at top
+        self.hero_box.set_margin_top(_HERO_MARGIN_START)
+        self.content_box.set_margin_top(_CONTENT_MARGIN_START)
 
         self._setup_collection_cards()
         self._setup_total_cards()
@@ -207,38 +226,39 @@ class ProfileView(Gtk.Box):
                 if gbytes and gbytes.get_size() > 0:
                     texture = Gdk.Texture.new_from_bytes(gbytes)
                     self.hero_picture.set_paintable(texture)
-                    self._reveal_hero()
+                    self._start_parallax()
             except Exception as e:
                 log.debug('Profile hero: failed: %s', e)
 
         session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, None, on_image)
 
-    _MARGIN_START = 16
-    _MARGIN_END = -180
-    _ANIM_DURATION_MS = 800
+    def _start_parallax(self):
+        """Parallax animation: hero slides more, content slides less."""
+        def on_progress(t, _=None):
+            # Hero: -340 → 0 (moves 340px)
+            hero_margin = int(
+                _HERO_MARGIN_START +
+                (_HERO_MARGIN_END - _HERO_MARGIN_START) * t)
+            self.hero_box.set_margin_top(hero_margin)
 
-    def _reveal_hero(self):
-        """Reveal hero + animate info block margin in parallel."""
-        self.hero_revealer.set_reveal_child(True)
-        self._animate_margin(self._MARGIN_START, self._MARGIN_END)
+            # Content: 16 → 220 (moves 204px — less than hero)
+            content_margin = int(
+                _CONTENT_MARGIN_START +
+                (_CONTENT_MARGIN_END - _CONTENT_MARGIN_START) * t)
+            self.content_box.set_margin_top(content_margin)
 
-    def _animate_margin(self, from_val, to_val):
-        """Animate info_block margin-top over _ANIM_DURATION_MS."""
-        progress = [0.0]
-        step = 16.0 / self._ANIM_DURATION_MS  # ~60fps
+            # Fade in image (delayed start at 15%)
+            if t > 0.15:
+                self.hero_picture.set_opacity(
+                    min(1.0, (t - 0.15) / 0.6))
+            else:
+                self.hero_picture.set_opacity(0.0)
 
-        def tick():
-            progress[0] = min(1.0, progress[0] + step)
-            # Ease-out cubic
-            t = progress[0]
-            eased = 1.0 - (1.0 - t) ** 3
-            margin = int(from_val + (to_val - from_val) * eased)
-            self.info_block.set_margin_top(margin)
-            if progress[0] >= 1.0:
-                return GLib.SOURCE_REMOVE
-            return GLib.SOURCE_CONTINUE
-
-        GLib.timeout_add(16, tick)
+        target = Adw.CallbackAnimationTarget.new(on_progress)
+        self._anim = Adw.TimedAnimation.new(
+            self.card_box, 0.0, 1.0, _ANIM_DURATION_MS, target)
+        self._anim.set_easing(Adw.Easing.EASE_OUT_CUBIC)
+        self._anim.play()
 
     def _on_collection_clicked(self, _button, tag_id):
         if self._on_navigate_tag:
@@ -248,9 +268,13 @@ class ProfileView(Gtk.Box):
                 self._on_navigate_tag(tag)
 
     def refresh_hero(self):
-        """Collapse hero, reset margin, load new image."""
-        self.hero_revealer.set_reveal_child(False)
-        self.info_block.set_margin_top(self._MARGIN_START)
+        """Reset to initial state, load new image."""
+        if self._anim:
+            self._anim.skip()
+            self._anim = None
+        self.hero_box.set_margin_top(_HERO_MARGIN_START)
+        self.content_box.set_margin_top(_CONTENT_MARGIN_START)
+        self.hero_picture.set_opacity(0)
         self._load_hero_image()
 
     def update_profile(self, user):
