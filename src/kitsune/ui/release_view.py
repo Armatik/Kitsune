@@ -86,10 +86,12 @@ class ReleaseView(Adw.NavigationPage):
 
     _TAB_PAGES = ('episodes', 'related', 'team', 'torrents')
 
-    def __init__(self, release: Release, client: AniLibriaClient, **kwargs):
+    def __init__(self, release: Release, client: AniLibriaClient,
+                 sync_manager=None, **kwargs):
         super().__init__(title=release.name.main, **kwargs)
         self._release = release
         self._client = client
+        self._sync = sync_manager
         self._on_episode_play = None
         self._on_genre_navigate = None
         self._on_tag_navigate = None
@@ -168,6 +170,7 @@ class ReleaseView(Adw.NavigationPage):
         self._tag_popover = TagPopover(
             release_id=self._release.id,
             on_changed=self._on_tags_changed,
+            sync_manager=self._sync,
         )
         self.tag_split_btn.set_popover(self._tag_popover)
         self._update_favorite_icon()
@@ -809,7 +812,10 @@ class ReleaseView(Adw.NavigationPage):
 
     @Gtk.Template.Callback()
     def on_favorite_clicked(self, _button):
-        tags_store.toggle_favorite(self._release.id)
+        if self._sync:
+            self._sync.toggle_favorite_synced(self._release.id)
+        else:
+            tags_store.toggle_favorite(self._release.id)
         self._update_favorite_icon()
         self._update_tag_pills()
         if self._on_tags_changed_ext:

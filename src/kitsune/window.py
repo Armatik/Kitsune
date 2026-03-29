@@ -11,6 +11,7 @@ from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
 from kitsune.auth import SessionManager
 from kitsune.navbar import get_tab, get_visible_tabs
+from kitsune.storage import tags_store
 from kitsune.storage.sync_manager import SyncManager
 from kitsune.ui import register_css
 from kitsune.ui.auth_dialog import AuthDialog
@@ -690,7 +691,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _show_release_detail(self, release):
         from kitsune.ui.release_view import ReleaseView
-        view = ReleaseView(release=release, client=self._client)
+        view = ReleaseView(release=release, client=self._client,
+                           sync_manager=self._sync)
         view.set_on_episode_play(self._play_episode)
         view.set_on_genre_clicked(self._navigate_to_genre)
         view.set_on_tag_clicked(self._navigate_to_tag)
@@ -875,7 +877,68 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._session.fetch_profile(
                 lambda user, err: self._on_profile_loaded(user))
         self._update_auth_sidebar()
-        self._sync.initial_sync(self._on_sync_complete)
+        self._switch_tab('profile')
+        self._show_merge_dialog()
+
+    def _show_merge_dialog(self):
+        """Show merge strategy dialog after first login."""
+        from kitsune.storage.sync_manager import MergeStrategy
+
+        # Fetch server counts to show in dialog
+        def on_counts(counts, error):
+            if error:
+                # Can't reach server — just do local
+                self._sync.initial_sync(
+                    self._on_sync_complete, MergeStrategy.MERGE)
+                return
+
+            server_favs = counts.get('favorites', 0)
+            server_cols = sum(counts.get('collections', {}).values())
+            local_favs = len(tags_store.get_release_ids_for_tag('favorites'))
+            local_cols = sum(
+                len(tags_store.get_release_ids_for_tag(t))
+                for t in ('watching', 'watched', 'planned',
+                          'postponed', 'abandoned'))
+
+            # If no differences — just merge silently
+            if server_favs == 0 and server_cols == 0 and \
+               local_favs == 0 and local_cols == 0:
+                self._sync.initial_sync(
+                    self._on_sync_complete, MergeStrategy.MERGE)
+                return
+
+            body = (
+                f'{_("Local")}: {local_favs} {_("favorites")}, '
+                f'{local_cols} {_("in collections")}\n'
+                f'{_("Server")}: {server_favs} {_("favorites")}, '
+                f'{server_cols} {_("in collections")}'
+            )
+
+            dialog = Adw.AlertDialog(
+                heading=_('Sync data'),
+                body=body,
+            )
+            dialog.add_response('merge', _('Merge'))
+            dialog.add_response('local', _('Keep local'))
+            dialog.add_response('server', _('Keep server'))
+            dialog.set_default_response('merge')
+            dialog.set_response_appearance(
+                'merge', Adw.ResponseAppearance.SUGGESTED)
+
+            def on_response(d, response):
+                strategies = {
+                    'merge': MergeStrategy.MERGE,
+                    'local': MergeStrategy.PREFER_LOCAL,
+                    'server': MergeStrategy.PREFER_SERVER,
+                }
+                strategy = strategies.get(response, MergeStrategy.MERGE)
+                self._sync.initial_sync(
+                    self._on_sync_complete, strategy)
+
+            dialog.connect('response', on_response)
+            dialog.present(self)
+
+        self._sync.fetch_server_counts(on_counts)
 
     def _on_sync_complete(self, ok, error):
         if self._profile_view:
@@ -893,7 +956,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_session_validated(self, valid, error):
         if valid:
-            self._on_logged_in()
+            if self._session:
+                self._session.fetch_profile(
+                    lambda user, err: self._on_profile_loaded(user))
+            self._update_auth_sidebar()
+            # Quiet pull on app restart — no dialog
+            self._sync.pull_from_server(self._on_sync_complete)
 
     def _on_profile_loaded(self, user):
         self._update_auth_sidebar()

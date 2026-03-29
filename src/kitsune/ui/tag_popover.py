@@ -18,11 +18,13 @@ _POPOVER_CSS = '.tag-popover-emoji { font-size: 22px; }'
 
 class TagPopover(Gtk.Popover):
 
-    def __init__(self, release_id: int, on_changed=None, **kwargs):
+    def __init__(self, release_id: int, on_changed=None,
+                 sync_manager=None, **kwargs):
         super().__init__(**kwargs)
         register_css(_POPOVER_CSS)
         self._release_id = release_id
         self._on_changed = on_changed
+        self._sync = sync_manager
         self.set_has_arrow(True)
 
         box = Gtk.Box(
@@ -110,12 +112,23 @@ class TagPopover(Gtk.Popover):
 
     def _on_tag_toggled(self, check):
         tag_id = check._tag_id
-        if check.get_active():
-            tags_store.add_release(tag_id, self._release_id)
+        if self._sync and self._is_synced_tag(tag_id):
+            if check.get_active():
+                self._sync.add_to_tag_synced(tag_id, self._release_id)
+            else:
+                self._sync.remove_from_tag_synced(tag_id, self._release_id)
         else:
-            tags_store.remove_release(tag_id, self._release_id)
+            if check.get_active():
+                tags_store.add_release(tag_id, self._release_id)
+            else:
+                tags_store.remove_release(tag_id, self._release_id)
         if self._on_changed:
             self._on_changed()
+
+    @staticmethod
+    def _is_synced_tag(tag_id):
+        from kitsune.storage.sync_manager import SYNCED_TAGS
+        return tag_id in SYNCED_TAGS
 
     def _on_search_changed(self, entry):
         text = entry.get_text().lower()
