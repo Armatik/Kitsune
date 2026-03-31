@@ -26,8 +26,8 @@
   <launchable type="desktop-id">net.armatik.Kitsune.desktop</launchable>
 
   <branding>
-    <color type="primary" scheme_preference="light">#FE3635</color>
-    <color type="primary" scheme_preference="dark">#A51D2D</color>
+    <color type="primary" scheme_preference="light">#F7776A</color>
+    <color type="primary" scheme_preference="dark">#90212С</color>
   </branding>
 
   <url type="homepage">https://altlinux.space/alt-gnome/Kitsune</url>
