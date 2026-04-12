@@ -117,7 +117,10 @@ class PendingQueue:
             (release_id, collection_type) → cancel both
           - remove_collection + existing add_collection → cancel both
           - duplicate add_* or remove_* on same key → dedupe (new op dropped)
-          - save_timecode: handled in a later task
+          - save_timecode on existing (release_id, episode_id) → update payload
+            in place and reset retry state (queue size unchanged)
+
+        Coalescing never matches against an op that is currently in flight.
 
         Returns the new op id, or None if the op was coalesced.
         """
@@ -151,6 +154,26 @@ class PendingQueue:
         payload: dict,
     ) -> bool:
         """Return True if the new op was absorbed into an existing one."""
+        if op_kind == OP_SAVE_TIMECODE:
+            episode_id = payload.get('episode_id')
+            for existing in self._ops:
+                if existing.id in self._in_flight:
+                    continue
+                if existing.op != OP_SAVE_TIMECODE:
+                    continue
+                if existing.release_id != release_id:
+                    continue
+                if existing.payload.get('episode_id') != episode_id:
+                    continue
+                # Update payload and reset retry state
+                existing.payload = dict(payload)
+                existing.attempt_count = 0
+                existing.next_retry_at = 0.0
+                existing.last_error = None
+                self._save()
+                return True
+            return False
+
         if op_kind not in self._OPPOSITES:
             return False
 

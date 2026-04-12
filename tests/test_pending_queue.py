@@ -352,3 +352,88 @@ def test_load_clears_in_flight(tmp_path):
     q1.mark_in_flight(op_id)
     q2 = PendingQueue.load(path)
     assert q2._in_flight == set()
+
+
+def test_coalesce_timecode_same_episode_updates_in_place(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    first_id = q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    second_id = q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 120.5, 'is_watched': False},
+    )
+    assert q.size() == 1
+    assert second_id is None
+    op = q._ops[0]
+    assert op.id == first_id
+    assert op.payload['time'] == 120.5
+
+
+def test_coalesce_timecode_different_episodes_stay_separate(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.1', 'time': 30.0, 'is_watched': False},
+    )
+    assert q.size() == 2
+
+
+def test_coalesce_timecode_different_releases_stay_separate(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    q.enqueue(
+        OP_SAVE_TIMECODE, 9276, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    assert q.size() == 2
+
+
+def test_coalesce_timecode_resets_retry_state(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    first_id = q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    q.mark_failure(first_id, 'network')
+    assert q._ops[0].attempt_count == 1
+    assert q._ops[0].next_retry_at == 1010.0
+    assert q._ops[0].last_error == 'network'
+    q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 120.5, 'is_watched': False},
+    )
+    assert q._ops[0].attempt_count == 0
+    assert q._ops[0].next_retry_at == 0.0
+    assert q._ops[0].last_error is None
+
+
+def test_coalesce_timecode_skips_in_flight(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    first_id = q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    q.mark_in_flight(first_id)
+    second_id = q.enqueue(
+        OP_SAVE_TIMECODE, 9275, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 120.5, 'is_watched': False},
+    )
+    assert second_id is not None
+    assert q.size() == 2
