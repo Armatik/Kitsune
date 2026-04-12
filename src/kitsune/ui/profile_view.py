@@ -13,6 +13,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gdk, GLib, Gtk
 
 from kitsune import tags_store
+from kitsune.storage import watch_positions
 from kitsune.ui import register_css
 
 log = logging.getLogger('kitsune.profile_view')
@@ -299,18 +300,44 @@ class ProfileView(Gtk.Box):
                 self.member_since_label.set_label('')
 
     def refresh_counts(self):
+        """Refresh all counters with count-up animation."""
+        targets = {}
         total = 0
         for tag_id, _label, _emoji, color in _COLLECTION_TAGS:
-            ids = tags_store.get_release_ids_for_tag(tag_id)
-            count = len(ids)
+            count = len(tags_store.get_release_ids_for_tag(tag_id))
             total += count
             lbl = self._cards.get(tag_id)
             if lbl:
-                lbl.set_markup(
-                    f'<span size="x-large" weight="bold" color="{color}">'
-                    f'{count}</span>')
-        self._total_label.set_markup(
-            f'<span size="x-large" weight="bold">{total}</span>')
+                targets[lbl] = (count, color)
+
+        targets[self._total_label] = (total, None)
+        completed = watch_positions.get_completed_count()
+        targets[self._episodes_label] = (completed, None)
+
+        self._animate_counters(targets)
+
+    def _animate_counters(self, targets):
+        """Animate labels from 0 to target with ease-out."""
+        if not targets:
+            return
+
+        def on_progress(t, _=None):
+            for lbl, (target, color) in targets.items():
+                val = int(target * t)
+                if color:
+                    lbl.set_markup(
+                        f'<span size="x-large" weight="bold"'
+                        f' color="{color}">{val}</span>')
+                else:
+                    lbl.set_markup(
+                        f'<span size="x-large" weight="bold">'
+                        f'{val}</span>')
+
+        target = Adw.CallbackAnimationTarget.new(on_progress)
+        anim = Adw.TimedAnimation.new(
+            self, 0.0, 1.0, 2000, target)
+        anim.set_easing(Adw.Easing.EASE_OUT_CUBIC)
+        anim.play()
 
     def set_sync_time(self, time_str):
         self.sync_time_label.set_label(

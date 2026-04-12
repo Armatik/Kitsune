@@ -77,6 +77,11 @@ def get_count() -> int:
     return len(_load())
 
 
+def get_completed_count() -> int:
+    """Count episodes marked as fully watched (position == -1)."""
+    return sum(1 for pos in _load().values() if pos == -1)
+
+
 def get_size() -> int:
     try:
         return _POSITIONS_FILE.stat().st_size
