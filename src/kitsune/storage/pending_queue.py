@@ -90,6 +90,17 @@ class PendingQueue:
         }
         _atomic_write_json(self._path, data)
 
+    def mark_in_flight(self, op_id: str):
+        """Mark an op as currently being dispatched (HTTP request in flight).
+
+        Ops in this state are hidden from peek_ready and are not matched by
+        coalescing — so a rapid click that would have cancelled an in-flight
+        op is instead enqueued as a new op, preserving intent.
+
+        The set is in-memory only; a process restart begins with an empty set.
+        """
+        self._in_flight.add(op_id)
+
     def enqueue(
         self,
         op_kind: str,
@@ -148,6 +159,8 @@ class PendingQueue:
         new_collection_type = payload.get('collection_type') if needs_collection_match else None
 
         for existing in list(self._ops):
+            if existing.id in self._in_flight:
+                continue
             if existing.release_id != release_id:
                 continue
             if needs_collection_match:

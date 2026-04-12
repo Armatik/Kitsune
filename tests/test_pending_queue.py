@@ -294,3 +294,61 @@ def test_coalesce_dedupe_collection_same_type(tmp_path):
         payload={'collection_type': 'WATCHING'},
     )
     assert q.size() == 1
+
+
+def test_mark_in_flight_hides_op_from_peek_ready(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(op_id)
+    assert q.peek_ready(now=10_000_000_000) == []
+
+
+def test_mark_success_removes_from_in_flight(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(op_id)
+    q.mark_success(op_id)
+    assert op_id not in q._in_flight
+
+
+def test_mark_failure_removes_from_in_flight(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(op_id)
+    q.mark_failure(op_id, 'oops')
+    assert op_id not in q._in_flight
+
+
+def test_coalesce_skips_in_flight_ops_opposite(tmp_path):
+    """An opposite op does NOT cancel an in-flight op — both are kept."""
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    first_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(first_id)
+    second_id = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    assert second_id is not None
+    assert q.size() == 2
+
+
+def test_coalesce_skips_in_flight_ops_duplicate(tmp_path):
+    """A duplicate op is enqueued normally if the matching existing op is in flight."""
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    first_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(first_id)
+    second_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert second_id is not None
+    assert q.size() == 2
+
+
+def test_load_clears_in_flight(tmp_path):
+    """In-flight state is in-memory only — a reload starts with empty set."""
+    path = tmp_path / 'pending_ops.json'
+    q1 = PendingQueue(path)
+    op_id = q1.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q1.mark_in_flight(op_id)
+    q2 = PendingQueue.load(path)
+    assert q2._in_flight == set()
