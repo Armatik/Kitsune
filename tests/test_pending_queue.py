@@ -134,3 +134,86 @@ def test_mark_success_unknown_id_is_noop(tmp_path):
     q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     q.mark_success('no-such-id')
     assert q.size() == 1
+
+
+def test_mark_failure_first_attempt_schedules_10s(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    q.mark_failure(op_id, 'timeout')
+    ready_at_1005 = q.peek_ready(now=1005.0)
+    ready_at_1010 = q.peek_ready(now=1010.0)
+    assert ready_at_1005 == []
+    assert len(ready_at_1010) == 1
+
+
+def test_mark_failure_progression_matches_backoff_table(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    expected = [10, 30, 60, 120, 300, 600]
+    for step in expected:
+        q.mark_failure(op_id, 'timeout')
+        op = q._ops[0]
+        assert op.next_retry_at == 1000.0 + step
+        # Undo the next_retry bump for the next iteration — we want to exercise
+        # attempt_count progression, not calendar time.
+        op.next_retry_at = 0.0
+    assert op.attempt_count == 6
+
+
+def test_mark_failure_caps_at_600s(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    for _ in range(10):
+        q.mark_failure(op_id, 'timeout')
+        q._ops[0].next_retry_at = 0.0
+    q.mark_failure(op_id, 'timeout')
+    assert q._ops[0].next_retry_at == 1000.0 + 600
+    assert q._ops[0].attempt_count == 11
+
+
+def test_mark_failure_stores_error_message(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_failure(op_id, 'connection refused')
+    assert q._ops[0].last_error == 'connection refused'
+
+
+def test_mark_failure_truncates_long_error(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    long_msg = 'x' * 500
+    q.mark_failure(op_id, long_msg)
+    assert len(q._ops[0].last_error) == 200
+
+
+def test_mark_failure_persists(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_failure(op_id, 'net error')
+    q2 = PendingQueue.load(path)
+    assert q2.size() == 1
+    assert q2._ops[0].last_error == 'net error'
+    assert q2._ops[0].attempt_count == 1
+
+
+def test_mark_failure_unknown_id_is_noop(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_failure('no-such-id', 'wat')
+    assert q._ops[0].attempt_count == 0

@@ -136,5 +136,22 @@ class PendingQueue:
         if len(self._ops) != before:
             self._save()
 
+    def mark_failure(self, op_id: str, error: str):
+        """Increment attempt_count, schedule next retry per backoff table, persist.
+
+        After BACKOFF_STEPS is exhausted, next_retry_at stays at the last
+        (largest) step — retries continue forever until success or clear.
+        """
+        for op in self._ops:
+            if op.id != op_id:
+                continue
+            op.attempt_count += 1
+            idx = min(op.attempt_count - 1, len(BACKOFF_STEPS) - 1)
+            op.next_retry_at = time.time() + BACKOFF_STEPS[idx]
+            op.last_error = str(error)[:MAX_ERROR_LEN]
+            self._in_flight.discard(op_id)
+            self._save()
+            return
+
     def size(self) -> int:
         return len(self._ops)
