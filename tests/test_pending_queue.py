@@ -12,6 +12,7 @@ from kitsune.storage.pending_queue import (
     OP_ADD_COLLECTION,
     OP_SAVE_TIMECODE,
 )
+from kitsune.storage.pending_queue import OP_REMOVE_FAVORITE, OP_REMOVE_COLLECTION
 
 
 def test_load_nonexistent_file_returns_empty_queue(tmp_path):
@@ -217,3 +218,79 @@ def test_mark_failure_unknown_id_is_noop(tmp_path):
     q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     q.mark_failure('no-such-id', 'wat')
     assert q._ops[0].attempt_count == 0
+
+
+def test_coalesce_add_then_remove_favorite_cancels_both(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    result = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    assert result is None
+    assert q.size() == 0
+
+
+def test_coalesce_remove_then_add_favorite_cancels_both(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert q.size() == 0
+
+
+def test_coalesce_dedupe_duplicate_add(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    result = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert result is None
+    assert q.size() == 1
+
+
+def test_coalesce_favorite_does_not_affect_other_releases(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_REMOVE_FAVORITE, 9276, user_id=42)
+    assert q.size() == 2
+
+
+def test_coalesce_collection_add_then_remove_same_type_cancels(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    q.enqueue(
+        OP_REMOVE_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    assert q.size() == 0
+
+
+def test_coalesce_collection_different_types_do_not_cancel(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    q.enqueue(
+        OP_REMOVE_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHED'},
+    )
+    assert q.size() == 2
+
+
+def test_coalesce_dedupe_collection_same_type(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    q.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    assert q.size() == 1

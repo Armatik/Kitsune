@@ -99,11 +99,21 @@ class PendingQueue:
     ) -> str | None:
         """Add a new op to the queue and persist.
 
-        Returns the new op id, or None if the op was coalesced into an
-        existing one (coalescing is implemented in a later task).
+        Coalescing rules (see spec A1/E2):
+          - add_favorite + existing remove_favorite on same release → cancel both
+          - remove_favorite + existing add_favorite on same release → cancel both
+          - add_collection + existing remove_collection on same
+            (release_id, collection_type) → cancel both
+          - remove_collection + existing add_collection → cancel both
+          - duplicate add_* or remove_* on same key → dedupe (new op dropped)
+          - save_timecode: handled in a later task
+
+        Returns the new op id, or None if the op was coalesced.
         """
         if payload is None:
             payload = {}
+        if self._try_coalesce(op_kind, release_id, payload):
+            return None
         new_op = Op(
             id=str(uuid.uuid4()),
             op=op_kind,
@@ -115,6 +125,43 @@ class PendingQueue:
         self._ops.append(new_op)
         self._save()
         return new_op.id
+
+    _OPPOSITES = {
+        OP_ADD_FAVORITE: OP_REMOVE_FAVORITE,
+        OP_REMOVE_FAVORITE: OP_ADD_FAVORITE,
+        OP_ADD_COLLECTION: OP_REMOVE_COLLECTION,
+        OP_REMOVE_COLLECTION: OP_ADD_COLLECTION,
+    }
+
+    def _try_coalesce(
+        self,
+        op_kind: str,
+        release_id: int,
+        payload: dict,
+    ) -> bool:
+        """Return True if the new op was absorbed into an existing one."""
+        if op_kind not in self._OPPOSITES:
+            return False
+
+        opposite = self._OPPOSITES[op_kind]
+        needs_collection_match = op_kind in (OP_ADD_COLLECTION, OP_REMOVE_COLLECTION)
+        new_collection_type = payload.get('collection_type') if needs_collection_match else None
+
+        for existing in list(self._ops):
+            if existing.release_id != release_id:
+                continue
+            if needs_collection_match:
+                if existing.op not in (OP_ADD_COLLECTION, OP_REMOVE_COLLECTION):
+                    continue
+                if existing.payload.get('collection_type') != new_collection_type:
+                    continue
+            if existing.op == opposite:
+                self._ops.remove(existing)
+                self._save()
+                return True
+            if existing.op == op_kind:
+                return True
+        return False
 
     def peek_ready(self, now: float) -> list[Op]:
         """Return ops ready to be dispatched: not in flight and next_retry_at <= now.
