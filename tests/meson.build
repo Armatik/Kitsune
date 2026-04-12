@@ -14,6 +14,7 @@ test_files = [
   'test_token_store.py',
   'test_session.py',
   'test_sync_manager.py',
+  'test_pending_queue.py',
 ]
 
 foreach test_file : test_files

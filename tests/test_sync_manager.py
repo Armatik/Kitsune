@@ -162,3 +162,11 @@ def test_syncing_flag(mock_tags):
     # After sync completes (synchronous fake), flag is cleared
     sm.initial_sync(lambda ok, err: None)
     assert not sm.is_syncing
+
+
+def test_sync_manager_exposes_pending_queue():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    # The queue attribute exists and starts empty; actual usage comes in Stage 2.
+    assert hasattr(sm, '_queue')
+    assert sm._queue.size() == 0

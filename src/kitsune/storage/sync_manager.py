@@ -4,6 +4,7 @@ import logging
 import time
 
 from kitsune.storage import tags_store, watch_positions
+from kitsune.storage.pending_queue import PendingQueue
 
 log = logging.getLogger('kitsune.sync')
 
@@ -36,6 +37,7 @@ class SyncManager:
         self._client = client
         self._last_sync = None
         self._syncing = False
+        self._queue = PendingQueue.load()
 
     @property
     def is_syncing(self):
