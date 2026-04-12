@@ -236,5 +236,49 @@ class PendingQueue:
             self._save()
             return
 
+    def release_ids(self) -> set[int]:
+        """Set of release ids with at least one op in the queue."""
+        return {op.release_id for op in self._ops}
+
+    def has_errors(self) -> bool:
+        """True if any queued op has failed at least once."""
+        return any(op.attempt_count > 0 for op in self._ops)
+
+    def last_error(self) -> str | None:
+        """The error message of the most recently failed op, or None.
+
+        'Most recent' is determined by next_retry_at — higher means later,
+        and a fresh failure always sets next_retry_at in the future.
+        """
+        errored = [op for op in self._ops if op.last_error]
+        if not errored:
+            return None
+        return max(errored, key=lambda op: op.next_retry_at).last_error
+
+    def clear(self):
+        """Remove all ops and in-flight markers, persist."""
+        self._ops = []
+        self._in_flight = set()
+        self._save()
+
+    def clear_for_user(self, user_id: int) -> int:
+        """Drop every op belonging to a given user. Returns count removed."""
+        before = len(self._ops)
+        self._ops = [op for op in self._ops if op.user_id != user_id]
+        removed = before - len(self._ops)
+        if removed:
+            self._save()
+        return removed
+
+    def reset_all_retries(self):
+        """Set next_retry_at to 0 for every op so they become immediately ready.
+
+        Used by the "Retry now" button. Attempt counts and last_error values
+        are preserved — this is a user-initiated wake-up, not a reset.
+        """
+        for op in self._ops:
+            op.next_retry_at = 0.0
+        self._save()
+
     def size(self) -> int:
         return len(self._ops)

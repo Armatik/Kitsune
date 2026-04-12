@@ -437,3 +437,160 @@ def test_coalesce_timecode_skips_in_flight(tmp_path):
     )
     assert second_id is not None
     assert q.size() == 2
+
+
+def test_release_ids_empty(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    assert q.release_ids() == set()
+
+
+def test_release_ids_from_multiple_ops(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(
+        OP_ADD_COLLECTION, 9276, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    q.enqueue(
+        OP_SAVE_TIMECODE, 9277, user_id=42,
+        payload={'episode_id': 'ep.0', 'time': 30.0, 'is_watched': False},
+    )
+    assert q.release_ids() == {9275, 9276, 9277}
+
+
+def test_release_ids_dedupes(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    assert q.release_ids() == {9275}
+
+
+def test_has_errors_false_on_empty_queue(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    assert q.has_errors() is False
+
+
+def test_has_errors_false_on_fresh_op(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert q.has_errors() is False
+
+
+def test_has_errors_true_after_failure(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_failure(op_id, 'timeout')
+    assert q.has_errors() is True
+
+
+def test_last_error_none_on_empty(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    assert q.last_error() is None
+
+
+def test_last_error_none_on_fresh_ops(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert q.last_error() is None
+
+
+def test_last_error_returns_most_recent_failure(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_a = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    op_b = q.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    q.mark_failure(op_a, 'first error')
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 2000.0
+    )
+    q.mark_failure(op_b, 'second error')
+    assert q.last_error() == 'second error'
+
+
+def test_clear_empties_queue(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    q.clear()
+    assert q.size() == 0
+
+
+def test_clear_persists(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.clear()
+    q2 = PendingQueue.load(path)
+    assert q2.size() == 0
+
+
+def test_clear_drops_in_flight(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(op_id)
+    q.clear()
+    assert q._in_flight == set()
+
+
+def test_clear_for_user_removes_matching_ops(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9277, user_id=999)
+    removed = q.clear_for_user(42)
+    assert removed == 2
+    assert q.size() == 1
+    assert q._ops[0].user_id == 999
+
+
+def test_clear_for_user_zero_when_no_match(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    removed = q.clear_for_user(999)
+    assert removed == 0
+    assert q.size() == 1
+
+
+def test_reset_all_retries_sets_next_retry_to_zero(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    q.mark_failure(op_id, 'timeout')
+    assert q._ops[0].next_retry_at > 0
+    q.reset_all_retries()
+    assert q._ops[0].next_retry_at == 0.0
+
+
+def test_reset_all_retries_keeps_attempt_count(tmp_path, monkeypatch):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    monkeypatch.setattr(
+        'kitsune.storage.pending_queue.time.time', lambda: 1000.0
+    )
+    q.mark_failure(op_id, 'timeout')
+    q.mark_failure(op_id, 'timeout again')
+    q.reset_all_retries()
+    assert q._ops[0].attempt_count == 2
+    assert q._ops[0].last_error == 'timeout again'
