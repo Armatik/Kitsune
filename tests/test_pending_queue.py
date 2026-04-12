@@ -90,3 +90,47 @@ def test_enqueue_sets_defaults(tmp_path):
     assert op['last_error'] is None
     assert op['payload'] == {}
     assert op['created_at'] > 0
+
+
+def test_peek_ready_returns_all_ops_when_next_retry_zero(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    ready = q.peek_ready(now=1000.0)
+    assert len(ready) == 2
+
+
+def test_peek_ready_returns_ops_in_created_order(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    q.enqueue(OP_ADD_FAVORITE, 9277, user_id=42)
+    ready = q.peek_ready(now=10_000_000_000)
+    assert [op.release_id for op in ready] == [9275, 9276, 9277]
+
+
+def test_mark_success_removes_op(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_success(op_id)
+    assert q.size() == 0
+
+
+def test_mark_success_persists(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_success(op_id)
+    q2 = PendingQueue.load(path)
+    assert q2.size() == 0
+
+
+def test_mark_success_unknown_id_is_noop(tmp_path):
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_success('no-such-id')
+    assert q.size() == 1

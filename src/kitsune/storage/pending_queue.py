@@ -116,5 +116,25 @@ class PendingQueue:
         self._save()
         return new_op.id
 
+    def peek_ready(self, now: float) -> list[Op]:
+        """Return ops ready to be dispatched: not in flight and next_retry_at <= now.
+
+        Ops are returned in the order they were enqueued (FIFO by created_at).
+        Callers must not mutate the returned list; use mark_success/mark_failure
+        to update queue state.
+        """
+        return [
+            op for op in self._ops
+            if op.id not in self._in_flight and op.next_retry_at <= now
+        ]
+
+    def mark_success(self, op_id: str):
+        """Remove a successfully dispatched op from the queue."""
+        before = len(self._ops)
+        self._ops = [op for op in self._ops if op.id != op_id]
+        self._in_flight.discard(op_id)
+        if len(self._ops) != before:
+            self._save()
+
     def size(self) -> int:
         return len(self._ops)
