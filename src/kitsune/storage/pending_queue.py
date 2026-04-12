@@ -83,5 +83,38 @@ class PendingQueue:
             except TypeError:
                 log.warning('Dropping malformed pending op: %s', op_dict)
 
+    def _save(self):
+        data = {
+            'version': VERSION,
+            'ops': [asdict(op) for op in self._ops],
+        }
+        _atomic_write_json(self._path, data)
+
+    def enqueue(
+        self,
+        op_kind: str,
+        release_id: int,
+        user_id: int,
+        payload: dict | None = None,
+    ) -> str | None:
+        """Add a new op to the queue and persist.
+
+        Returns the new op id, or None if the op was coalesced into an
+        existing one (coalescing is implemented in a later task).
+        """
+        if payload is None:
+            payload = {}
+        new_op = Op(
+            id=str(uuid.uuid4()),
+            op=op_kind,
+            release_id=release_id,
+            user_id=user_id,
+            payload=dict(payload),
+            created_at=time.time(),
+        )
+        self._ops.append(new_op)
+        self._save()
+        return new_op.id
+
     def size(self) -> int:
         return len(self._ops)
