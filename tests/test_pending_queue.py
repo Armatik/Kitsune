@@ -594,3 +594,42 @@ def test_reset_all_retries_keeps_attempt_count(tmp_path, monkeypatch):
     q.reset_all_retries()
     assert q._ops[0].attempt_count == 2
     assert q._ops[0].last_error == 'timeout again'
+
+
+def test_coalesce_preserves_remove_when_in_flight_add_and_pending_dup(tmp_path):
+    """Regression: opposite op must NOT cancel a pending dup if an in-flight
+    op on the same key exists — otherwise user's last intent is lost."""
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_a = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(op_a)
+    # Second add enqueued because A is in-flight (invisible to coalesce)
+    op_b = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert op_b is not None
+    assert q.size() == 2
+    # Now user clicks remove — must NOT silently drop it
+    op_c = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    assert op_c is not None  # remove must be enqueued, not coalesced away
+    assert q.size() == 3     # all three ops present
+
+
+def test_coalesce_preserves_add_when_in_flight_remove_and_pending_dup(tmp_path):
+    """Same bug, opposite direction."""
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    op_a = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    q.mark_in_flight(op_a)
+    op_b = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    assert op_b is not None
+    op_c = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    assert op_c is not None
+    assert q.size() == 3
+
+
+def test_coalesce_still_works_when_no_in_flight_conflict(tmp_path):
+    """Normal coalescing still works when there's no in-flight interference."""
+    path = tmp_path / 'pending_ops.json'
+    q = PendingQueue(path)
+    q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    assert q.size() == 0  # cancelled as before
