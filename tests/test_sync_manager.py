@@ -170,3 +170,58 @@ def test_sync_manager_exposes_pending_queue():
     # The queue attribute exists and starts empty; actual usage comes in Stage 2.
     assert hasattr(sm, '_queue')
     assert sm._queue.size() == 0
+
+
+# --- Pub/sub and accessor tests (Stage 2) ---
+
+def test_connect_sync_error_fires_on_emit():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    received = []
+    sm.connect_sync_error(lambda op, rid, err: received.append((op, rid, err)))
+    sm._emit_sync_error('add_favorite', 9275, 'timeout')
+    assert received == [('add_favorite', 9275, 'timeout')]
+
+
+def test_connect_queue_changed_fires_on_emit():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    received = []
+    sm.connect_queue_changed(lambda size: received.append(size))
+    sm._emit_queue_changed()
+    assert received == [0]
+
+
+def test_connect_sync_complete_fires_on_emit():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    received = []
+    sm.connect_sync_complete(lambda ok: received.append(ok))
+    sm._emit_sync_complete(True)
+    assert received == [True]
+
+
+def test_set_user_id():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    assert sm._user_id == 0
+    sm.set_user_id(42)
+    assert sm._user_id == 42
+
+
+def test_queue_size_delegates():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    assert sm.queue_size() == 0
+
+
+def test_queue_has_errors_delegates():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    assert sm.queue_has_errors() is False
+
+
+def test_last_queue_error_delegates():
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    assert sm.last_queue_error() is None

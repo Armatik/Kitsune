@@ -38,6 +38,14 @@ class SyncManager:
         self._last_sync = None
         self._syncing = False
         self._queue = PendingQueue.load()
+        self._user_id = 0
+        self._draining = False
+        self._drain_scheduled = False
+        self._retry_timer_id = None
+        # Pub/sub callback lists (matching SessionManager pattern)
+        self._on_sync_error_cbs = []
+        self._on_queue_changed_cbs = []
+        self._on_sync_complete_cbs = []
 
     @property
     def is_syncing(self):
@@ -51,6 +59,47 @@ class SyncManager:
                      hasattr(self._client, '_get_token') and
                      self._client._get_token and
                      self._client._get_token())
+
+    # --- Pub/sub (callback-list pattern, see SessionManager) ---
+
+    def connect_sync_error(self, callback):
+        """callback(op_kind: str, release_id: int, error: str)"""
+        self._on_sync_error_cbs.append(callback)
+
+    def connect_queue_changed(self, callback):
+        """callback(size: int)"""
+        self._on_queue_changed_cbs.append(callback)
+
+    def connect_sync_complete(self, callback):
+        """callback(success: bool)"""
+        self._on_sync_complete_cbs.append(callback)
+
+    def _emit_sync_error(self, op_kind, release_id, error):
+        for cb in self._on_sync_error_cbs:
+            cb(op_kind, release_id, error)
+
+    def _emit_queue_changed(self):
+        size = self._queue.size()
+        for cb in self._on_queue_changed_cbs:
+            cb(size)
+
+    def _emit_sync_complete(self, success):
+        for cb in self._on_sync_complete_cbs:
+            cb(success)
+
+    # --- Public queue accessors (for profile UI) ---
+
+    def set_user_id(self, user_id):
+        self._user_id = user_id
+
+    def queue_size(self):
+        return self._queue.size()
+
+    def queue_has_errors(self):
+        return self._queue.has_errors()
+
+    def last_queue_error(self):
+        return self._queue.last_error()
 
     # --- Initial sync with strategy ---
 
