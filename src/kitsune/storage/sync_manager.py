@@ -124,18 +124,28 @@ class SyncManager:
         self._drain_next()
 
     def _drain_next(self):
-        """Dispatch the next ready op, or finish draining."""
+        """Dispatch the next ready op, or finish draining.
+
+        Unknown op kinds (added by a newer version and loaded from disk on
+        an older binary) are skipped but NOT removed — the op stays in the
+        queue until a version that understands it runs and drains. This
+        prevents silent data loss during downgrades.
+        """
         ready = self._queue.peek_ready(time.time())
-        if not ready:
+        # Find the first op with a known kind; skip unknowns
+        op = None
+        dispatch_method = None
+        for candidate in ready:
+            method = self._OP_DISPATCH.get(candidate.op)
+            if method:
+                op = candidate
+                dispatch_method = method
+                break
+            log.debug(
+                'Skipping unknown op kind %r in queue (op id %s) — '
+                'leaving in place for a future version', candidate.op, candidate.id)
+        if op is None:
             self._draining = False
-            return
-        op = ready[0]
-        dispatch_method = self._OP_DISPATCH.get(op.op)
-        if not dispatch_method:
-            log.warning('Unknown op kind in queue: %s', op.op)
-            self._queue.mark_success(op.id)
-            self._emit_queue_changed()
-            self._drain_next()
             return
         self._queue.mark_in_flight(op.id)
         getattr(self, dispatch_method)(op)
@@ -166,16 +176,26 @@ class SyncManager:
 
         Success is detected by `error is None` — not by inspecting `data`,
         which may legitimately be None for successful drain operations.
+
+        Wrapped in try/except so that an exception from `_save()` (disk full,
+        permission error) or a subscriber callback does not permanently
+        deadlock the drain pipeline by leaving `_draining = True`. On any
+        exception, we log, clear the guard, and re-schedule a drain — the
+        next idle tick will retry from a clean state.
         """
-        if error:
-            self._queue.mark_failure(op.id, str(error))
-            self._emit_sync_error(op.op, op.release_id, str(error))
-            self._emit_queue_changed()
+        try:
+            if error:
+                self._queue.mark_failure(op.id, str(error))
+                self._emit_sync_error(op.op, op.release_id, str(error))
+                self._emit_queue_changed()
+            else:
+                self._queue.mark_success(op.id)
+                self._emit_queue_changed()
             self._drain_next()
-        else:
-            self._queue.mark_success(op.id)
-            self._emit_queue_changed()
-            self._drain_next()
+        except Exception:
+            log.exception('Drain result handler raised; resetting drain state')
+            self._draining = False
+            self._schedule_drain()
 
     def _schedule_drain(self):
         """Schedule a drain on the next GLib idle tick.

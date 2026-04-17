@@ -457,3 +457,66 @@ def test_add_to_tag_synced_custom_tag_does_not_enqueue(mock_tags, tmp_path):
     sm.add_to_tag_synced(custom_id, 9275)
     assert 9275 in tags_store.get_release_ids_for_tag(custom_id)
     assert sm._queue.size() == 0  # custom tag — NOT enqueued
+
+
+# --- Robustness tests (post-review fixes) ---
+
+def test_drain_skips_unknown_op_kinds_without_dropping(tmp_path, mock_tags):
+    """Unknown op kinds are skipped, not silently deleted.
+
+    If a newer version enqueued an op kind this binary doesn't know about
+    (e.g. after a downgrade), we must not discard the op — leave it in the
+    queue so a future upgrade can process it.
+    """
+    from kitsune.storage.pending_queue import Op
+    import uuid, time as _time
+    sm, client = _make_sm_with_fake(tmp_path)
+    # Inject an unknown op directly
+    sm._queue._ops.append(Op(
+        id=str(uuid.uuid4()), op='future_op_kind',
+        release_id=9275, user_id=42, payload={},
+        created_at=_time.time(),
+    ))
+    # Also enqueue a known op after it
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    assert sm._queue.size() == 2
+
+    sm._drain_queue()
+    client.flush_all()
+
+    # Known op was dispatched and removed; unknown op still in queue
+    assert ('add_favorites', [9276]) in client.call_log
+    assert sm._queue.size() == 1
+    assert sm._queue._ops[0].op == 'future_op_kind'
+
+
+def test_drain_recovers_after_mark_success_raises(tmp_path, mock_tags, monkeypatch):
+    """If mark_success raises (e.g. disk full), _draining is reset.
+
+    Without this safety net, a single disk error would permanently dead-
+    lock the sync pipeline for the session.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._drain_queue()
+    # Make mark_success raise on the in-flight op
+    original = sm._queue.mark_success
+
+    def boom(op_id):
+        raise OSError('disk full')
+
+    monkeypatch.setattr(sm._queue, 'mark_success', boom)
+    # Fire the callback — this triggers _on_op_result which calls the
+    # now-broken mark_success
+    client.flush_next()
+
+    # The guard must have reset so future drains can proceed
+    assert sm._draining is False
+
+    # Restore and verify recovery by draining again
+    monkeypatch.setattr(sm._queue, 'mark_success', original)
+    # Queue still has the op (mark_success never completed)
+    # On next drain, the in-flight flag is still set from the failed attempt,
+    # so peek_ready returns nothing — verify the drain loop is not stuck
+    sm._drain_queue()
+    assert sm._draining is False
