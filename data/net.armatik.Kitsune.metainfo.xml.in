@@ -27,7 +27,7 @@
 
   <branding>
     <color type="primary" scheme_preference="light">#F7776A</color>
-    <color type="primary" scheme_preference="dark">#90212С</color>
+    <color type="primary" scheme_preference="dark">#90212C</color>
   </branding>
 
   <url type="homepage">https://altlinux.space/alt-gnome/Kitsune</url>
