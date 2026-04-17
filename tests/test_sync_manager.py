@@ -6,6 +6,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from kitsune.storage.sync_manager import SyncManager, MergeStrategy
 from kitsune.storage import tags_store
 
+sys.path.insert(0, os.path.dirname(__file__))
+
+from fakes.fake_api_client import FakeApiClient
+from kitsune.storage.pending_queue import (
+    PendingQueue, OP_ADD_FAVORITE, OP_REMOVE_FAVORITE,
+    OP_ADD_COLLECTION, OP_REMOVE_COLLECTION,
+)
+
 
 class FakeSyncClient:
     def __init__(self):
@@ -113,32 +121,6 @@ def test_sync_sets_last_sync_time(mock_tags):
     assert sm.get_last_sync_time() is not None
 
 
-# --- Write-through tests ---
-
-def test_toggle_favorite_synced(mock_tags):
-    client = FakeSyncClient()
-    sm = SyncManager(client)
-
-    result = sm.toggle_favorite_synced(42)
-    assert result is True
-    assert tags_store.is_favorited(42)
-    assert 42 in client.pushed_favorites
-
-    result = sm.toggle_favorite_synced(42)
-    assert result is False
-    assert not tags_store.is_favorited(42)
-    assert 42 in client.removed_favorites
-
-
-def test_add_to_collection_synced(mock_tags):
-    client = FakeSyncClient()
-    sm = SyncManager(client)
-
-    sm.add_to_tag_synced('watching', 55)
-    assert 55 in tags_store.get_release_ids_for_tag('watching')
-    assert (55, 'WATCHING') in client.pushed_collections
-
-
 # --- Server counts ---
 
 def test_fetch_server_counts(mock_tags):
@@ -225,3 +207,190 @@ def test_last_queue_error_delegates():
     client = FakeSyncClient()
     sm = SyncManager(client)
     assert sm.last_queue_error() is None
+
+
+# --- Drain tests (Stage 2) ---
+
+def _make_sm_with_fake(tmp_path):
+    """Helper: SyncManager with FakeApiClient and tmp queue."""
+    client = FakeApiClient()
+    sm = SyncManager(client)
+    # Redirect queue to tmp to avoid touching real user dir
+    sm._queue = PendingQueue(tmp_path / 'pending_ops.json')
+    sm.set_user_id(42)
+    return sm, client
+
+
+def test_drain_dispatches_add_favorite(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._drain_queue()
+    assert client.call_log == [('add_favorites', [9275])]
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_drain_dispatches_remove_favorite(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    sm._drain_queue()
+    assert client.call_log == [('remove_favorites', [9275])]
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_drain_dispatches_add_collection(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    sm._drain_queue()
+    assert client.call_log == [('add_to_collection', 9275, 'WATCHING')]
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_drain_dispatches_remove_collection(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_REMOVE_COLLECTION, 9275, user_id=42)
+    sm._drain_queue()
+    assert client.call_log == [('remove_from_collection', [9275])]
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_drain_emits_queue_changed_on_success(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sizes = []
+    sm.connect_queue_changed(lambda s: sizes.append(s))
+    sm._drain_queue()
+    client.flush_all()
+    assert 0 in sizes
+
+
+def test_drain_emits_sync_error_on_failure(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    errors = []
+    sm.connect_sync_error(lambda op, rid, err: errors.append((op, rid, err)))
+    sm._drain_queue()
+    client.fail_next('server 500')
+    assert len(errors) == 1
+    assert errors[0] == ('add_favorite', 9275, 'server 500')
+    assert sm._queue.size() == 1  # op still in queue for retry
+
+
+def test_drain_reentrancy_guard(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._draining = True  # simulate already draining
+    sm._drain_queue()
+    assert client.call_log == []  # nothing dispatched
+
+
+def test_drain_chains_multiple_ops(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    sm._drain_queue()
+    # First op dispatched
+    assert len(client.call_log) == 1
+    client.flush_next()  # first succeeds → second dispatched
+    assert len(client.call_log) == 2
+    client.flush_next()  # second succeeds
+    assert sm._queue.size() == 0
+
+
+# --- Write-through tests (updated for queue routing) ---
+
+def test_toggle_favorite_synced_enqueues_and_drains(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+
+    result = sm.toggle_favorite_synced(42)
+    assert result is True
+    assert tags_store.is_favorited(42)
+    # Op is in queue, not dispatched yet (idle-scheduled)
+    assert sm._queue.size() == 1
+    assert client.call_log == []
+    # Drain and flush to simulate real async cycle
+    sm._drain_queue()
+    client.flush_all()
+    assert ('add_favorites', [42]) in client.call_log
+    assert sm._queue.size() == 0
+
+    result = sm.toggle_favorite_synced(42)
+    assert result is False
+    assert not tags_store.is_favorited(42)
+    sm._drain_queue()
+    client.flush_all()
+    assert ('remove_favorites', [42]) in client.call_log
+
+
+def test_add_to_collection_synced_enqueues(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+
+    sm.add_to_tag_synced('watching', 55)
+    assert 55 in tags_store.get_release_ids_for_tag('watching')
+    assert sm._queue.size() == 1
+    sm._drain_queue()
+    client.flush_all()
+    assert ('add_to_collection', 55, 'WATCHING') in client.call_log
+
+
+def test_remove_from_tag_synced_enqueues(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.add_release('watching', 55)
+
+    sm.remove_from_tag_synced('watching', 55)
+    assert 55 not in tags_store.get_release_ids_for_tag('watching')
+    assert sm._queue.size() == 1
+    sm._drain_queue()
+    client.flush_all()
+    assert ('remove_from_collection', [55]) in client.call_log
+
+
+def test_write_through_schedules_drain(mock_tags, tmp_path, monkeypatch):
+    """Verify that write-through calls GLib.idle_add to schedule drain."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    sm.add_to_tag_synced('favorites', 9275)
+    assert len(scheduled) == 1  # _schedule_drain called once
+
+
+def test_write_through_not_logged_in_skips_enqueue(mock_tags, tmp_path):
+    """If not logged in, local change happens but no enqueue."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._client._get_token = lambda: None  # simulate not logged in
+    sm.add_to_tag_synced('favorites', 9275)
+    assert tags_store.is_favorited(9275)  # local still applies
+    assert sm._queue.size() == 0  # not enqueued
+
+
+def test_write_through_does_not_double_schedule(mock_tags, tmp_path, monkeypatch):
+    """Two write-throughs before the idle fires only schedule one drain."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    sm.add_to_tag_synced('favorites', 9275)
+    sm.add_to_tag_synced('favorites', 9276)
+    assert len(scheduled) == 1  # second write-through suppresses double schedule
+
+
+def test_write_through_custom_tag_skips_enqueue(mock_tags, tmp_path):
+    """Custom (non-synced) tags apply locally but are not enqueued."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.create_tag('Custom Test', 'emoji', '🔥')
+    custom_id = [t['id'] for t in tags_store.get_all_tags()
+                 if not t.get('builtin')][0]
+    sm.add_to_tag_synced(custom_id, 9275)
+    assert 9275 in tags_store.get_release_ids_for_tag(custom_id)
+    assert sm._queue.size() == 0  # custom tag not enqueued

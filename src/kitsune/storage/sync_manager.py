@@ -3,8 +3,13 @@
 import logging
 import time
 
+from gi.repository import GLib
+
 from kitsune.storage import tags_store, watch_positions
-from kitsune.storage.pending_queue import PendingQueue
+from kitsune.storage.pending_queue import (
+    PendingQueue, OP_ADD_FAVORITE, OP_REMOVE_FAVORITE,
+    OP_ADD_COLLECTION, OP_REMOVE_COLLECTION,
+)
 
 log = logging.getLogger('kitsune.sync')
 
@@ -101,6 +106,89 @@ class SyncManager:
     def last_queue_error(self):
         return self._queue.last_error()
 
+    # --- Drain queue (Stage 2) ---
+
+    _OP_DISPATCH = {
+        OP_ADD_FAVORITE: '_dispatch_add_favorite',
+        OP_REMOVE_FAVORITE: '_dispatch_remove_favorite',
+        OP_ADD_COLLECTION: '_dispatch_add_collection',
+        OP_REMOVE_COLLECTION: '_dispatch_remove_collection',
+    }
+
+    def _drain_queue(self):
+        """Process ready ops from the queue. Reentrancy-guarded."""
+        if self._draining:
+            return
+        self._draining = True
+        self._drain_scheduled = False
+        self._drain_next()
+
+    def _drain_next(self):
+        """Dispatch the next ready op, or finish draining."""
+        ready = self._queue.peek_ready(time.time())
+        if not ready:
+            self._draining = False
+            return
+        op = ready[0]
+        dispatch_method = self._OP_DISPATCH.get(op.op)
+        if not dispatch_method:
+            log.warning('Unknown op kind in queue: %s', op.op)
+            self._queue.mark_success(op.id)
+            self._emit_queue_changed()
+            self._drain_next()
+            return
+        self._queue.mark_in_flight(op.id)
+        getattr(self, dispatch_method)(op)
+
+    def _dispatch_add_favorite(self, op):
+        self._client.add_favorites(
+            [op.release_id],
+            lambda data, err: self._on_op_result(op, err))
+
+    def _dispatch_remove_favorite(self, op):
+        self._client.remove_favorites(
+            [op.release_id],
+            lambda data, err: self._on_op_result(op, err))
+
+    def _dispatch_add_collection(self, op):
+        self._client.add_to_collection(
+            op.release_id,
+            op.payload.get('collection_type', ''),
+            lambda data, err: self._on_op_result(op, err))
+
+    def _dispatch_remove_collection(self, op):
+        self._client.remove_from_collection(
+            [op.release_id],
+            lambda data, err: self._on_op_result(op, err))
+
+    def _on_op_result(self, op, error):
+        """Handle the result of a dispatched op.
+
+        Success is detected by `error is None` — not by inspecting `data`,
+        which may legitimately be None for successful drain operations.
+        """
+        if error:
+            self._queue.mark_failure(op.id, str(error))
+            self._emit_sync_error(op.op, op.release_id, str(error))
+            self._emit_queue_changed()
+            self._drain_next()
+        else:
+            self._queue.mark_success(op.id)
+            self._emit_queue_changed()
+            self._drain_next()
+
+    def _schedule_drain(self):
+        """Schedule a drain on the next GLib idle tick.
+
+        Uses a flag to avoid scheduling multiple drains in the same idle
+        cycle. The flag is cleared at the start of _drain_queue, so a new
+        drain can be scheduled while the current one is running.
+        """
+        if self._drain_scheduled:
+            return
+        self._drain_scheduled = True
+        GLib.idle_add(self._drain_queue)
+
     # --- Initial sync with strategy ---
 
     def initial_sync(self, callback=None, strategy=MergeStrategy.MERGE):
@@ -128,28 +216,40 @@ class SyncManager:
     # --- Write-through (real-time sync on user action) ---
 
     def add_to_tag_synced(self, tag_id, release_id):
-        """Add release to tag locally + push to server."""
+        """Add release to tag locally + enqueue server push."""
         tags_store.add_release(tag_id, release_id)
         if not self.is_logged_in():
             return
         if tag_id == 'favorites':
-            self._client.add_favorites([release_id], _noop)
+            self._queue.enqueue(
+                OP_ADD_FAVORITE, release_id, user_id=self._user_id)
         elif tag_id in _TAG_TO_COLLECTION:
-            self._client.add_to_collection(
-                release_id, _TAG_TO_COLLECTION[tag_id], _noop)
+            self._queue.enqueue(
+                OP_ADD_COLLECTION, release_id, user_id=self._user_id,
+                payload={'collection_type': _TAG_TO_COLLECTION[tag_id]})
+        else:
+            return  # custom tag, no server sync
+        self._emit_queue_changed()
+        self._schedule_drain()
 
     def remove_from_tag_synced(self, tag_id, release_id):
-        """Remove release from tag locally + push to server."""
+        """Remove release from tag locally + enqueue server push."""
         tags_store.remove_release(tag_id, release_id)
         if not self.is_logged_in():
             return
         if tag_id == 'favorites':
-            self._client.remove_favorites([release_id], _noop)
+            self._queue.enqueue(
+                OP_REMOVE_FAVORITE, release_id, user_id=self._user_id)
         elif tag_id in _TAG_TO_COLLECTION:
-            self._client.remove_from_collection([release_id], _noop)
+            self._queue.enqueue(
+                OP_REMOVE_COLLECTION, release_id, user_id=self._user_id)
+        else:
+            return
+        self._emit_queue_changed()
+        self._schedule_drain()
 
     def toggle_favorite_synced(self, release_id):
-        """Toggle favorite locally + push to server. Returns new state."""
+        """Toggle favorite locally + enqueue server push. Returns new state."""
         is_fav = tags_store.is_favorited(release_id)
         if is_fav:
             self.remove_from_tag_synced('favorites', release_id)
