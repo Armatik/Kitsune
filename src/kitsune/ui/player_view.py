@@ -97,11 +97,13 @@ class PlayerView(Adw.NavigationPage):
     skip_btn = Gtk.Template.Child()
     close_btn = Gtk.Template.Child()
 
-    def __init__(self, release: Release, episode: Episode, **kwargs):
+    def __init__(self, release: Release, episode: Episode,
+                 sync_manager=None, **kwargs):
         log.debug('init: %s ep %s', release.name.main, episode.ordinal)
         super().__init__(title=release.name.main, **kwargs)
         self._release = release
         self._episode = episode
+        self._sync = sync_manager
         self._player = GstPlayer()
         self._seeking = False
         self._seek_reset_timer = 0
@@ -542,14 +544,31 @@ class PlayerView(Adw.NavigationPage):
     def _save_watch_position(self):
         pos = self._player.get_position()
         dur = self._player.get_duration()
+        ep_id = self._episode.id
         if dur > 0 and pos > 5 and (dur - pos) > 60:
             watch_positions.save_position(
                 self._release.id, self._episode.ordinal, pos,
+                episode_id=ep_id,
             )
+            if self._sync and ep_id:
+                self._sync.enqueue_timecode(
+                    release_id=self._release.id,
+                    episode_id=ep_id,
+                    pos=pos,
+                    is_watched=False,
+                )
         elif dur > 0 and (dur - pos) <= 60:
             watch_positions.mark_completed(
                 self._release.id, self._episode.ordinal,
+                episode_id=ep_id,
             )
+            if self._sync and ep_id:
+                self._sync.enqueue_timecode(
+                    release_id=self._release.id,
+                    episode_id=ep_id,
+                    pos=0,
+                    is_watched=True,
+                )
 
     def _on_state_changed(self, _player, state):
         log.debug('ui state: %s (buffering=%s)', state, self._buffering)
@@ -563,9 +582,18 @@ class PlayerView(Adw.NavigationPage):
                 self._save_watch_position()
 
     def _on_eos(self, _player):
+        ep_id = self._episode.id
         watch_positions.mark_completed(
             self._release.id, self._episode.ordinal,
+            episode_id=ep_id,
         )
+        if self._sync and ep_id:
+            self._sync.enqueue_timecode(
+                release_id=self._release.id,
+                episode_id=ep_id,
+                pos=0,
+                is_watched=True,
+            )
         if self._current_idx >= 0 \
                 and self._current_idx < len(self._episodes) - 1:
             self._switch_episode(self._episodes[self._current_idx + 1])
@@ -784,5 +812,10 @@ class PlayerView(Adw.NavigationPage):
             if self._fade_anim:
                 self._fade_anim.skip()
                 self._fade_anim = None
+            # Stage 5: flush pending timecode ops so the server gets our
+            # latest position even if the user closes the player without
+            # full app shutdown.
+            if self._sync:
+                self._sync.flush_timecodes(self._release.id)
         finally:
             Adw.NavigationPage.do_unmap(self)
