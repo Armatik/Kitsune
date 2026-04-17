@@ -26,8 +26,9 @@ def save(release_id: int, data: dict):
     release_id = int(release_id)
     target = _CACHE_DIR / f'{release_id}.json'
     _atomic_write_json(target, data)
-    from kitsune.storage import search_index
+    from kitsune.storage import search_index, episode_index
     search_index.index_release(release_id, data)
+    episode_index.add_from_release_data(release_id, data)
 
 
 def get_count() -> int:

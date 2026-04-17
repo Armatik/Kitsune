@@ -207,20 +207,25 @@ def _find_key_by_episode_id(episode_id: str, entries: dict) -> str | None:
 
 
 def find_by_episode_id(episode_id: str):
-    """Return (release_id, ordinal) for an episode_id, or None if not found.
+    """Return (release_id, ordinal) for an episode_id, or None.
 
-    Scans the local entries first. Task 4 extends this to also consult
-    `episode_index` for ids that were never watched locally.
+    Lookup order:
+      1. Local watch_positions entries (episodes the user has opened).
+      2. episode_index (populated by release_cache as releases load).
+
+    An episode still returns None only if neither source knows about it.
     """
     entries = _load()
     key = _find_key_by_episode_id(episode_id, entries)
-    if key is None:
-        return None
-    prefix, _, ord_part = key.rpartition('_')
-    try:
-        return (int(prefix), float(ord_part))
-    except ValueError:
-        return None
+    if key is not None:
+        prefix, _, ord_part = key.rpartition('_')
+        try:
+            return (int(prefix), float(ord_part))
+        except ValueError:
+            pass
+    # Fallback to episode_index
+    from kitsune.storage import episode_index
+    return episode_index.lookup(episode_id)
 
 
 def apply_server_entry(episode_id: str, pos: float, is_watched: bool,
@@ -235,8 +240,15 @@ def apply_server_entry(episode_id: str, pos: float, is_watched: bool,
     entries = _load()
     key = _find_key_by_episode_id(episode_id, entries)
     if key is None:
-        return 'unmapped'
-    existing = entries[key]
+        # Fall back to episode_index for an episode that was never watched
+        # locally. If the index knows it, we'll create a new entry.
+        from kitsune.storage import episode_index
+        mapping = episode_index.lookup(episode_id)
+        if mapping is None:
+            return 'unmapped'
+        release_id, ordinal = mapping
+        key = f'{release_id}_{ordinal}'
+    existing = entries.get(key, {})
     local_ts = existing.get('updated_at', 0.0)
     if local_ts >= updated_at:
         return 'skipped'

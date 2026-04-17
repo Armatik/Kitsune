@@ -159,3 +159,22 @@ def test_clear_all_calls_search_index(mock_idx, mock_clear, monkeypatch, tmp_pat
     release_cache.save(1, {'id': 1})
     release_cache.clear_all()
     mock_clear.assert_called_once()
+
+
+def test_save_populates_episode_index(monkeypatch, tmp_path):
+    """release_cache.save should push episode ids into episode_index."""
+    from kitsune.storage import episode_index
+    f = tmp_path / 'episode_index.json'
+    monkeypatch.setattr(episode_index, '_INDEX_FILE', f)
+    monkeypatch.setattr(episode_index, '_cache', None)
+    release_data = {
+        'id': 9275,
+        'episodes': [
+            {'id': 'ep.0', 'ordinal': 1.0},
+            {'id': 'ep.1', 'ordinal': 2.0},
+        ],
+    }
+    from kitsune import release_cache
+    release_cache.save(9275, release_data)
+    assert episode_index.lookup('ep.0') == (9275, 1.0)
+    assert episode_index.lookup('ep.1') == (9275, 2.0)

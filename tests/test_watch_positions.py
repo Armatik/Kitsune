@@ -246,3 +246,33 @@ def test_apply_server_entry_equal_timestamps_skipped(monkeypatch, tmp_path):
     result = wp.apply_server_entry(
         'ep.0', pos=60, is_watched=False, updated_at=local_ts)
     assert result == 'skipped'
+
+
+def test_find_by_episode_id_falls_back_to_episode_index(
+        monkeypatch, tmp_path):
+    """If a server sends an episode_id never watched locally,
+    find_by_episode_id consults episode_index."""
+    from kitsune.storage import episode_index
+    _setup_tmp(monkeypatch, tmp_path)
+    idx_file = tmp_path / 'episode_index.json'
+    monkeypatch.setattr(episode_index, '_INDEX_FILE', idx_file)
+    monkeypatch.setattr(episode_index, '_cache', None)
+    episode_index.add_from_release_data(
+        9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+    assert wp.find_by_episode_id('ep.0') == (9275, 1.0)
+
+
+def test_apply_server_entry_resolves_via_episode_index(monkeypatch, tmp_path):
+    """apply_server_entry uses index when episode is not locally known."""
+    from kitsune.storage import episode_index
+    _setup_tmp(monkeypatch, tmp_path)
+    idx_file = tmp_path / 'episode_index.json'
+    monkeypatch.setattr(episode_index, '_INDEX_FILE', idx_file)
+    monkeypatch.setattr(episode_index, '_cache', None)
+    episode_index.add_from_release_data(
+        9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+    result = wp.apply_server_entry(
+        'ep.0', pos=120, is_watched=False, updated_at=1000.0)
+    assert result == 'applied'
+    assert wp.get_position(9275, 1.0) == 120
+    assert wp.get_episode_id(9275, 1.0) == 'ep.0'

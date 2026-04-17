@@ -15,6 +15,7 @@ test_files = [
   'test_session.py',
   'test_sync_manager.py',
   'test_pending_queue.py',
+  'test_episode_index.py',
 ]
 
 foreach test_file : test_files
