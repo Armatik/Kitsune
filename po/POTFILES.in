@@ -10,9 +10,12 @@ src/kitsune/ui/release_view_related.py
 src/kitsune/ui/search_dialog.py
 src/kitsune/ui/tag_popover.py
 src/kitsune/ui/tags_view.py
+src/kitsune/ui/profile_view.py
+src/kitsune/ui/session_expired_banner.blp
 src/kitsune/ui/widgets/franchise_card.py
 src/kitsune/ui/widgets/genre_card.py
 src/kitsune/ui/filter_dialog.blp
+src/kitsune/ui/profile_view.blp
 src/kitsune/ui/player_view.blp
 src/kitsune/ui/preferences_window.blp
 src/kitsune/ui/release_view.blp
