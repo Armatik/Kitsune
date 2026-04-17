@@ -283,7 +283,10 @@ class AuthDialog(Adw.Dialog):
 
     # -------------------------------------------------------------- Social
 
-    @Gtk.Template.Callback()
+    # NOTE: social buttons in the template are currently `sensitive: false` with no
+    # `clicked =>` handler, so no @Gtk.Template.Callback — Gtk errors out if the
+    # decorator is declared but the template has no matching handler. Keep the
+    # method reachable for when social login is re-enabled.
     def on_social_clicked(self, button):
         provider = None
         for attr_name, prov in _SOCIAL_MAP.items():

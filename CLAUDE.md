@@ -66,7 +66,7 @@ write (star a release, mark an episode as watched, etc.) is enqueued in
 - `src/kitsune/storage/watch_positions.py` — v2 schema `{version, entries: {key: {pos, episode_id, updated_at}}}` with lazy v1 migration. `apply_server_entry` does conflict resolution (local wins on tie).
 - `src/kitsune/storage/episode_index.py` — reverse index `episode_id → (release_id, ordinal)`, populated opportunistically by `release_cache.save`, used as fallback for pulled timecodes.
 - `src/kitsune/auth/session.py` — `SessionManager` has `is_expired()` / `clear_expired()` / `force_logout_cleanup()`; 401 from server flips `_expired=True`. `logout()` wipes all synced local data before the server POST.
-- `src/kitsune/ui/session_expired_banner.py` — custom banner widget (two buttons: "Log in again" + dismiss).
+- Session-expired banner — inline `Adw.Banner` in `window.blp` next to `offline_banner`; revealed by `session-expired`, hidden by `session-restored` / `logged-out`. `button-clicked` → `on_session_banner_login` in `window.py` opens the auth dialog.
 - `src/kitsune/ui/profile_view.py` — pending-ops indicator with retry-now button, subscribed to `queue-changed` / `sync-complete`.
 
 Pub/sub everywhere uses the callback-list pattern (`connect_*` methods storing callables in a list), NOT GObject signals.

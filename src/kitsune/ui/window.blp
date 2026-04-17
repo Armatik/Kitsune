@@ -11,9 +11,6 @@ template $KitsuneWindow: Adw.ApplicationWindow {
     child: Gtk.Box {
       orientation: vertical;
 
-      $KitsuneSessionExpiredBanner session_expired_banner {
-      }
-
     Adw.NavigationView nav_view {
       vexpand: true;
 
@@ -241,6 +238,13 @@ template $KitsuneWindow: Adw.ApplicationWindow {
         // sidebar set programmatically
       };
     }
+    }
+
+    Adw.Banner session_expired_banner {
+      title: _("Your session has expired. Log in again to resume sync.");
+      button-label: _("Log in again");
+      revealed: false;
+      button-clicked => $on_session_banner_login();
     }
 
     Adw.Banner offline_banner {

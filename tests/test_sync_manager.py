@@ -3,6 +3,8 @@
 import sys, os, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+import pytest
+
 from kitsune.storage.sync_manager import SyncManager, MergeStrategy
 from kitsune.storage import tags_store
 
@@ -13,6 +15,15 @@ from kitsune.storage.pending_queue import (
     PendingQueue, OP_ADD_FAVORITE, OP_REMOVE_FAVORITE,
     OP_ADD_COLLECTION, OP_REMOVE_COLLECTION,
 )
+
+
+@pytest.fixture(autouse=True)
+def _isolate_pending_queue(mock_pending_queue):
+    """Every SyncManager(client) instance in this module loads PendingQueue.
+    Without isolation the dev user's real ~/.local/share/kitsune/pending_ops.json
+    leaks in and skews assertions like `sm.queue_size() == 0`.
+    """
+    pass
 
 
 class FakeSyncClient:
@@ -860,8 +871,33 @@ def test_drain_batches_timecode_ops_into_single_call(mock_tags, tmp_path):
     assert len(save_calls) == 1
     payloads = save_calls[0][1]
     assert len(payloads) == 3
+    # Wire format uses `release_episode_id` (server POST schema). The
+    # internal queue payload still uses `episode_id`.
+    for p in payloads:
+        assert 'release_episode_id' in p
+        assert 'episode_id' not in p
     client.flush_all()
     assert sm._queue.size() == 0
+
+
+def test_timecode_dispatch_translates_episode_id_to_release_episode_id(mock_tags, tmp_path):
+    """Server POST schema requires `release_episode_id`; we store `episode_id`
+    internally and translate at the wire boundary."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep-uuid-123',
+        pos=120.5, is_watched=False)
+    # Internal payload uses episode_id
+    assert sm._queue._ops[0].payload['episode_id'] == 'ep-uuid-123'
+    sm._drain_queue()
+    save_calls = [c for c in client.call_log if c[0] == 'save_timecodes']
+    assert len(save_calls) == 1
+    payload = save_calls[0][1][0]
+    assert payload == {
+        'release_episode_id': 'ep-uuid-123',
+        'time': 120.5,
+        'is_watched': False,
+    }
 
 
 def test_drain_batch_cap_50_per_call(mock_tags, tmp_path):

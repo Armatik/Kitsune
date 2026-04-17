@@ -50,7 +50,9 @@ def _parse_timecode_item(item):
         updated_at = item[3] if len(item) >= 4 and item[3] is not None else time.time()
         return (ep_id, float(time_val), bool(is_watched), float(updated_at))
     if isinstance(item, dict):
-        ep_id = item.get('episode_id') or item.get('id')
+        ep_id = (item.get('episode_id')
+                 or item.get('release_episode_id')
+                 or item.get('id'))
         if not ep_id:
             return None
         raw_updated_at = item.get('updated_at')
@@ -191,22 +193,28 @@ class SyncManager:
         self._draining = False
 
     def _dispatch_add_favorite(self, op):
+        log.debug('dispatch add_favorite rid=%d id=%s', op.release_id, op.id)
         self._client.add_favorites(
             [op.release_id],
             lambda data, err: self._on_op_result(op, err))
 
     def _dispatch_remove_favorite(self, op):
+        log.debug('dispatch remove_favorite rid=%d id=%s', op.release_id, op.id)
         self._client.remove_favorites(
             [op.release_id],
             lambda data, err: self._on_op_result(op, err))
 
     def _dispatch_add_collection(self, op):
+        ctype = op.payload.get('collection_type', '')
+        log.debug('dispatch add_collection rid=%d type=%s id=%s',
+                  op.release_id, ctype, op.id)
         self._client.add_to_collection(
-            op.release_id,
-            op.payload.get('collection_type', ''),
+            op.release_id, ctype,
             lambda data, err: self._on_op_result(op, err))
 
     def _dispatch_remove_collection(self, op):
+        log.debug('dispatch remove_collection rid=%d id=%s',
+                  op.release_id, op.id)
         self._client.remove_from_collection(
             [op.release_id],
             lambda data, err: self._on_op_result(op, err))
@@ -218,10 +226,23 @@ class SyncManager:
         mark_success'd. On error, all are mark_failure'd with the same
         error — the next retry tick may re-batch them (possibly with
         different coalescing neighbours).
+
+        Payload translation: internally we key episodes by `episode_id`
+        (matches the GET response tuple slot and `Timecode` dataclass),
+        but the POST schema requires `release_episode_id`. We remap at
+        the wire boundary so existing on-disk queued ops keep working.
         """
+        log.debug('dispatch timecode batch: %d ops', len(ops))
         for op in ops:
             self._queue.mark_in_flight(op.id)
-        timecodes = [op.payload for op in ops]
+        timecodes = [
+            {
+                'release_episode_id': op.payload.get('episode_id'),
+                'time': op.payload.get('time'),
+                'is_watched': op.payload.get('is_watched'),
+            }
+            for op in ops
+        ]
         op_ids = [op.id for op in ops]
         self._client.save_timecodes(
             timecodes,
@@ -342,6 +363,8 @@ class SyncManager:
         those complete naturally (and fail with 401) keeps the code
         simple and the next retry sees clean state.
         """
+        log.debug('pause_for_expired_session: stopping retry timer '
+                  '(%d ops frozen)', self._queue.size())
         self._stop_retry_timer()
 
     def resume_after_expired_session(self):
@@ -358,6 +381,8 @@ class SyncManager:
         between the enqueue and resume, the flag may still be True and
         `_schedule_drain` would early-return. The reset closes that gap.
         """
+        log.debug('resume_after_expired_session: %d ops to flush',
+                  self._queue.size())
         self._drain_scheduled = False
         self._schedule_drain()
 
@@ -368,6 +393,8 @@ class SyncManager:
         unsent ops are discarded because the user accepted that by
         clicking Log out.
         """
+        log.debug('clear_queue_on_logout: discarding %d ops',
+                  self._queue.size())
         self._queue.clear()
         self._stop_retry_timer()
         self._emit_queue_changed()

@@ -36,6 +36,7 @@ from kitsune import release_cache
 from kitsune.storage import search_index
 from kitsune.storage import watch_positions
 from kitsune.storage import episode_index
+from kitsune.storage import pending_queue
 
 
 class StubClient:
@@ -167,6 +168,20 @@ def mock_episode_index(tmp_path):
     yield f
     episode_index._INDEX_FILE = original_file
     episode_index._cache = original_cache
+
+
+@pytest.fixture
+def mock_pending_queue(tmp_path):
+    """Redirect pending_queue to a temp file.
+
+    Without this, SyncManager(client) in tests loads the dev user's real
+    ~/.local/share/kitsune/pending_ops.json — any ops there leak into tests.
+    """
+    f = tmp_path / 'pending_ops.json'
+    original = pending_queue._PENDING_OPS_FILE
+    pending_queue._PENDING_OPS_FILE = f
+    yield f
+    pending_queue._PENDING_OPS_FILE = original
 
 
 @pytest.fixture

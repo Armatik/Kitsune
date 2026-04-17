@@ -5,7 +5,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, Gtk, Gio
+from gi.repository import Adw, Gdk, GLib, Gtk, Gio
 
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
@@ -16,10 +16,6 @@ from kitsune.storage.sync_manager import SyncManager
 from kitsune.ui import register_css
 from kitsune.ui.auth_dialog import AuthDialog
 from kitsune.ui.catalog_view import CatalogView
-# GType registration via @Gtk.Template — referenced from window.blp
-# as $KitsuneSessionExpiredBanner; the import itself isn't used in
-# Python code below, so F401 is suppressed.
-from kitsune.ui.session_expired_banner import SessionExpiredBanner  # noqa: F401
 
 _T = ADW_TRANSITION
 _NAV_CSS = (
@@ -98,11 +94,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
             if self._session.is_logged_in():
                 self._session.validate_session(self._on_session_validated)
 
-        # Session-expired banner wiring
-        self.session_expired_banner.on_login_requested = \
-            self._on_banner_login_requested
-        self.session_expired_banner.on_dismissed = \
-            self._on_banner_dismissed
+        # Session-expired banner wiring — button-clicked handler is in
+        # window.blp ($on_session_banner_login); reveal is toggled by
+        # session callbacks below.
         if self._session:
             self._session.connect_session_expired(
                 self._on_session_expired_show_banner)
@@ -1092,29 +1086,20 @@ class KitsuneWindow(Adw.ApplicationWindow):
             player.cleanup()
 
     def _on_session_expired_show_banner(self):
-        """Reveal the session-expired banner unless the user dismissed it."""
-        if not self.session_expired_banner.dismissed_this_session:
-            self.session_expired_banner.set_reveal_child(True)
+        self.session_expired_banner.set_revealed(True)
 
     def _on_session_restored_hide_banner(self):
-        """Hide the banner on successful re-login and allow future reveals."""
-        self.session_expired_banner.set_reveal_child(False)
-        self.session_expired_banner.reset_dismissal()
+        self.session_expired_banner.set_revealed(False)
 
     def _on_session_logged_out_hide_banner(self):
-        """Hide the banner on logout and reset dismissal flag."""
-        self.session_expired_banner.set_reveal_child(False)
-        self.session_expired_banner.reset_dismissal()
+        self.session_expired_banner.set_revealed(False)
 
-    def _on_banner_login_requested(self, _banner):
-        """User clicked 'Log in again' — open auth_dialog."""
+    @Gtk.Template.Callback()
+    def on_session_banner_login(self, _banner):
+        """button-clicked handler for session_expired_banner (see window.blp)."""
         from kitsune.ui.auth_dialog import AuthDialog
         dialog = AuthDialog(self._session, sync_manager=self._sync)
         dialog.present(self)
-
-    def _on_banner_dismissed(self, _banner):
-        """User clicked × — banner already hid itself; no further action."""
-        pass
 
     def _play_episode(self, release, episode):
         from kitsune.ui.player_view import PlayerView

@@ -302,6 +302,36 @@ def test_expired_to_restored_chain_fires_session_restored(client_stub):
     assert sm.is_expired() is False
 
 
+def test_validate_session_failure_enters_expired_not_logged_out(client_stub):
+    """On startup, if the saved token is rejected (401 / 403), we must
+    NOT wipe it — that would trigger connect_logged_out and drop the
+    pending sync queue. Instead enter the expired state so the banner
+    shows and the queue is preserved for the next re-login."""
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    sm._token = 'stale-token'
+    logged_out_events = []
+    expired_events = []
+    sm.connect_logged_out(lambda: logged_out_events.append(True))
+    sm.connect_session_expired(lambda: expired_events.append(True))
+
+    # Fake client's get_profile returns an error
+    def fake_get_profile(callback=None):
+        if callback:
+            callback(None, 'HTTP forbidden')
+    client_stub.get_profile = fake_get_profile
+
+    results = []
+    sm.validate_session(lambda ok, err: results.append((ok, err)))
+
+    assert results == [(False, 'HTTP forbidden')]
+    assert expired_events == [True]
+    assert logged_out_events == []  # queue must NOT be dropped
+    assert sm.is_expired() is True
+    assert sm.is_logged_in() is True  # token still there for re-login path
+    assert sm.get_token() == 'stale-token'
+
+
 def test_logged_out_during_401_flow_leaves_clean_state(client_stub):
     """Startup 401 scenario: validate_session fails, _clear_token fires
     logged_out. Expired flag must be False after logged_out so any

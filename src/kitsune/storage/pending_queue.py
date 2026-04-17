@@ -73,6 +73,7 @@ class PendingQueue:
             raw = json.loads(self._path.read_text())
         except (FileNotFoundError, json.JSONDecodeError):
             self._ops = []
+            log.debug('load: no prior queue at %s', self._path)
             return
         if not isinstance(raw, dict) or raw.get('version') != VERSION:
             log.warning(
@@ -90,6 +91,7 @@ class PendingQueue:
                 self._ops.append(Op(**op_dict))
             except TypeError:
                 log.warning('Dropping malformed pending op: %s', op_dict)
+        log.debug('load: restored %d ops from %s', len(self._ops), self._path)
 
     def _save(self):
         data = {
@@ -135,6 +137,8 @@ class PendingQueue:
         if payload is None:
             payload = {}
         if self._try_coalesce(op_kind, release_id, payload):
+            log.debug('enqueue %s rid=%d coalesced (size=%d)',
+                      op_kind, release_id, len(self._ops))
             return None
         new_op = Op(
             id=str(uuid.uuid4()),
@@ -146,6 +150,8 @@ class PendingQueue:
         )
         self._ops.append(new_op)
         self._save()
+        log.debug('enqueue %s rid=%d id=%s (size=%d)',
+                  op_kind, release_id, new_op.id, len(self._ops))
         return new_op.id
 
     _OPPOSITES = {
@@ -245,6 +251,7 @@ class PendingQueue:
         self._in_flight.discard(op_id)
         if len(self._ops) != before:
             self._save()
+            log.debug('mark_success id=%s (size=%d)', op_id, len(self._ops))
 
     def mark_failure(self, op_id: str, error: str):
         """Increment attempt_count, schedule next retry per backoff table, persist.
@@ -257,10 +264,14 @@ class PendingQueue:
                 continue
             op.attempt_count += 1
             idx = min(op.attempt_count - 1, len(BACKOFF_STEPS) - 1)
-            op.next_retry_at = time.time() + BACKOFF_STEPS[idx]
+            backoff = BACKOFF_STEPS[idx]
+            op.next_retry_at = time.time() + backoff
             op.last_error = str(error)[:MAX_ERROR_LEN]
             self._in_flight.discard(op_id)
             self._save()
+            log.debug(
+                'mark_failure id=%s attempt=%d backoff=%ds error=%s',
+                op_id, op.attempt_count, backoff, op.last_error)
             return
 
     def release_ids(self) -> set[int]:
@@ -284,9 +295,11 @@ class PendingQueue:
 
     def clear(self):
         """Remove all ops and in-flight markers, persist."""
+        cleared = len(self._ops)
         self._ops = []
         self._in_flight = set()
         self._save()
+        log.debug('clear: dropped %d ops', cleared)
 
     def clear_for_user(self, user_id: int) -> int:
         """Drop every op belonging to a given user. Returns count removed."""
@@ -295,6 +308,8 @@ class PendingQueue:
         removed = before - len(self._ops)
         if removed:
             self._save()
+        log.debug('clear_for_user user_id=%d: removed %d ops (size=%d)',
+                  user_id, removed, len(self._ops))
         return removed
 
     def reset_all_retries(self):

@@ -17,6 +17,7 @@ test_files = [
   'test_pending_queue.py',
   'test_episode_index.py',
   'test_sync_flow.py',
+  'test_api_client.py',
 ]
 
 foreach test_file : test_files
@@ -39,7 +40,6 @@ widget_test_files = [
   'test_tag_card_widget.py',
   'test_release_view_widget.py',
   'test_player_view_widget.py',
-  'test_session_expired_banner_widget.py',
   'test_profile_view_widget.py',
 ]
 

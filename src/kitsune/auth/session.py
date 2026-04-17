@@ -1,9 +1,12 @@
 # src/kitsune/auth/session.py
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import logging
 import uuid
 
 from kitsune.auth import token_store
+
+log = logging.getLogger('kitsune.session')
 
 
 class SessionManager:
@@ -17,6 +20,9 @@ class SessionManager:
         self._on_logged_out = []
         self._on_session_expired = []
         self._on_session_restored = []
+
+        log.debug('init: token_loaded=%s device_id=%s',
+                  bool(self._token), self._device_id)
 
         client.set_token_getter(self.get_token)
         if hasattr(client, 'set_token_expired_handler'):
@@ -63,7 +69,9 @@ class SessionManager:
         emit session-expired once.
         """
         if self._expired:
+            log.debug('token_expired (already expired, ignored)')
             return
+        log.debug('token_expired → marking expired, emitting session-expired')
         self._expired = True
         self._emit_session_expired()
 
@@ -72,16 +80,19 @@ class SessionManager:
         if the session was never expired."""
         if not self._expired:
             return
+        log.debug('clear_expired → emitting session-restored')
         self._expired = False
         self._emit_session_restored()
 
     def _set_token(self, token):
+        log.debug('set_token: new_token=%s', bool(token))
         self._token = token
         token_store.save_token(token)
         for cb in self._on_logged_in:
             cb()
 
     def _clear_token(self):
+        log.debug('clear_token: had_token=%s', bool(self._token))
         self._token = None
         self._user = None
         # Logout is terminal: wipe expired flag so a reused SessionManager
@@ -93,8 +104,10 @@ class SessionManager:
             cb()
 
     def login_with_credentials(self, login, password, callback=None):
+        log.debug('login_with_credentials: login=%s', login)
         def on_result(token, error):
             if error or not token:
+                log.debug('login_with_credentials failed: %s', error)
                 if callback:
                     callback(False, error)
                 return
@@ -104,8 +117,10 @@ class SessionManager:
         self._client.login(login, password, on_result)
 
     def login_with_otp(self, code, device_id, callback=None):
+        log.debug('login_with_otp: device_id=%s', device_id)
         def on_result(token, error):
             if error or not token:
+                log.debug('login_with_otp failed: %s', error)
                 if callback:
                     callback(False, error)
                 return
@@ -139,9 +154,11 @@ class SessionManager:
         immediately even if the server POST fails or 401s with an
         already-invalid token.
         """
+        log.debug('logout requested — wiping synced local data')
         self.force_logout_cleanup()
 
         def on_result(data, error):
+            log.debug('server logout: error=%s', error)
             self._clear_token()
             if callback:
                 callback(True, None)
@@ -161,25 +178,41 @@ class SessionManager:
         # top would create a cycle at startup.
         from kitsune.storage import tags_store, watch_positions, episode_index
         from kitsune.storage.sync_manager import SYNCED_TAGS
+        cleared = 0
         # Clear releases in synced built-in tags (but keep the tags themselves)
         for tag_id in SYNCED_TAGS:
-            for rid in list(tags_store.get_release_ids_for_tag(tag_id)):
+            ids = list(tags_store.get_release_ids_for_tag(tag_id))
+            for rid in ids:
                 tags_store.remove_release(tag_id, rid)
+            cleared += len(ids)
         watch_positions.clear_all()
         episode_index.clear()
+        log.debug('force_logout_cleanup: cleared %d synced-tag entries + '
+                  'watch_positions + episode_index', cleared)
 
     def validate_session(self, callback=None):
         if not self._token:
+            log.debug('validate_session: no token, skipping')
             if callback:
                 callback(False, None)
             return
+        log.debug('validate_session: fetching profile')
         def on_profile(user, error):
             if error:
-                self._clear_token()
+                # The saved token was rejected (401 / 403 / etc.). Don't
+                # wipe it — that would take the pending sync queue with it
+                # via connect_logged_out. Instead enter the expired flow:
+                # banner shown, queue paused, re-login as the same user
+                # flushes the queue, re-login as a different user triggers
+                # force_logout_cleanup + clear_for_user in the UI.
+                log.debug('validate_session failed: %s → entering expired state',
+                          error)
+                self._on_token_expired()
                 if callback:
                     callback(False, error)
                 return
             self._user = user
+            log.debug('validate_session ok: user_id=%s', user.id if user else None)
             if callback:
                 callback(True, None)
         self._client.get_profile(on_profile)

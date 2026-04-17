@@ -18,7 +18,6 @@ ui_blueprints = [
   'player_view',
   'auth_dialog',
   'profile_view',
-  'session_expired_banner',
 ]
 
 widget_blueprints = [
