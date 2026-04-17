@@ -815,3 +815,232 @@ def test_snapshot_stable_even_if_drain_succeeds_mid_sync(mock_tags, tmp_path):
 
     # Local state survived the sync — snapshot protection held.
     assert 9275 in tags_store.get_release_ids_for_tag('favorites')
+
+
+# --- Stage 5: timecode sync ---
+
+def test_enqueue_timecode_creates_op(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    from kitsune.storage.pending_queue import OP_SAVE_TIMECODE
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0',
+        pos=120.5, is_watched=False)
+    assert sm._queue.size() == 1
+    op = sm._queue._ops[0]
+    assert op.op == OP_SAVE_TIMECODE
+    assert op.release_id == 9275
+    assert op.payload == {
+        'episode_id': 'ep.0',
+        'time': 120.5,
+        'is_watched': False,
+    }
+
+
+def test_enqueue_timecode_coalesces_rapid_saves_same_episode(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0',
+        pos=30.0, is_watched=False)
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0',
+        pos=120.5, is_watched=False)
+    assert sm._queue.size() == 1
+    assert sm._queue._ops[0].payload['time'] == 120.5
+
+
+def test_drain_batches_timecode_ops_into_single_call(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    for i in range(3):
+        sm.enqueue_timecode(
+            release_id=9275,
+            episode_id=f'ep.{i}', pos=60.0 * (i + 1),
+            is_watched=False)
+    sm._drain_queue()
+    save_calls = [c for c in client.call_log if c[0] == 'save_timecodes']
+    assert len(save_calls) == 1
+    payloads = save_calls[0][1]
+    assert len(payloads) == 3
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_drain_batch_cap_50_per_call(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    for i in range(75):
+        sm.enqueue_timecode(
+            release_id=9275,
+            episode_id=f'ep.{i}', pos=60.0,
+            is_watched=False)
+    sm._drain_queue()
+    save_calls = [c for c in client.call_log if c[0] == 'save_timecodes']
+    assert len(save_calls) == 1
+    assert len(save_calls[0][1]) == 50
+    client.flush_all()
+    sm._drain_queue()
+    save_calls = [c for c in client.call_log if c[0] == 'save_timecodes']
+    assert len(save_calls) == 2
+    assert len(save_calls[1][1]) == 25
+
+
+def test_drain_timecode_batch_success_marks_all_ops_success(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    for i in range(3):
+        sm.enqueue_timecode(
+            release_id=9275,
+            episode_id=f'ep.{i}', pos=60.0, is_watched=False)
+    sm._drain_queue()
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_drain_timecode_batch_failure_marks_all_ops_failure(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    for i in range(3):
+        sm.enqueue_timecode(
+            release_id=9275,
+            episode_id=f'ep.{i}', pos=60.0, is_watched=False)
+    errors = []
+    sm.connect_sync_error(lambda op, rid, err: errors.append((op, rid, err)))
+    sm._drain_queue()
+    client.fail_next('server 500')
+    assert sm._queue.size() == 3
+    assert len(errors) == 3
+    assert all(e[2] == 'server 500' for e in errors)
+    assert all(op.attempt_count == 1 for op in sm._queue._ops)
+
+
+def test_drain_mixed_ops_processes_non_timecodes_first(mock_tags, tmp_path):
+    from kitsune.storage.pending_queue import OP_ADD_FAVORITE
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 111, user_id=42)
+    sm.enqueue_timecode(
+        release_id=222, episode_id='ep.0',
+        pos=60.0, is_watched=False)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 333, user_id=42)
+    sm._drain_queue()
+    assert client.call_log[0][0] == 'add_favorites'
+    client.flush_next()
+    assert client.call_log[1][0] == 'add_favorites'
+    client.flush_next()
+    assert client.call_log[2][0] == 'save_timecodes'
+    client.flush_next()
+    assert sm._queue.size() == 0
+
+
+def test_pull_timecodes_applies_via_apply_server_entry(mock_tags, tmp_path):
+    from kitsune.storage import watch_positions, episode_index
+    sm, client = _make_sm_with_fake(tmp_path)
+    wp_file = tmp_path / 'wp.json'
+    idx_file = tmp_path / 'idx.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file), \
+         um.patch.object(episode_index, '_INDEX_FILE', idx_file), \
+         um.patch.object(episode_index, '_cache', None):
+        episode_index.add_from_release_data(
+            9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+        client.get_timecodes_response = [
+            {'episode_id': 'ep.0', 'time': 120.5,
+             'is_watched': False, 'updated_at': 5000.0},
+        ]
+        done = [False]
+        sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+        client.flush_all()
+        assert done[0] is True
+        assert watch_positions.get_position(9275, 1.0) == 120.5
+        assert watch_positions.get_episode_id(9275, 1.0) == 'ep.0'
+
+
+def test_pull_timecodes_handles_list_format(mock_tags, tmp_path):
+    from kitsune.storage import watch_positions, episode_index
+    sm, client = _make_sm_with_fake(tmp_path)
+    wp_file = tmp_path / 'wp.json'
+    idx_file = tmp_path / 'idx.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file), \
+         um.patch.object(episode_index, '_INDEX_FILE', idx_file), \
+         um.patch.object(episode_index, '_cache', None):
+        episode_index.add_from_release_data(
+            9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+        client.get_timecodes_response = [['ep.0', 60.0, False]]
+        done = [False]
+        sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+        client.flush_all()
+        assert done[0] is True
+        assert watch_positions.get_position(9275, 1.0) == 60.0
+
+
+def test_pull_timecodes_skips_unmapped(mock_tags, tmp_path):
+    from kitsune.storage import watch_positions, episode_index
+    sm, client = _make_sm_with_fake(tmp_path)
+    wp_file = tmp_path / 'wp.json'
+    idx_file = tmp_path / 'idx.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file), \
+         um.patch.object(episode_index, '_INDEX_FILE', idx_file), \
+         um.patch.object(episode_index, '_cache', None):
+        client.get_timecodes_response = [
+            {'episode_id': 'unknown.0', 'time': 60.0,
+             'is_watched': False, 'updated_at': 1000.0},
+        ]
+        done = [False]
+        sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+        client.flush_all()
+        assert done[0] is True
+        assert watch_positions.get_count() == 0
+
+
+def test_pull_timecodes_handles_empty_response(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    client.get_timecodes_response = []
+    done = [False]
+    sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+    client.flush_all()
+    assert done[0] is True
+
+
+def test_pull_timecodes_handles_error(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    done = [False]
+    sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+    client.fail_next('server error')
+    assert done[0] is True
+
+
+def test_flush_timecodes_enqueues_pushable_entries(mock_tags, tmp_path):
+    from kitsune.storage import watch_positions
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.set_user_id(42)
+    wp_file = tmp_path / 'wp.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file):
+        watch_positions.save_position(9275, 1.0, 60.0, episode_id='ep.0')
+        watch_positions.save_position(9275, 2.0, 90.0, episode_id='ep.1')
+        watch_positions.save_position(9275, 3.0, 30.0)
+        sm._queue.clear()
+        sm.flush_timecodes()
+        assert sm._queue.size() == 2
+
+
+def test_flush_timecodes_noop_when_not_logged_in(mock_tags, tmp_path):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._client._get_token = lambda: None
+    sm.flush_timecodes()
+    assert sm._queue.size() == 0
+    assert client.call_log == []
+
+
+def test_flush_timecodes_coalesces_with_existing_ops(mock_tags, tmp_path):
+    from kitsune.storage import watch_positions
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.set_user_id(42)
+    wp_file = tmp_path / 'wp.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file):
+        watch_positions.save_position(9275, 1.0, 60.0, episode_id='ep.0')
+        sm._queue.clear()
+        sm.enqueue_timecode(
+            release_id=9275, episode_id='ep.0',
+            pos=30.0, is_watched=False)
+        sm.flush_timecodes()
+        assert sm._queue.size() == 1
+        assert sm._queue._ops[0].payload['time'] == 60.0

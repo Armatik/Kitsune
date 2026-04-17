@@ -80,7 +80,8 @@ class FakeApiClient:
     def get_timecodes(self, since=None, callback=None):
         self.call_log.append(('get_timecodes',))
         if callback:
-            self._pending.append((callback, []))
+            default = getattr(self, 'get_timecodes_response', [])
+            self._pending.append((callback, default))
 
     # --- Network event stubs ---
 

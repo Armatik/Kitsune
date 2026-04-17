@@ -8,7 +8,7 @@ from gi.repository import GLib
 from kitsune.storage import tags_store, watch_positions
 from kitsune.storage.pending_queue import (
     PendingQueue, OP_ADD_FAVORITE, OP_REMOVE_FAVORITE,
-    OP_ADD_COLLECTION, OP_REMOVE_COLLECTION,
+    OP_ADD_COLLECTION, OP_REMOVE_COLLECTION, OP_SAVE_TIMECODE,
 )
 
 log = logging.getLogger('kitsune.sync')
@@ -35,6 +35,25 @@ class MergeStrategy:
 
 def _noop(data, error):
     pass
+
+
+def _parse_timecode_item(item):
+    """Parse a server timecode entry. Returns (episode_id, time, is_watched, updated_at) or None."""
+    if isinstance(item, (list, tuple)) and len(item) >= 3:
+        ep_id, time_val, is_watched = item[0], item[1], item[2]
+        updated_at = item[3] if len(item) >= 4 else time.time()
+        return (ep_id, float(time_val), bool(is_watched), float(updated_at))
+    if isinstance(item, dict):
+        ep_id = item.get('episode_id') or item.get('id')
+        if not ep_id:
+            return None
+        return (
+            ep_id,
+            float(item.get('time', 0)),
+            bool(item.get('is_watched', False)),
+            float(item.get('updated_at') or time.time()),
+        )
+    return None
 
 
 class SyncManager:
@@ -127,29 +146,41 @@ class SyncManager:
     def _drain_next(self):
         """Dispatch the next ready op, or finish draining.
 
+        Two-phase dispatch:
+          1. Non-timecode ops: one at a time through the callback chain.
+          2. Timecode ops: batched into one save_timecodes call (cap 50).
+
         Unknown op kinds (added by a newer version and loaded from disk on
         an older binary) are skipped but NOT removed — the op stays in the
         queue until a version that understands it runs and drains. This
         prevents silent data loss during downgrades.
         """
         ready = self._queue.peek_ready(time.time())
-        # Find the first op with a known kind; skip unknowns
-        op = None
-        dispatch_method = None
+        # Prefer non-timecode ops first
+        non_tc_op = None
+        non_tc_method = None
         for candidate in ready:
+            if candidate.op == OP_SAVE_TIMECODE:
+                continue
             method = self._OP_DISPATCH.get(candidate.op)
             if method:
-                op = candidate
-                dispatch_method = method
+                non_tc_op = candidate
+                non_tc_method = method
                 break
             log.debug(
                 'Skipping unknown op kind %r in queue (op id %s) — '
                 'leaving in place for a future version', candidate.op, candidate.id)
-        if op is None:
-            self._draining = False
+        if non_tc_op is not None:
+            self._queue.mark_in_flight(non_tc_op.id)
+            getattr(self, non_tc_method)(non_tc_op)
             return
-        self._queue.mark_in_flight(op.id)
-        getattr(self, dispatch_method)(op)
+        # No non-timecode ops ready — batch timecodes
+        timecode_ops = [op for op in ready if op.op == OP_SAVE_TIMECODE][:50]
+        if timecode_ops:
+            self._dispatch_timecode_batch(timecode_ops)
+            return
+        # Nothing to dispatch (everything left is unknown op kinds)
+        self._draining = False
 
     def _dispatch_add_favorite(self, op):
         self._client.add_favorites(
@@ -171,6 +202,45 @@ class SyncManager:
         self._client.remove_from_collection(
             [op.release_id],
             lambda data, err: self._on_op_result(op, err))
+
+    def _dispatch_timecode_batch(self, ops):
+        """Send a batch of save_timecode ops in one HTTP call.
+
+        All ops are marked in-flight together. On 2xx response, all are
+        mark_success'd. On error, all are mark_failure'd with the same
+        error — the next retry tick may re-batch them (possibly with
+        different coalescing neighbours).
+        """
+        for op in ops:
+            self._queue.mark_in_flight(op.id)
+        timecodes = [op.payload for op in ops]
+        op_ids = [op.id for op in ops]
+        self._client.save_timecodes(
+            timecodes,
+            lambda data, err: self._on_timecode_batch_result(ops, op_ids, err))
+
+    def _on_timecode_batch_result(self, ops, op_ids, error):
+        """Handle the result of a batched save_timecodes call.
+
+        Uses the same exception-safety guard as `_on_op_result` — if a
+        subscriber raises or mark_success/failure raises, we reset
+        `_draining` and re-schedule so the pipeline does not deadlock.
+        """
+        try:
+            if error:
+                for op in ops:
+                    self._queue.mark_failure(op.id, str(error))
+                    self._emit_sync_error(op.op, op.release_id, str(error))
+                self._emit_queue_changed()
+            else:
+                for op_id in op_ids:
+                    self._queue.mark_success(op_id)
+                self._emit_queue_changed()
+            self._drain_next()
+        except Exception:
+            log.exception('Timecode batch result handler raised; resetting drain state')
+            self._draining = False
+            self._schedule_drain()
 
     def _on_op_result(self, op, error):
         """Handle the result of a dispatched op.
@@ -338,64 +408,124 @@ class SyncManager:
             self.add_to_tag_synced('favorites', release_id)
         return not is_fav
 
+    def enqueue_timecode(self, release_id: int, episode_id: str,
+                        pos: float, is_watched: bool):
+        """Enqueue a timecode save for the server.
+
+        Stage 1 coalescing ensures rapid saves for the same
+        (release_id, episode_id) update an existing op in place rather
+        than stacking duplicates. Called by player_view on every local
+        save_position / mark_completed.
+
+        The ordinal is intentionally NOT in this signature — the server
+        identifies episodes by episode_id alone, and coalescing in
+        PendingQueue uses (release_id, episode_id) as the key. The local
+        save (via watch_positions.save_position) is where ordinal is
+        needed, and player_view calls that separately.
+        """
+        if not self.is_logged_in():
+            return
+        self._queue.enqueue(
+            OP_SAVE_TIMECODE, release_id, user_id=self._user_id,
+            payload={
+                'episode_id': episode_id,
+                'time': pos,
+                'is_watched': is_watched,
+            })
+        self._emit_queue_changed()
+        self._schedule_drain()
+
     # --- Watch positions ---
 
     def flush_timecodes(self, release_id=None, callback=None):
-        """Push local watch positions to server.
+        """Enqueue every pushable local entry and drain.
 
-        Called on player exit and app close.
-        If release_id given, only flush that release.
+        Called on player exit and app close (window.py:100). Since
+        Stage 2, the queue is the single path to the server — this method
+        used to build its own payload but now delegates to enqueue +
+        drain. Coalescing ensures no duplicate ops for the same
+        (release_id, episode_id).
+
+        If release_id is given, only entries for that release are flushed.
+
+        The callback argument is accepted for backward compat with the
+        old synchronous signature but is invoked immediately — the actual
+        server write happens asynchronously via the queue.
         """
         if not self.is_logged_in():
             if callback:
                 callback(True, None)
             return
-
-        if release_id:
-            positions = watch_positions.get_all_for_release(release_id)
-        else:
-            positions = watch_positions._load()
-
-        timecodes = []
-        for key, pos in positions.items():
-            if release_id:
-                # key is ordinal (float), pos is position
-                timecodes.append({
-                    'time': pos if pos != -1 else 0,
-                    'is_watched': pos == -1,
+        for rid, ordinal, entry in watch_positions.iter_pushable():
+            if release_id is not None and rid != release_id:
+                continue
+            pos = entry['pos']
+            is_watched = (pos == -1)
+            self._queue.enqueue(
+                OP_SAVE_TIMECODE, rid, user_id=self._user_id,
+                payload={
+                    'episode_id': entry['episode_id'],
+                    'time': pos if not is_watched else 0,
+                    'is_watched': is_watched,
                 })
-            else:
-                # key is 'releaseid_ordinal', pos is position
-                timecodes.append({
-                    'time': pos if pos != -1 else 0,
-                    'is_watched': pos == -1,
-                })
-
-        if timecodes:
-            log.debug('Flushing %d timecodes to server', len(timecodes))
-            self._client.save_timecodes(timecodes, callback or _noop)
-        elif callback:
+        self._emit_queue_changed()
+        self._schedule_drain()
+        if callback:
             callback(True, None)
 
+    def _pull_and_save_timecodes(self, then):
+        """Pull watch positions from server and apply them locally.
+
+        Server may return either list-of-lists (`[episode_id, time,
+        is_watched]`) or list-of-dicts (`{episode_id, time, is_watched,
+        updated_at}`). Each entry is resolved via
+        `watch_positions.apply_server_entry` which handles the episode_id
+        → (release_id, ordinal) mapping (with episode_index fallback).
+
+        Entries whose episode_id cannot be resolved are silently skipped
+        (counted as 'unmapped' in the debug log). Conflict resolution is
+        local-wins-on-tie per A4 — the server only overwrites when its
+        `updated_at` is strictly greater than the local one.
+        """
+        if not self.is_logged_in():
+            then()
+            return
+
+        def on_timecodes(data, error):
+            if error:
+                log.debug('Timecodes pull failed: %s', error)
+                then()
+                return
+            applied = skipped = unmapped = 0
+            for item in (data or []):
+                parsed = _parse_timecode_item(item)
+                if parsed is None:
+                    continue
+                ep_id, time_val, is_watched, updated_at = parsed
+                result = watch_positions.apply_server_entry(
+                    ep_id, time_val, is_watched, updated_at)
+                if result == 'applied':
+                    applied += 1
+                elif result == 'skipped':
+                    skipped += 1
+                elif result == 'unmapped':
+                    unmapped += 1
+            log.debug('Timecodes pulled: applied=%d skipped=%d unmapped=%d',
+                      applied, skipped, unmapped)
+            then()
+
+        self._client.get_timecodes(callback=on_timecodes)
+
     def pull_timecodes(self, callback=None):
-        """Pull watch positions from server into local store."""
+        """Public wrapper around _pull_and_save_timecodes for backward compat."""
         if not self.is_logged_in():
             if callback:
                 callback(True, None)
             return
-
-        def on_timecodes(data, error):
-            if error or not data:
-                log.debug('Timecodes pull failed: %s', error)
-                if callback:
-                    callback(False, error)
-                return
-            # Data is list of [episode_id, time, is_watched]
-            log.debug('Pulled %d timecodes from server', len(data))
+        def then():
             if callback:
                 callback(True, None)
-
-        self._client.get_timecodes(callback=on_timecodes)
+        self._pull_and_save_timecodes(then)
 
     # --- Server counts (for merge dialog) ---
 
