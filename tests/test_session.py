@@ -64,7 +64,7 @@ def test_login_failure(mock_store):
 
 
 @patch('kitsune.auth.session.token_store')
-def test_logout(mock_store):
+def test_logout(mock_store, mock_synced_storage):
     mock_store.load_token.return_value = 'existing-token'
     sm = SessionManager(FakeClient())
     sm.logout(lambda ok, err: None)
@@ -192,7 +192,8 @@ def test_clear_token_wipes_expired_flag(client_stub):
     assert restored_events == []
 
 
-def test_force_logout_cleanup_clears_synced_tags(client_stub, mock_tags):
+def test_force_logout_cleanup_clears_synced_tags(
+        client_stub, mock_synced_storage):
     """Synced tags (favorites, watching, etc.) are cleared; custom tags stay."""
     from kitsune.auth.session import SessionManager
     from kitsune.storage import tags_store
@@ -213,38 +214,36 @@ def test_force_logout_cleanup_clears_synced_tags(client_stub, mock_tags):
 
 
 def test_force_logout_cleanup_clears_watch_positions(
-        client_stub, monkeypatch, tmp_path):
+        client_stub, mock_synced_storage):
     from kitsune.auth.session import SessionManager
     from kitsune.storage import watch_positions
-    wp_file = tmp_path / 'wp.json'
-    monkeypatch.setattr(watch_positions, '_POSITIONS_FILE', wp_file)
+    mock_tags, mock_positions, _ = mock_synced_storage
     watch_positions.save_position(9275, 1.0, 60.0, episode_id='ep.0')
-    assert wp_file.exists()
+    assert mock_positions.exists()
 
     sm = SessionManager(client_stub)
     sm.force_logout_cleanup()
 
-    assert not wp_file.exists()
+    assert not mock_positions.exists()
 
 
 def test_force_logout_cleanup_clears_episode_index(
-        client_stub, monkeypatch, tmp_path):
+        client_stub, mock_synced_storage):
     from kitsune.auth.session import SessionManager
     from kitsune.storage import episode_index
-    idx_file = tmp_path / 'idx.json'
-    monkeypatch.setattr(episode_index, '_INDEX_FILE', idx_file)
-    monkeypatch.setattr(episode_index, '_cache', None)
+    _, _, mock_index = mock_synced_storage
     episode_index.add_from_release_data(
         9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
-    assert idx_file.exists()
+    assert mock_index.exists()
 
     sm = SessionManager(client_stub)
     sm.force_logout_cleanup()
 
-    assert not idx_file.exists()
+    assert not mock_index.exists()
 
 
-def test_force_logout_cleanup_does_not_call_server_logout(client_stub):
+def test_force_logout_cleanup_does_not_call_server_logout(
+        client_stub, mock_synced_storage):
     """force_logout_cleanup must NOT call client.logout() — the token
     is already rejected, a server logout call would just 401."""
     from kitsune.auth.session import SessionManager
@@ -543,7 +542,7 @@ def test_logout_fires_logged_out_signal_after_cleanup(
     assert observed_tags_at_logout == [[]]
 
 
-def test_logout_resets_expired_flag(client_stub):
+def test_logout_resets_expired_flag(client_stub, mock_synced_storage):
     """logout on an expired session correctly resets the _expired flag."""
     from kitsune.auth.session import SessionManager
     sm = SessionManager(client_stub)

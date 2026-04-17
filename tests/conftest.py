@@ -34,6 +34,8 @@ if os.path.exists(_gresource):
 from kitsune import tags_store
 from kitsune import release_cache
 from kitsune.storage import search_index
+from kitsune.storage import watch_positions
+from kitsune.storage import episode_index
 
 
 class StubClient:
@@ -142,6 +144,35 @@ def mock_cache(tmp_path):
     release_cache._CACHE_DIR = d
     yield d
     release_cache._CACHE_DIR = original
+
+
+@pytest.fixture
+def mock_positions(tmp_path):
+    """Redirect watch_positions to a temp file."""
+    f = tmp_path / 'watch_positions.json'
+    original = watch_positions._POSITIONS_FILE
+    watch_positions._POSITIONS_FILE = f
+    yield f
+    watch_positions._POSITIONS_FILE = original
+
+
+@pytest.fixture
+def mock_episode_index(tmp_path):
+    """Redirect episode_index to a temp file and reset the module cache."""
+    f = tmp_path / 'episode_index.json'
+    original_file = episode_index._INDEX_FILE
+    original_cache = episode_index._cache
+    episode_index._INDEX_FILE = f
+    episode_index._cache = None
+    yield f
+    episode_index._INDEX_FILE = original_file
+    episode_index._cache = original_cache
+
+
+@pytest.fixture
+def mock_synced_storage(mock_tags, mock_positions, mock_episode_index):
+    """Isolate all storage modules touched by session.force_logout_cleanup."""
+    return (mock_tags, mock_positions, mock_episode_index)
 
 
 @pytest.fixture
