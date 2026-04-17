@@ -3,56 +3,111 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
+import time
 from pathlib import Path
 
 from kitsune.storage import _atomic_write_json
+
+log = logging.getLogger('kitsune.watch_positions')
 
 _POSITIONS_FILE = Path(
     os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
 ) / 'kitsune' / 'watch_positions.json'
 
+VERSION = 2
+
 
 def _load() -> dict:
+    """Return entries dict in v2 shape: {key: {pos, episode_id, updated_at}}.
+
+    v1 files (bare dict of floats) are lazily wrapped using the file's
+    mtime as updated_at and episode_id = None. The on-disk file is only
+    rewritten when the next _save is triggered — reads remain idempotent.
+    """
     try:
-        return json.loads(_POSITIONS_FILE.read_text())
+        raw = json.loads(_POSITIONS_FILE.read_text())
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+    if isinstance(raw, dict) and raw.get('version') == VERSION:
+        entries = raw.get('entries', {})
+        return entries if isinstance(entries, dict) else {}
+    if isinstance(raw, dict) and 'version' in raw:
+        log.warning(
+            'watch_positions.json has unsupported version %r, dropping contents',
+            raw.get('version'))
+        return {}
+    if isinstance(raw, dict):
+        try:
+            mtime = _POSITIONS_FILE.stat().st_mtime
+        except FileNotFoundError:
+            mtime = time.time()
+        entries = {}
+        for key, value in raw.items():
+            if isinstance(value, (int, float)):
+                entries[key] = {
+                    'pos': float(value),
+                    'episode_id': None,
+                    'updated_at': mtime,
+                }
+        return entries
+    return {}
 
 
-def _save(data: dict):
+def _save(entries: dict):
+    data = {'version': VERSION, 'entries': entries}
     _atomic_write_json(_POSITIONS_FILE, data)
 
 
 def get_position(release_id: int, ordinal: float) -> float:
-    data = _load()
-    return data.get(f'{release_id}_{ordinal}', 0)
+    entries = _load()
+    entry = entries.get(f'{release_id}_{ordinal}')
+    if entry is None:
+        return 0
+    return entry['pos']
 
 
-def save_position(release_id: int, ordinal: float, position: float):
-    data = _load()
+def save_position(release_id: int, ordinal: float, position: float,
+                  episode_id: str | None = None):
+    entries = _load()
     key = f'{release_id}_{ordinal}'
+    changed = False
     if position > 5:
-        data[key] = round(position, 1)
-    elif key in data:
-        del data[key]
-    _save(data)
+        entries[key] = {
+            'pos': round(position, 1),
+            'episode_id': episode_id if episode_id is not None
+                          else (entries.get(key, {}).get('episode_id')),
+            'updated_at': time.time(),
+        }
+        changed = True
+    elif key in entries:
+        del entries[key]
+        changed = True
+    if changed:
+        _save(entries)
 
 
-def mark_completed(release_id: int, ordinal: float):
+def mark_completed(release_id: int, ordinal: float,
+                   episode_id: str | None = None):
     """Mark episode as fully watched (stores -1 as position)."""
-    data = _load()
+    entries = _load()
     key = f'{release_id}_{ordinal}'
-    data[key] = -1
-    _save(data)
+    entries[key] = {
+        'pos': -1,
+        'episode_id': episode_id if episode_id is not None
+                      else (entries.get(key, {}).get('episode_id')),
+        'updated_at': time.time(),
+    }
+    _save(entries)
 
 
 def remove_position(release_id: int, ordinal: float):
-    data = _load()
+    entries = _load()
     key = f'{release_id}_{ordinal}'
-    if key in data:
-        del data[key]
-        _save(data)
+    if key in entries:
+        del entries[key]
+        _save(entries)
 
 
 def get_all_for_release(release_id: int) -> dict[float, float]:
@@ -60,15 +115,15 @@ def get_all_for_release(release_id: int) -> dict[float, float]:
 
     position > 0 means partially watched, -1 means completed.
     """
-    data = _load()
+    entries = _load()
     prefix = f'{release_id}_'
     result = {}
-    for key, value in data.items():
+    for key, entry in entries.items():
         if key.startswith(prefix):
             try:
                 ordinal = float(key[len(prefix):])
-                result[ordinal] = value
-            except (ValueError, TypeError):
+                result[ordinal] = entry['pos']
+            except (ValueError, TypeError, KeyError):
                 continue
     return result
 
@@ -79,7 +134,7 @@ def get_count() -> int:
 
 def get_completed_count() -> int:
     """Count episodes marked as fully watched (position == -1)."""
-    return sum(1 for pos in _load().values() if pos == -1)
+    return sum(1 for entry in _load().values() if entry.get('pos') == -1)
 
 
 def get_size() -> int:
@@ -104,3 +159,92 @@ def is_completed(pos, duration):
     if pos > 0 and duration and duration > 0 and pos >= duration * _WATCHED_FRACTION:
         return True
     return False
+
+
+def get_episode_id(release_id: int, ordinal: float) -> str | None:
+    entries = _load()
+    entry = entries.get(f'{release_id}_{ordinal}')
+    if entry is None:
+        return None
+    return entry.get('episode_id')
+
+
+def get_updated_at(release_id: int, ordinal: float) -> float | None:
+    entries = _load()
+    entry = entries.get(f'{release_id}_{ordinal}')
+    if entry is None:
+        return None
+    return entry.get('updated_at')
+
+
+def iter_pushable():
+    """Yield (release_id, ordinal, entry) for every entry with an episode_id.
+
+    Used by Stage 5's timecode drain to push to the server.
+    """
+    entries = _load()
+    for key, entry in entries.items():
+        if not entry.get('episode_id'):
+            continue
+        prefix, _, ord_part = key.rpartition('_')
+        try:
+            release_id = int(prefix)
+            ordinal = float(ord_part)
+        except ValueError:
+            continue
+        yield (release_id, ordinal, entry)
+
+
+def _find_key_by_episode_id(episode_id: str, entries: dict) -> str | None:
+    """Internal: return the raw storage key (e.g. '42_1.0') for an episode_id.
+
+    Scans the provided entries dict. Returns None if not found.
+    """
+    for key, entry in entries.items():
+        if entry.get('episode_id') == episode_id:
+            return key
+    return None
+
+
+def find_by_episode_id(episode_id: str):
+    """Return (release_id, ordinal) for an episode_id, or None if not found.
+
+    Scans the local entries first. Task 4 extends this to also consult
+    `episode_index` for ids that were never watched locally.
+    """
+    entries = _load()
+    key = _find_key_by_episode_id(episode_id, entries)
+    if key is None:
+        return None
+    prefix, _, ord_part = key.rpartition('_')
+    try:
+        return (int(prefix), float(ord_part))
+    except ValueError:
+        return None
+
+
+def apply_server_entry(episode_id: str, pos: float, is_watched: bool,
+                       updated_at: float) -> str:
+    """Apply a timecode from the server, respecting local-wins-on-tie.
+
+    Returns one of:
+      - 'applied': server state was newer; local entry was updated
+      - 'skipped': local state was newer-or-equal; no change
+      - 'unmapped': could not resolve episode_id to a (release_id, ordinal)
+    """
+    entries = _load()
+    key = _find_key_by_episode_id(episode_id, entries)
+    if key is None:
+        return 'unmapped'
+    existing = entries[key]
+    local_ts = existing.get('updated_at', 0.0)
+    if local_ts >= updated_at:
+        return 'skipped'
+    new_pos = -1 if is_watched else float(pos)
+    entries[key] = {
+        'pos': new_pos,
+        'episode_id': episode_id,
+        'updated_at': updated_at,
+    }
+    _save(entries)
+    return 'applied'
