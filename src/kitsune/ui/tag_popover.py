@@ -155,7 +155,10 @@ class TagPopover(Gtk.Popover):
 
     def _on_tag_created(self, tag):
         if tag:
-            tags_store.add_release(tag['id'], self._release_id)
+            if self._sync and self._is_synced_tag(tag['id']):
+                self._sync.add_to_tag_synced(tag['id'], self._release_id)
+            else:
+                tags_store.add_release(tag['id'], self._release_id)
             self._populate()
             if self._on_changed:
                 self._on_changed()

@@ -188,6 +188,40 @@ class SyncManager:
             return
         self._drain_scheduled = True
         GLib.idle_add(self._drain_queue)
+        self._start_retry_timer()
+
+    def _start_retry_timer(self):
+        """Start the 10-second retry timer (idempotent)."""
+        if self._retry_timer_id is not None:
+            return
+        self._retry_timer_id = GLib.timeout_add_seconds(
+            10, self._retry_tick)
+
+    def _stop_retry_timer(self):
+        """Stop the retry timer."""
+        if self._retry_timer_id is not None:
+            GLib.source_remove(self._retry_timer_id)
+            self._retry_timer_id = None
+
+    def _retry_tick(self):
+        """Called every 10s: if there are ready ops, schedule a drain.
+
+        Returns True (GLib.SOURCE_CONTINUE) to keep the timer alive.
+        """
+        ready = self._queue.peek_ready(time.time())
+        if ready:
+            self._schedule_drain()
+        return True
+
+    def force_drain(self):
+        """Reset all retry timers and drain immediately.
+
+        Used by the 'Retry now' button in the profile UI (Stage 7).
+        Attempt counts and last_error values are preserved — this is a
+        user-initiated wake-up, not a state reset.
+        """
+        self._queue.reset_all_retries()
+        self._drain_queue()
 
     # --- Initial sync with strategy ---
 

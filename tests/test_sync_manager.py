@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import sys, os
+import sys, os, time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from kitsune.storage.sync_manager import SyncManager, MergeStrategy
@@ -394,3 +394,66 @@ def test_write_through_custom_tag_skips_enqueue(mock_tags, tmp_path):
     sm.add_to_tag_synced(custom_id, 9275)
     assert 9275 in tags_store.get_release_ids_for_tag(custom_id)
     assert sm._queue.size() == 0  # custom tag not enqueued
+
+
+# --- Retry timer tests (Stage 2) ---
+
+def test_force_drain_resets_retries_and_drains(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    op_id = sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._queue.mark_failure(op_id, 'timeout')
+    # Op is now in backoff — peek_ready should not return it for 10s
+    assert sm._queue.peek_ready(time.time()) == []
+    # force_drain resets retries and drains immediately
+    sm.force_drain()
+    assert len(client.call_log) == 1
+    client.flush_all()
+    assert sm._queue.size() == 0
+
+
+def test_retry_tick_schedules_drain_when_ready(tmp_path, mock_tags, monkeypatch):
+    sm, client = _make_sm_with_fake(tmp_path)
+    op_id = sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    # Make op immediately ready (bypass backoff)
+    sm._queue._ops[0].next_retry_at = 0.0
+    sm._queue._ops[0].attempt_count = 1
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    result = sm._retry_tick()
+    assert result is True  # GLib.SOURCE_CONTINUE
+    assert len(scheduled) == 1  # drain was scheduled
+
+
+def test_retry_tick_noop_when_queue_empty(tmp_path, mock_tags, monkeypatch):
+    sm, client = _make_sm_with_fake(tmp_path)
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    result = sm._retry_tick()
+    assert result is True
+    assert len(scheduled) == 0
+
+
+# --- E6 regression test: tag_popover._on_tag_created (Stage 2 Task 6) ---
+
+def test_add_to_tag_synced_custom_tag_does_not_enqueue(mock_tags, tmp_path):
+    """Custom (non-synced) tags go through tags_store directly, not queue.
+
+    This is the invariant that the tag_popover fix must preserve: synced
+    built-in tags go through sync_manager, custom tags don't.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    # Create a custom tag
+    tags_store.create_tag('Custom Test', 'emoji', '🔥')
+    custom_tags = [t for t in tags_store.get_all_tags()
+                   if not t.get('builtin')]
+    assert len(custom_tags) >= 1
+    custom_id = custom_tags[0]['id']
+    sm.add_to_tag_synced(custom_id, 9275)
+    assert 9275 in tags_store.get_release_ids_for_tag(custom_id)
+    assert sm._queue.size() == 0  # custom tag — NOT enqueued
