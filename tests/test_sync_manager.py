@@ -1044,3 +1044,85 @@ def test_flush_timecodes_coalesces_with_existing_ops(mock_tags, tmp_path):
         sm.flush_timecodes()
         assert sm._queue.size() == 1
         assert sm._queue._ops[0].payload['time'] == 60.0
+
+
+# --- Post-review coverage (Stage 5 final) ---
+
+def test_enqueue_timecode_noop_when_not_logged_in(mock_tags, tmp_path):
+    """enqueue_timecode early-returns without touching queue if no token."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._client._get_token = lambda: None
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0',
+        pos=120.5, is_watched=False)
+    assert sm._queue.size() == 0
+
+
+def test_flush_timecodes_filters_by_release_id(mock_tags, tmp_path):
+    """flush_timecodes(release_id=X) enqueues only entries for that release."""
+    from kitsune.storage import watch_positions
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.set_user_id(42)
+    wp_file = tmp_path / 'wp.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file):
+        watch_positions.save_position(9275, 1.0, 60.0, episode_id='ep.a')
+        watch_positions.save_position(8888, 1.0, 90.0, episode_id='ep.b')
+        sm._queue.clear()
+        sm.flush_timecodes(release_id=9275)
+        assert sm._queue.size() == 1
+        assert sm._queue._ops[0].release_id == 9275
+
+
+def test_parse_timecode_item_handles_mixed_malformed_entries():
+    """_parse_timecode_item returns None for garbage entries; callers skip them."""
+    from kitsune.storage.sync_manager import _parse_timecode_item
+    assert _parse_timecode_item(None) is None
+    assert _parse_timecode_item('string') is None
+    assert _parse_timecode_item(['too', 'short']) is None
+    assert _parse_timecode_item({'no_episode_id': 'xxx'}) is None
+    assert _parse_timecode_item({'episode_id': '', 'time': 0}) is None
+    # Well-formed dict and list still work
+    parsed = _parse_timecode_item({'episode_id': 'ep.0', 'time': 30, 'is_watched': False, 'updated_at': 100.0})
+    assert parsed == ('ep.0', 30.0, False, 100.0)
+    parsed = _parse_timecode_item(['ep.0', 30, False, 100.0])
+    assert parsed == ('ep.0', 30.0, False, 100.0)
+
+
+def test_parse_timecode_item_preserves_explicit_zero_updated_at():
+    """updated_at=0 is valid (loses to positive local ts); must not be replaced by now()."""
+    from kitsune.storage.sync_manager import _parse_timecode_item
+    parsed = _parse_timecode_item({'episode_id': 'ep.0', 'time': 30, 'is_watched': False, 'updated_at': 0})
+    assert parsed == ('ep.0', 30.0, False, 0.0)
+    parsed = _parse_timecode_item(['ep.0', 30, False, 0])
+    assert parsed == ('ep.0', 30.0, False, 0.0)
+
+
+def test_coalesce_absorbs_new_save_after_failed_timecode(tmp_path, mock_tags, monkeypatch):
+    """Regression: a new timecode for the same (release, episode) as a failed op
+    coalesces into the failed op's slot, replacing the stale payload.
+
+    This closes the stale-op race: if op A fails and later op B fires for the
+    same key, B must update A's payload in place so the retry dispatches B's
+    value. Stage 1 coalescing rules for save_timecode skip only IN-FLIGHT ops;
+    failed ops (which are NOT in-flight) are coalesce-eligible — so this
+    scenario works correctly by design.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0', pos=30.0, is_watched=False)
+    sm._drain_queue()
+    # Fail the batch → op stays in queue with backoff
+    client.fail_next('server 500')
+    assert sm._queue.size() == 1
+    first_op_id = sm._queue._ops[0].id
+    assert sm._queue._ops[0].payload['time'] == 30.0
+    assert sm._queue._ops[0].attempt_count == 1
+    # New save for SAME (release, episode) while A is failed (not in-flight)
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0', pos=120.0, is_watched=False)
+    # B coalesced into A's slot — payload updated, retry state reset
+    assert sm._queue.size() == 1
+    assert sm._queue._ops[0].id == first_op_id  # same op, updated
+    assert sm._queue._ops[0].payload['time'] == 120.0
+    assert sm._queue._ops[0].attempt_count == 0  # reset by timecode coalescing

@@ -38,20 +38,28 @@ def _noop(data, error):
 
 
 def _parse_timecode_item(item):
-    """Parse a server timecode entry. Returns (episode_id, time, is_watched, updated_at) or None."""
+    """Parse a server timecode entry. Returns (episode_id, time, is_watched, updated_at) or None.
+
+    When `updated_at` is missing (None) we fall back to `time.time()` — server
+    is "fresh" by default. We distinguish missing from 0: `updated_at = 0` is
+    an explicit epoch timestamp and is preserved so conflict resolution can
+    compare it correctly (it will lose to any positive local timestamp).
+    """
     if isinstance(item, (list, tuple)) and len(item) >= 3:
         ep_id, time_val, is_watched = item[0], item[1], item[2]
-        updated_at = item[3] if len(item) >= 4 else time.time()
+        updated_at = item[3] if len(item) >= 4 and item[3] is not None else time.time()
         return (ep_id, float(time_val), bool(is_watched), float(updated_at))
     if isinstance(item, dict):
         ep_id = item.get('episode_id') or item.get('id')
         if not ep_id:
             return None
+        raw_updated_at = item.get('updated_at')
+        updated_at = time.time() if raw_updated_at is None else raw_updated_at
         return (
             ep_id,
             float(item.get('time', 0)),
             bool(item.get('is_watched', False)),
-            float(item.get('updated_at') or time.time()),
+            float(updated_at),
         )
     return None
 
