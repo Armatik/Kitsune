@@ -593,23 +593,36 @@ def test_enqueued_op_carries_current_user_id(tmp_path, mock_tags):
 
 # --- Stage 3: pull coordination / snapshot protection ---
 
-def test_initial_sync_captures_queue_snapshot(mock_tags, tmp_path):
-    """initial_sync snapshots queue release_ids before the pull starts.
+def test_initial_sync_captures_queue_snapshot(mock_tags, tmp_path, monkeypatch):
+    """initial_sync snapshots queue release_ids BEFORE the pull begins.
 
-    The snapshot is taken eagerly in initial_sync (not lazily in _sync_*),
-    so any writes that enter the queue AFTER initial_sync starts are not
-    in the snapshot — they belong to the next pull cycle.
+    Observes the intermediate (mid-sync) state by monkey-patching
+    _sync_favorites to capture `self._pull_snapshot` at entry time. This
+    is the only way to verify the eager-capture invariant, since
+    FakeSyncClient runs callbacks synchronously — the final state alone
+    would only prove that _sync_done cleared the snapshot.
     """
     sm, client = _make_sm_with_fake(tmp_path)
     sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     sm._queue.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
     assert sm._pull_snapshot == set()
-    # Use a FakeSyncClient variant so initial_sync completes synchronously
-    # (FakeApiClient defers callbacks — we'd need to flush manually)
+
+    captured = {}
+    original = sm._sync_favorites
+
+    def capture_at_entry(then):
+        captured['mid_sync'] = set(sm._pull_snapshot)
+        original(then)
+
+    monkeypatch.setattr(sm, '_sync_favorites', capture_at_entry)
+
     sync_client = FakeSyncClient()
     sm._client = sync_client
     sm.initial_sync(lambda ok, err: None)
-    # After initial_sync completes, _sync_done clears the snapshot
+
+    # During sync (before _sync_done runs): snapshot contains pending ids
+    assert captured['mid_sync'] == {9275, 9276}
+    # After sync: _sync_done cleared it
     assert sm._pull_snapshot == set()
 
 
