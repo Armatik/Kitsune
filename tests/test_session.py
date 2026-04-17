@@ -459,3 +459,21 @@ def test_auth_dialog_first_login_during_expired_is_safe(client_stub):
     assert sm.is_expired() is False
     assert called_force == []
     assert FakeSync._Queue.cleared_for == []
+
+
+def test_expired_flag_is_true_during_on_logged_in_callback(client_stub):
+    """Session _on_logged_in listeners are fired BEFORE auth_dialog's
+    _finalize_login runs clear_expired. So window._on_logged_in can
+    check is_expired() to skip the merge dialog — this test pins that
+    invariant: _set_token does not touch _expired.
+    """
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    sm._on_token_expired()
+    assert sm.is_expired() is True
+    observed_expired_during_login = []
+    sm.connect_logged_in(
+        lambda: observed_expired_during_login.append(sm.is_expired()))
+    # Simulate successful re-login
+    sm._set_token('new-token')
+    assert observed_expired_during_login == [True]  # flag still True in callback

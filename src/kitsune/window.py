@@ -909,6 +909,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 lambda user, err: self._on_profile_loaded(user))
         self._update_auth_sidebar()
         self._switch_tab('profile')
+        # Skip the merge dialog on expired-session re-login: the auth_dialog
+        # _finalize_login flow will call session.clear_expired(), which emits
+        # session-restored and resumes sync via SyncManager.resume_after_expired_session.
+        # Showing the merge dialog on top of that is confusing — the user just
+        # wants to continue where they left off, not pick a merge strategy.
+        if self._session and self._session.is_expired():
+            return
         self._show_merge_dialog()
 
     def _show_merge_dialog(self):
