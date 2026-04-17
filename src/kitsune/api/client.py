@@ -104,6 +104,10 @@ class AniLibriaClient:
             gbytes = session.send_and_read_finish(result)
             status = msg.get_status()
             if status != Soup.Status.OK:
+                # HTTP errors (including 401) are valid server responses,
+                # not network failures — we intentionally do NOT flip
+                # `self._offline` here. The offline banner stays hidden
+                # and _on_network_error is not invoked.
                 state[0] = True
                 GLib.source_remove(timeout_id)
                 if status == Soup.Status.UNAUTHORIZED and self._token_expired_handler:

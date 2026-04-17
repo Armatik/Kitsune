@@ -150,6 +150,9 @@ class SessionManager:
         rejected (calling server logout would just 401). This is a
         destructive operation — custom (non-builtin) tags are preserved.
         """
+        # Local imports to avoid a circular dependency: sync_manager already
+        # imports from kitsune.storage, and importing SYNCED_TAGS at module
+        # top would create a cycle at startup.
         from kitsune.storage import tags_store, watch_positions, episode_index
         from kitsune.storage.sync_manager import SYNCED_TAGS
         # Clear releases in synced built-in tags (but keep the tags themselves)

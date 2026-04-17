@@ -263,3 +263,62 @@ def test_force_logout_cleanup_does_not_call_server_logout(client_stub):
     sm = SessionManager(stub)
     sm.force_logout_cleanup()
     assert calls == []
+
+
+# --- Stage 6 post-review coverage ---
+
+def test_concurrent_401_storm_emits_session_expired_once(client_stub):
+    """Three rapid 401s (e.g. _sync_favorites, _sync_collections,
+    pull_timecodes all failing in startup validation) must coalesce
+    into exactly ONE session-expired emit."""
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    emitted = []
+    sm.connect_session_expired(lambda: emitted.append(True))
+    # Three 401s as would arrive from concurrent in-flight requests
+    client_stub._token_expired_handler()
+    client_stub._token_expired_handler()
+    client_stub._token_expired_handler()
+    assert len(emitted) == 1
+    assert sm.is_expired() is True
+
+
+def test_expired_to_restored_chain_fires_session_restored(client_stub):
+    """End-to-end restore chain: _on_token_expired → clear_expired →
+    session-restored subscribers fire. Stage 7's auth_dialog will drive
+    this chain after successful re-login."""
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    expired_events = []
+    restored_events = []
+    sm.connect_session_expired(lambda: expired_events.append(True))
+    sm.connect_session_restored(lambda: restored_events.append(True))
+    # Simulate: server 401
+    client_stub._token_expired_handler()
+    assert expired_events == [True]
+    assert restored_events == []
+    # Simulate: successful re-login by the same user
+    sm.clear_expired()
+    assert restored_events == [True]
+    assert sm.is_expired() is False
+
+
+def test_logged_out_during_401_flow_leaves_clean_state(client_stub):
+    """Startup 401 scenario: validate_session fails, _clear_token fires
+    logged_out. Expired flag must be False after logged_out so any
+    future login starts fresh."""
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    sm._token = 'expiring-token'
+    logged_out_events = []
+    sm.connect_logged_out(lambda: logged_out_events.append(True))
+    # Server returns 401 on the validation request
+    client_stub._token_expired_handler()
+    assert sm.is_expired() is True
+    # Then validate_session's error callback runs _clear_token
+    sm._clear_token()
+    # Logged out → expired flag wiped → any subsequent fresh login
+    # starts clean
+    assert sm.is_expired() is False
+    assert sm.is_logged_in() is False
+    assert logged_out_events == [True]

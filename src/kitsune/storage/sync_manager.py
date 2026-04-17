@@ -351,10 +351,12 @@ class SyncManager:
         a successful re-login. Pending ops that piled up during the
         expired window are now dispatched.
 
-        We reset `_drain_scheduled` first so the schedule is guaranteed to
-        fire even if a write-through enqueue set the flag while the session
-        was paused (those idle_add calls targeted a dead GLib slot or were
-        suppressed by the reentrancy guard).
+        We reset `_drain_scheduled` defensively so the schedule is
+        guaranteed to fire. Normally a paused-window enqueue's scheduled
+        idle_add would run (finding the queue in backoff) and clear the
+        flag — but in the edge case where the GLib main loop was idle
+        between the enqueue and resume, the flag may still be True and
+        `_schedule_drain` would early-return. The reset closes that gap.
         """
         self._drain_scheduled = False
         self._schedule_drain()
