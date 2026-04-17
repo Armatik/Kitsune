@@ -105,6 +105,11 @@ class ProfileView(Gtk.Box):
     member_since_label = Gtk.Template.Child()
     sync_time_label = Gtk.Template.Child()
     sync_button = Gtk.Template.Child()
+    pending_row = Gtk.Template.Child()
+    pending_label = Gtk.Template.Child()
+    error_row = Gtk.Template.Child()
+    error_text_label = Gtk.Template.Child()
+    retry_button = Gtk.Template.Child()
     collections_flow = Gtk.Template.Child()
     totals_box = Gtk.Template.Child()
     logout_button = Gtk.Template.Child()
@@ -131,6 +136,12 @@ class ProfileView(Gtk.Box):
         self._setup_collection_cards()
         self._setup_total_cards()
         self._load_hero_image()
+
+        # Subscribe to sync events for pending-ops indicator
+        if self._sync_manager:
+            self._sync_manager.connect_queue_changed(self._on_queue_changed)
+            self._sync_manager.connect_sync_complete(self._on_sync_complete)
+            self._refresh_indicator()
 
     def _setup_collection_cards(self):
         for tag_id, label, emoji, color in _COLLECTION_TAGS:
@@ -352,6 +363,52 @@ class ProfileView(Gtk.Box):
         import datetime
         self.set_sync_time(datetime.datetime.now().strftime('%H:%M'))
         self.refresh_counts()
+
+    def _refresh_indicator(self):
+        """Update pending-row, error-row, retry-button visibility + text
+        based on current queue state."""
+        if not self._sync_manager:
+            self.pending_row.set_visible(False)
+            self.error_row.set_visible(False)
+            self.retry_button.set_visible(False)
+            return
+        size = self._sync_manager.queue_size()
+        has_errors = self._sync_manager.queue_has_errors()
+        last_error = self._sync_manager.last_queue_error()
+        self.pending_row.set_visible(size > 0)
+        if size > 0:
+            if size == 1:
+                self.pending_label.set_label(
+                    _('1 operation waiting to sync'))
+            else:
+                self.pending_label.set_label(
+                    _('{n} operations waiting to sync').format(n=size))
+        # Keep error_row and retry_button visibility in sync: if any op
+        # has failed, the user sees both the explanation AND the retry
+        # button. Fall back to a generic label if last_error is missing
+        # (rare — queue ops always record their error message on failure,
+        # but defend against a None/'' leak).
+        self.error_row.set_visible(has_errors)
+        if has_errors:
+            self.error_text_label.set_label(
+                (last_error or _('Unknown error'))[:80])
+        self.retry_button.set_visible(has_errors)
+
+    def _on_queue_changed(self, _size):
+        self._refresh_indicator()
+
+    def _on_sync_complete(self, success):
+        if success:
+            import datetime
+            self.set_sync_time(datetime.datetime.now().strftime('%H:%M'))
+            self.refresh_counts()
+        self._refresh_indicator()
+
+    @Gtk.Template.Callback()
+    def on_retry_clicked(self, _button):
+        """User hit 'Retry now' — reset backoffs and drain."""
+        if self._sync_manager:
+            self._sync_manager.force_drain()
 
     @Gtk.Template.Callback()
     def on_settings_site_clicked(self, _button):

@@ -88,21 +88,71 @@ template $KitsuneProfileView: Gtk.Box {
 
             // Sync
             Gtk.Box {
+              orientation: vertical;
+              spacing: 4;
               halign: center;
-              spacing: 6;
               margin-top: 4;
               margin-bottom: 14;
 
-              Gtk.Label sync_time_label {
-                styles ["dim-label", "caption"]
+              Gtk.Box {
+                halign: center;
+                spacing: 6;
+
+                Gtk.Label sync_time_label {
+                  styles ["dim-label", "caption"]
+                }
+
+                Gtk.Button sync_button {
+                  icon-name: "emblem-synchronizing-symbolic";
+                  tooltip-text: _("Sync now");
+                  clicked => $on_sync_clicked();
+
+                  styles ["flat", "circular"]
+                }
               }
 
-              Gtk.Button sync_button {
-                icon-name: "emblem-synchronizing-symbolic";
-                tooltip-text: _("Sync now");
-                clicked => $on_sync_clicked();
+              Gtk.Box pending_row {
+                halign: center;
+                spacing: 6;
+                visible: false;
 
-                styles ["flat", "circular"]
+                Gtk.Label {
+                  label: "●";
+
+                  styles ["warning"]
+                }
+
+                Gtk.Label pending_label {
+                  styles ["caption"]
+                }
+              }
+
+              Gtk.Box error_row {
+                halign: center;
+                spacing: 6;
+                visible: false;
+
+                Gtk.Label {
+                  label: _("Last error:");
+
+                  styles ["dim-label", "caption"]
+                }
+
+                Gtk.Label error_text_label {
+                  max-width-chars: 50;
+                  ellipsize: end;
+
+                  styles ["caption"]
+                }
+              }
+
+              Gtk.Button retry_button {
+                label: _("Retry now");
+                halign: center;
+                visible: false;
+                clicked => $on_retry_clicked();
+
+                styles ["flat"]
               }
             }
 
