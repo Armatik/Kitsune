@@ -47,6 +47,7 @@ class SyncManager:
         self._draining = False
         self._drain_scheduled = False
         self._retry_timer_id = None
+        self._pull_snapshot = set()
         # Pub/sub callback lists (matching SessionManager pattern)
         self._on_sync_error_cbs = []
         self._on_queue_changed_cbs = []
@@ -253,7 +254,17 @@ class SyncManager:
     # --- Initial sync with strategy ---
 
     def initial_sync(self, callback=None, strategy=MergeStrategy.MERGE):
-        """Full sync with chosen merge strategy."""
+        """Full sync with chosen merge strategy.
+
+        Before the server HTTP pull begins, a snapshot of pending-queue
+        release ids is captured into `self._pull_snapshot`. During the
+        sync, `_sync_favorites` and `_sync_collections` skip any release
+        id in the snapshot — pending ops own those releases until they
+        drain. The queue is also kicked via `_schedule_drain()` as a
+        best-effort flush, but the snapshot is taken BEFORE the kick so
+        even successfully-drained ops in this tick remain protected
+        against read-after-write replication lag on the server.
+        """
         if self._syncing:
             log.debug('Sync already in progress, skipping')
             if callback:
@@ -262,6 +273,15 @@ class SyncManager:
         self._syncing = True
         log.debug('Starting sync with strategy: %s', strategy)
         self._strategy = strategy
+        # Snapshot before kicking drain (see docstring). The snapshot and
+        # the drain kick are deliberately independent: we always try to
+        # drain (it's cheap on an empty queue), and the snapshot freezes
+        # the release-ids owned by pending ops so the concurrent pull
+        # does not stomp them.
+        self._pull_snapshot = self._queue.release_ids()
+        if self._pull_snapshot:
+            log.debug('Pull snapshot holds %d release ids', len(self._pull_snapshot))
+        self._schedule_drain()
         self._sync_favorites(
             lambda: self._sync_collections(
                 lambda: self._sync_done(callback)))
@@ -406,6 +426,7 @@ class SyncManager:
     def _sync_done(self, callback):
         self._syncing = False
         self._last_sync = time.time()
+        self._pull_snapshot = set()
         log.debug('Sync complete')
         if callback:
             callback(True, None)
@@ -419,28 +440,30 @@ class SyncManager:
             local_ids = set(tags_store.get_release_ids_for_tag('favorites'))
             server_set = set(server_ids) if server_ids else set()
             strategy = self._strategy
+            snapshot = self._pull_snapshot
 
             if strategy == MergeStrategy.PREFER_SERVER:
-                # Clear local, set to server
-                for rid in local_ids - server_set:
+                # Clear local, set to server — BUT skip snapshot ids
+                # (pending queue owns them)
+                for rid in (local_ids - server_set) - snapshot:
                     tags_store.remove_release('favorites', rid)
-                for rid in server_set - local_ids:
+                for rid in (server_set - local_ids) - snapshot:
                     tags_store.add_release('favorites', rid)
                 then()
             elif strategy == MergeStrategy.PREFER_LOCAL:
-                # Push all local to server (add missing, remove extra)
-                to_add = local_ids - server_set
-                to_remove = server_set - local_ids
+                # Push all local to server — snapshot ids go via queue
+                to_add = (local_ids - server_set) - snapshot
+                to_remove = (server_set - local_ids) - snapshot
                 if to_add:
                     self._client.add_favorites(list(to_add), _noop)
                 if to_remove:
                     self._client.remove_favorites(list(to_remove), _noop)
                 then()
             else:
-                # MERGE: server wins conflicts, push local-only
-                for rid in server_set - local_ids:
+                # MERGE: server wins conflicts — snapshot ids excluded
+                for rid in (server_set - local_ids) - snapshot:
                     tags_store.add_release('favorites', rid)
-                local_only = local_ids - server_set
+                local_only = (local_ids - server_set) - snapshot
                 if local_only:
                     self._client.add_favorites(
                         list(local_only), lambda d, e: then())
@@ -465,6 +488,7 @@ class SyncManager:
                     server_by_tag.setdefault(tag_id, set()).add(rid)
 
             strategy = self._strategy
+            snapshot = self._pull_snapshot
             push_queue = []
 
             for tag_id in COLLECTION_MAP.values():
@@ -472,23 +496,20 @@ class SyncManager:
                 server_ids = server_by_tag.get(tag_id, set())
 
                 if strategy == MergeStrategy.PREFER_SERVER:
-                    for rid in local_ids - server_ids:
+                    for rid in (local_ids - server_ids) - snapshot:
                         tags_store.remove_release(tag_id, rid)
-                    for rid in server_ids - local_ids:
+                    for rid in (server_ids - local_ids) - snapshot:
                         tags_store.add_release(tag_id, rid)
                 elif strategy == MergeStrategy.PREFER_LOCAL:
-                    # Push local-only, remove server-only from server
-                    for rid in local_ids - server_ids:
+                    for rid in (local_ids - server_ids) - snapshot:
                         ctype = _TAG_TO_COLLECTION.get(tag_id)
                         if ctype:
                             push_queue.append((rid, ctype))
-                    # Note: API doesn't support removing specific
-                    # collection entries easily, skip for now
                 else:
                     # MERGE
-                    for rid in server_ids - local_ids:
+                    for rid in (server_ids - local_ids) - snapshot:
                         tags_store.add_release(tag_id, rid)
-                    for rid in local_ids - server_ids:
+                    for rid in (local_ids - server_ids) - snapshot:
                         ctype = _TAG_TO_COLLECTION.get(tag_id)
                         if ctype:
                             push_queue.append((rid, ctype))

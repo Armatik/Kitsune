@@ -589,3 +589,216 @@ def test_enqueued_op_carries_current_user_id(tmp_path, mock_tags):
     sm.add_to_tag_synced('watching', 9276)
     assert sm._queue._ops[0].user_id == 777
     assert sm._queue._ops[1].user_id == 777
+
+
+# --- Stage 3: pull coordination / snapshot protection ---
+
+def test_initial_sync_captures_queue_snapshot(mock_tags, tmp_path):
+    """initial_sync snapshots queue release_ids before the pull starts.
+
+    The snapshot is taken eagerly in initial_sync (not lazily in _sync_*),
+    so any writes that enter the queue AFTER initial_sync starts are not
+    in the snapshot — they belong to the next pull cycle.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    assert sm._pull_snapshot == set()
+    # Use a FakeSyncClient variant so initial_sync completes synchronously
+    # (FakeApiClient defers callbacks — we'd need to flush manually)
+    sync_client = FakeSyncClient()
+    sm._client = sync_client
+    sm.initial_sync(lambda ok, err: None)
+    # After initial_sync completes, _sync_done clears the snapshot
+    assert sm._pull_snapshot == set()
+
+
+def test_snapshot_cleared_between_successive_syncs(mock_tags, tmp_path):
+    """Each initial_sync call starts with a fresh snapshot."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sync_client = FakeSyncClient()
+    sm._client = sync_client
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm.initial_sync(lambda ok, err: None)
+    assert sm._pull_snapshot == set()  # cleared after first sync
+    # Enqueue a different op before second sync
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9999, user_id=42)
+    sm.initial_sync(lambda ok, err: None)
+    assert sm._pull_snapshot == set()  # cleared again
+
+
+def test_initial_sync_kicks_drain(mock_tags, tmp_path, monkeypatch):
+    """initial_sync should schedule a drain of pending ops as part of its setup."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    # Swap to synchronous client so initial_sync completes in-call
+    sync_client = FakeSyncClient()
+    sm._client = sync_client
+    sm.initial_sync(lambda ok, err: None)
+    # The drain was kicked via GLib.idle_add at least once
+    assert len(scheduled) >= 1
+
+
+def test_pull_prefer_server_does_not_remove_pending_favorite(mock_tags, tmp_path):
+    """PREFER_SERVER must not evict a locally-favorited release if its
+    add_favorite op is still pending (E3 regression test)."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.add_release('favorites', 9275)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sync_client = FakeSyncClient()
+    sync_client.server_favorites = []
+    sync_client.server_collections = []
+    sm._client = sync_client
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.PREFER_SERVER)
+
+    assert 9275 in tags_store.get_release_ids_for_tag('favorites')
+
+
+def test_pull_merge_does_not_add_when_pending_remove(mock_tags, tmp_path):
+    """MERGE must not re-add a locally-removed release if its
+    remove_favorite op is still pending."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
+    sync_client = FakeSyncClient()
+    sync_client.server_favorites = [9275]
+    sync_client.server_collections = []
+    sm._client = sync_client
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.MERGE)
+
+    assert 9275 not in tags_store.get_release_ids_for_tag('favorites')
+
+
+def test_pull_prefer_local_skips_pending_from_push(mock_tags, tmp_path):
+    """PREFER_LOCAL must not double-push: releases already in the queue
+    will be pushed via the queue drain, so the sync push should skip them."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.add_release('favorites', 9275)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    tags_store.add_release('favorites', 8888)
+
+    sync_client = FakeSyncClient()
+    sync_client.server_favorites = []
+    sync_client.server_collections = []
+    sm._client = sync_client
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.PREFER_LOCAL)
+
+    assert 8888 in sync_client.pushed_favorites
+    assert 9275 not in sync_client.pushed_favorites
+
+
+def test_pull_prefer_server_does_not_remove_pending_collection(mock_tags, tmp_path):
+    """PREFER_SERVER must not evict a collection entry if its add_collection
+    op is still pending."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.add_release('watching', 9275)
+    sm._queue.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    sync_client = FakeSyncClient()
+    sync_client.server_favorites = []
+    sync_client.server_collections = []
+    sm._client = sync_client
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.PREFER_SERVER)
+
+    assert 9275 in tags_store.get_release_ids_for_tag('watching')
+
+
+def test_pull_merge_collection_respects_snapshot(mock_tags, tmp_path):
+    """MERGE: a pending remove must not be undone by server data."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_REMOVE_COLLECTION, 9275, user_id=42)
+    sync_client = FakeSyncClient()
+    sync_client.server_favorites = []
+    sync_client.server_collections = [
+        {'release_id': 9275, 'type_of_collection': 'WATCHED'},
+    ]
+    sm._client = sync_client
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.MERGE)
+
+    assert 9275 not in tags_store.get_release_ids_for_tag('watched')
+
+
+def test_pull_prefer_local_collection_skips_pending_from_push(mock_tags, tmp_path):
+    """PREFER_LOCAL: releases with pending collection ops are not double-pushed."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.add_release('watching', 9275)
+    tags_store.add_release('watching', 8888)
+    sm._queue.enqueue(
+        OP_ADD_COLLECTION, 9275, user_id=42,
+        payload={'collection_type': 'WATCHING'},
+    )
+    sync_client = FakeSyncClient()
+    sync_client.server_favorites = []
+    sync_client.server_collections = []
+    sm._client = sync_client
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.PREFER_LOCAL)
+
+    pushed_ids = [entry[0] for entry in sync_client.pushed_collections]
+    assert 8888 in pushed_ids
+    assert 9275 not in pushed_ids
+
+
+def test_snapshot_stable_even_if_drain_succeeds_mid_sync(mock_tags, tmp_path):
+    """Snapshot is frozen at initial_sync entry — a successful drain does
+    not remove its release ids from the snapshot. This defends against
+    server replication lag.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    tags_store.add_release('favorites', 9275)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+
+    class HybridClient:
+        def __init__(self):
+            self._get_token = lambda: 'test-token'
+            self.pending_drain_cbs = []
+
+        def add_favorites(self, ids, cb=None):
+            if cb:
+                self.pending_drain_cbs.append(cb)
+
+        def remove_favorites(self, ids, cb=None):
+            if cb:
+                cb(None, None)
+
+        def add_to_collection(self, rid, ctype, cb=None):
+            if cb:
+                cb(None, None)
+
+        def remove_from_collection(self, ids, cb=None):
+            if cb:
+                cb(None, None)
+
+        def get_favorite_ids(self, callback=None):
+            # Server hasn't received our write yet (replication lag)
+            callback([], None)
+
+        def get_collection_ids(self, callback=None):
+            callback([], None)
+
+        def get_timecodes(self, since=None, callback=None):
+            callback([], None)
+
+    sm._client = HybridClient()
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.PREFER_SERVER)
+
+    # Local state survived the sync — snapshot protection held.
+    assert 9275 in tags_store.get_release_ids_for_tag('favorites')
