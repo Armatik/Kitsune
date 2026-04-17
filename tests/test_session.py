@@ -190,3 +190,76 @@ def test_clear_token_wipes_expired_flag(client_stub):
     assert sm.is_expired() is False
     # Logout is terminal — no session-restored emit
     assert restored_events == []
+
+
+def test_force_logout_cleanup_clears_synced_tags(client_stub, mock_tags):
+    """Synced tags (favorites, watching, etc.) are cleared; custom tags stay."""
+    from kitsune.auth.session import SessionManager
+    from kitsune.storage import tags_store
+    tags_store.add_release('favorites', 9275)
+    tags_store.add_release('watching', 9276)
+    tags_store.create_tag('Custom', 'emoji', '🔥')
+    custom_id = [t['id'] for t in tags_store.get_all_tags()
+                 if not t.get('builtin')][0]
+    tags_store.add_release(custom_id, 8888)
+
+    sm = SessionManager(client_stub)
+    sm.force_logout_cleanup()
+
+    assert tags_store.get_release_ids_for_tag('favorites') == []
+    assert tags_store.get_release_ids_for_tag('watching') == []
+    # Custom tag preserved
+    assert 8888 in tags_store.get_release_ids_for_tag(custom_id)
+
+
+def test_force_logout_cleanup_clears_watch_positions(
+        client_stub, monkeypatch, tmp_path):
+    from kitsune.auth.session import SessionManager
+    from kitsune.storage import watch_positions
+    wp_file = tmp_path / 'wp.json'
+    monkeypatch.setattr(watch_positions, '_POSITIONS_FILE', wp_file)
+    watch_positions.save_position(9275, 1.0, 60.0, episode_id='ep.0')
+    assert wp_file.exists()
+
+    sm = SessionManager(client_stub)
+    sm.force_logout_cleanup()
+
+    assert not wp_file.exists()
+
+
+def test_force_logout_cleanup_clears_episode_index(
+        client_stub, monkeypatch, tmp_path):
+    from kitsune.auth.session import SessionManager
+    from kitsune.storage import episode_index
+    idx_file = tmp_path / 'idx.json'
+    monkeypatch.setattr(episode_index, '_INDEX_FILE', idx_file)
+    monkeypatch.setattr(episode_index, '_cache', None)
+    episode_index.add_from_release_data(
+        9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+    assert idx_file.exists()
+
+    sm = SessionManager(client_stub)
+    sm.force_logout_cleanup()
+
+    assert not idx_file.exists()
+
+
+def test_force_logout_cleanup_does_not_call_server_logout(client_stub):
+    """force_logout_cleanup must NOT call client.logout() — the token
+    is already rejected, a server logout call would just 401."""
+    from kitsune.auth.session import SessionManager
+    calls = []
+
+    # Extend the stub with a logout method that records calls
+    original_cls = type(client_stub)
+
+    class InstrumentedStub(original_cls):
+        def logout(self, callback=None):
+            calls.append('logout')
+            if callback:
+                callback(None, None)
+
+    stub = InstrumentedStub()
+    sm = SessionManager(stub)
+    sm.force_logout_cleanup()
+    assert calls == []

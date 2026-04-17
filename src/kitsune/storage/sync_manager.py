@@ -329,6 +329,36 @@ class SyncManager:
         self._queue.reset_all_retries()
         self._drain_queue()
 
+    def pause_for_expired_session(self):
+        """Stop the retry timer because the server is rejecting our token.
+
+        Called by window.py via session.connect_session_expired(). Drain
+        stays theoretically enabled (the in-memory flag is untouched), but
+        it's a no-op: `is_logged_in()` still returns True (token is kept)
+        and the next dispatch attempt will just fail with 401 again,
+        which re-fires _on_token_expired — already idempotent.
+
+        We intentionally do NOT cancel any in-flight HTTP here — letting
+        those complete naturally (and fail with 401) keeps the code
+        simple and the next retry sees clean state.
+        """
+        self._stop_retry_timer()
+
+    def resume_after_expired_session(self):
+        """Restart the retry timer and kick a drain to flush queued ops.
+
+        Called by window.py via session.connect_session_restored() after
+        a successful re-login. Pending ops that piled up during the
+        expired window are now dispatched.
+
+        We reset `_drain_scheduled` first so the schedule is guaranteed to
+        fire even if a write-through enqueue set the flag while the session
+        was paused (those idle_add calls targeted a dead GLib slot or were
+        suppressed by the reentrancy guard).
+        """
+        self._drain_scheduled = False
+        self._schedule_drain()
+
     # --- Initial sync with strategy ---
 
     def initial_sync(self, callback=None, strategy=MergeStrategy.MERGE):

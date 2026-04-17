@@ -1143,3 +1143,48 @@ def test_fake_client_trigger_without_handler_is_noop(tmp_path):
     """Firing with no handler registered must not raise."""
     client = FakeApiClient()
     client.trigger_token_expired()  # should not raise
+
+
+# --- Stage 6: session-expired reaction ---
+
+def test_pause_for_expired_session_stops_retry_timer(tmp_path, mock_tags, monkeypatch):
+    sm, client = _make_sm_with_fake(tmp_path)
+    # Kick a drain so the retry timer starts
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0', pos=30.0, is_watched=False)
+    sm._drain_queue()
+    client.flush_all()
+    # Timer is now started
+    assert sm._retry_timer_id is not None
+    sm.pause_for_expired_session()
+    assert sm._retry_timer_id is None
+
+
+def test_pause_for_expired_session_safe_when_no_timer(tmp_path, mock_tags):
+    """Calling pause before any drain ever happened must not raise."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    assert sm._retry_timer_id is None
+    sm.pause_for_expired_session()
+    assert sm._retry_timer_id is None
+
+
+def test_resume_after_expired_session_kicks_drain(tmp_path, mock_tags, monkeypatch):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.0', pos=30.0, is_watched=False)
+    sm._drain_queue()
+    client.flush_all()
+    sm.pause_for_expired_session()
+    # Enqueue another while "paused"
+    sm.enqueue_timecode(
+        release_id=9275, episode_id='ep.1', pos=30.0, is_watched=False)
+    # Clear state to see what resume triggers
+    client.call_log.clear()
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    sm.resume_after_expired_session()
+    assert len(scheduled) == 1
+    assert sm._retry_timer_id is not None

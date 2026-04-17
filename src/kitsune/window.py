@@ -83,6 +83,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if self._session:
             self._session.connect_logged_in(self._on_logged_in)
             self._session.connect_logged_out(self._on_logged_out)
+            self._session.connect_session_expired(
+                self._sync.pause_for_expired_session)
+            self._session.connect_session_restored(
+                self._sync.resume_after_expired_session)
             if self._session.is_logged_in():
                 self._session.validate_session(self._on_session_validated)
 

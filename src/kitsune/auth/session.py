@@ -141,6 +141,24 @@ class SessionManager:
                 callback(True, None)
         self._client.logout(on_result)
 
+    def force_logout_cleanup(self):
+        """Clear synced local data without calling the server.
+
+        Used by the account-switch path (Stage 7): when re-login brings a
+        different user, we must wipe the previous account's synced data
+        locally because the token from the OLD session has already been
+        rejected (calling server logout would just 401). This is a
+        destructive operation — custom (non-builtin) tags are preserved.
+        """
+        from kitsune.storage import tags_store, watch_positions, episode_index
+        from kitsune.storage.sync_manager import SYNCED_TAGS
+        # Clear releases in synced built-in tags (but keep the tags themselves)
+        for tag_id in SYNCED_TAGS:
+            for rid in list(tags_store.get_release_ids_for_tag(tag_id)):
+                tags_store.remove_release(tag_id, rid)
+        watch_positions.clear_all()
+        episode_index.clear()
+
     def validate_session(self, callback=None):
         if not self._token:
             if callback:
