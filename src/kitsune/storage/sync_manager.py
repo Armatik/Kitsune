@@ -239,6 +239,13 @@ class SyncManager:
         Used by the 'Retry now' button in the profile UI (Stage 7).
         Attempt counts and last_error values are preserved — this is a
         user-initiated wake-up, not a state reset.
+
+        If a drain is already in progress (`_draining=True`), the
+        `_drain_queue` call hits the reentrancy guard and returns
+        immediately. The `reset_all_retries()` call above still took
+        effect, so every op is now ready — the in-progress drain will
+        pick them up as it iterates. The user's click therefore always
+        has an effect, even when the dispatch itself appears to be a no-op.
         """
         self._queue.reset_all_retries()
         self._drain_queue()

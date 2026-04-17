@@ -520,3 +520,72 @@ def test_drain_recovers_after_mark_success_raises(tmp_path, mock_tags, monkeypat
     # so peek_ready returns nothing — verify the drain loop is not stuck
     sm._drain_queue()
     assert sm._draining is False
+
+
+def test_force_drain_during_in_flight_still_effective(tmp_path, mock_tags):
+    """force_drain while a drain is in-flight: reset_all_retries still applies.
+
+    Scenario: user clicks 'Retry now' while the retry timer already kicked
+    off a drain. The direct _drain_queue call hits the reentrancy guard,
+    but reset_all_retries() has already zeroed next_retry_at on every op,
+    so the in-progress drain's next _drain_next iteration will pick up any
+    ops that were previously in backoff.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    op_a = sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    op_b = sm._queue.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    # Put op_a in-flight so op_b is "behind" it waiting to dispatch
+    sm._drain_queue()
+    # Meanwhile, mark op_b as failed so it's in backoff
+    sm._queue.mark_failure(op_b, 'simulated earlier failure')
+    assert sm._queue._ops[1].next_retry_at > time.time()
+    # User clicks 'Retry now' while op_a's HTTP is still in-flight
+    sm.force_drain()
+    # reset_all_retries took effect even though _drain_queue was a no-op
+    assert sm._queue._ops[1].next_retry_at == 0.0
+    # Fire the in-flight callback → chain continues → op_b dispatched
+    client.flush_next()  # op_a succeeds
+    assert ('add_favorites', [9276]) in client.call_log
+    client.flush_next()  # op_b succeeds
+    assert sm._queue.size() == 0
+
+
+def test_end_to_end_write_fail_retry_success(tmp_path, mock_tags, monkeypatch):
+    """Full async cycle: write-through → dispatch → fail → backoff → retry_tick → success."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    # Stub idle_add so _schedule_drain is a no-op (we drain manually)
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: None,
+    )
+    sm.add_to_tag_synced('favorites', 9275)
+    assert sm._queue.size() == 1
+    # First dispatch attempt — simulate server error
+    sm._drain_queue()
+    client.fail_next('server 500')
+    assert sm._queue.size() == 1
+    assert sm._queue.has_errors()
+    # Backoff now blocks peek_ready
+    assert sm._queue.peek_ready(time.time()) == []
+    # retry_tick fires but sees op still in backoff — no-op
+    sm._retry_tick()
+    assert client.call_log == [('add_favorites', [9275])]  # still just one call
+    # Simulate backoff expiring
+    sm._queue._ops[0].next_retry_at = 0.0
+    # Now retry_tick schedules drain (monkeypatched) — call manually
+    sm._retry_tick()
+    sm._drain_queue()
+    assert len(client.call_log) == 2  # retry dispatched
+    client.flush_next()  # success
+    assert sm._queue.size() == 0
+    assert not sm._queue.has_errors()
+
+
+def test_enqueued_op_carries_current_user_id(tmp_path, mock_tags):
+    """set_user_id value is captured at enqueue time."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm.set_user_id(777)
+    sm.add_to_tag_synced('favorites', 9275)
+    sm.add_to_tag_synced('watching', 9276)
+    assert sm._queue._ops[0].user_id == 777
+    assert sm._queue._ops[1].user_id == 777
