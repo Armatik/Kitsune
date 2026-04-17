@@ -13,6 +13,7 @@ class FakeApiClient:
         self.call_log = []
         self._pending = []  # list of (callback, default_data)
         self._get_token = lambda: 'fake-token'
+        self._token_expired_handler = None
 
     # --- Control methods (called by tests) ---
 
@@ -37,6 +38,15 @@ class FakeApiClient:
 
     def pending_count(self):
         return len(self._pending)
+
+    def set_token_expired_handler(self, callback):
+        """Register SessionManager's 401-handler."""
+        self._token_expired_handler = callback
+
+    def trigger_token_expired(self):
+        """Simulate an incoming 401 from the server."""
+        if self._token_expired_handler is not None:
+            self._token_expired_handler()
 
     # --- API methods (mirror AniLibriaClient) ---
 

@@ -12,10 +12,15 @@ class SessionManager:
         self._token = token_store.load_token()
         self._user = None
         self._device_id = str(uuid.uuid4())
+        self._expired = False
         self._on_logged_in = []
         self._on_logged_out = []
+        self._on_session_expired = []
+        self._on_session_restored = []
 
         client.set_token_getter(self.get_token)
+        if hasattr(client, 'set_token_expired_handler'):
+            client.set_token_expired_handler(self._on_token_expired)
 
     def is_logged_in(self):
         return self._token is not None
@@ -32,6 +37,44 @@ class SessionManager:
     def connect_logged_out(self, callback):
         self._on_logged_out.append(callback)
 
+    def is_expired(self):
+        return self._expired
+
+    def connect_session_expired(self, callback):
+        """callback() — fired when server rejects our token (401)."""
+        self._on_session_expired.append(callback)
+
+    def connect_session_restored(self, callback):
+        """callback() — fired when expired session is cleared (re-login)."""
+        self._on_session_restored.append(callback)
+
+    def _emit_session_expired(self):
+        for cb in self._on_session_expired:
+            cb()
+
+    def _emit_session_restored(self):
+        for cb in self._on_session_restored:
+            cb()
+
+    def _on_token_expired(self):
+        """Called by ApiClient when the server returns 401.
+
+        Idempotent — repeated 401s during a single expired window only
+        emit session-expired once.
+        """
+        if self._expired:
+            return
+        self._expired = True
+        self._emit_session_expired()
+
+    def clear_expired(self):
+        """Reset the expired flag after a successful re-login. No-op
+        if the session was never expired."""
+        if not self._expired:
+            return
+        self._expired = False
+        self._emit_session_restored()
+
     def _set_token(self, token):
         self._token = token
         token_store.save_token(token)
@@ -41,6 +84,10 @@ class SessionManager:
     def _clear_token(self):
         self._token = None
         self._user = None
+        # Logout is terminal: wipe expired flag so a reused SessionManager
+        # starts fresh. No session-restored emit — the session is gone,
+        # not restored.
+        self._expired = False
         token_store.delete_token()
         for cb in self._on_logged_out:
             cb()

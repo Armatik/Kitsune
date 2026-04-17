@@ -1126,3 +1126,20 @@ def test_coalesce_absorbs_new_save_after_failed_timecode(tmp_path, mock_tags, mo
     assert sm._queue._ops[0].id == first_op_id  # same op, updated
     assert sm._queue._ops[0].payload['time'] == 120.0
     assert sm._queue._ops[0].attempt_count == 0  # reset by timecode coalescing
+
+
+# --- Stage 6: token expired handler hook ---
+
+def test_fake_client_supports_token_expired_handler(tmp_path):
+    """FakeApiClient records the handler and fires it on trigger."""
+    client = FakeApiClient()
+    fired = []
+    client.set_token_expired_handler(lambda: fired.append(True))
+    client.trigger_token_expired()
+    assert fired == [True]
+
+
+def test_fake_client_trigger_without_handler_is_noop(tmp_path):
+    """Firing with no handler registered must not raise."""
+    client = FakeApiClient()
+    client.trigger_token_expired()  # should not raise

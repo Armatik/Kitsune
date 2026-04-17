@@ -35,6 +35,7 @@ class AniLibriaClient:
         self._on_network_ok = None
         self._offline = False
         self._get_token = None
+        self._token_expired_handler = None
 
     def set_on_network_error(self, callback):
         self._on_network_error = callback
@@ -44,6 +45,17 @@ class AniLibriaClient:
 
     def set_token_getter(self, getter):
         self._get_token = getter
+
+    def set_token_expired_handler(self, callback):
+        """Register a callback invoked when the server returns 401.
+
+        Fires before the regular error callback — the caller still receives
+        the standard 'HTTP unauthorized' error string and can decide how to
+        handle it locally (e.g. login dialog shows "wrong credentials" for
+        an explicit login attempt). The handler is typically registered by
+        SessionManager to transition into the expired state.
+        """
+        self._token_expired_handler = callback
 
     def _fetch(self, path: str, callback, cancellable: Gio.Cancellable | None = None):
         uri = f'{API_BASE_URL}{path}'
@@ -94,6 +106,11 @@ class AniLibriaClient:
             if status != Soup.Status.OK:
                 state[0] = True
                 GLib.source_remove(timeout_id)
+                if status == Soup.Status.UNAUTHORIZED and self._token_expired_handler:
+                    try:
+                        self._token_expired_handler()
+                    except Exception:
+                        pass  # handler errors must not prevent caller callback
                 callback(None, f'HTTP {status.value_nick}')
                 return
             if gbytes is None:
