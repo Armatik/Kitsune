@@ -114,16 +114,6 @@ def test_get_release_ids_for_tag(tmp_path):
     assert set(ids) == {1, 2}
 
 
-def test_update_tag(tmp_path):
-    _use_temp_file(tmp_path)
-    tag = tags_store.create_tag('Old', 'emoji', '💎')
-    tags_store.update_tag(tag['id'], name='New', icon_type='color', icon_value='red')
-    updated = [t for t in tags_store.get_all_tags() if t['id'] == tag['id']][0]
-    assert updated['name'] == 'New'
-    assert updated['icon_type'] == 'color'
-    assert updated['icon_value'] == 'red'
-
-
 def test_stats(tmp_path):
     _use_temp_file(tmp_path)
     initial = tags_store.get_count()

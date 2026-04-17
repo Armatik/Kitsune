@@ -151,17 +151,6 @@ def delete_tag(tag_id: str):
     _save(data)
 
 
-def update_tag(tag_id: str, **kwargs):
-    data = _load()
-    tag = _find_tag(data, tag_id)
-    if not tag or tag['builtin']:
-        return
-    for key in ('name', 'icon_type', 'icon_value'):
-        if key in kwargs:
-            tag[key] = kwargs[key]
-    _save(data)
-
-
 def add_release(tag_id: str, release_id: int):
     data = _load()
     tag = _find_tag(data, tag_id)
