@@ -38,6 +38,7 @@ widget_test_files = [
   'test_tag_card_widget.py',
   'test_release_view_widget.py',
   'test_player_view_widget.py',
+  'test_session_expired_banner_widget.py',
 ]
 
 foreach test_file : widget_test_files

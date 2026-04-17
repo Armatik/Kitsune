@@ -10,6 +10,7 @@
     <file preprocess="xml-stripblanks">auth_dialog.ui</file>
     <file preprocess="xml-stripblanks">aniliberty-logo.svg</file>
     <file preprocess="xml-stripblanks">profile_view.ui</file>
+    <file preprocess="xml-stripblanks">session_expired_banner.ui</file>
     <file preprocess="xml-stripblanks">content_grid.ui</file>
     <file preprocess="xml-stripblanks">release_card.ui</file>
     <file preprocess="xml-stripblanks">genre_card.ui</file>

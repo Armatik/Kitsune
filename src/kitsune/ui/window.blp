@@ -11,6 +11,9 @@ template $KitsuneWindow: Adw.ApplicationWindow {
     child: Gtk.Box {
       orientation: vertical;
 
+      $KitsuneSessionExpiredBanner session_expired_banner {
+      }
+
     Adw.NavigationView nav_view {
       vexpand: true;
 
