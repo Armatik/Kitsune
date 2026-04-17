@@ -135,6 +135,12 @@ class SessionManager:
         self._client.poll_social_auth(state, on_result)
 
     def logout(self, callback=None):
+        """Wipe synced local data first so the user sees an empty profile
+        immediately even if the server POST fails or 401s with an
+        already-invalid token.
+        """
+        self.force_logout_cleanup()
+
         def on_result(data, error):
             self._clear_token()
             if callback:

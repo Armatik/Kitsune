@@ -1188,3 +1188,27 @@ def test_resume_after_expired_session_kicks_drain(tmp_path, mock_tags, monkeypat
     sm.resume_after_expired_session()
     assert len(scheduled) == 1
     assert sm._retry_timer_id is not None
+
+
+# --- Queue cleanup on logged_out (Stage 8) ---
+
+def test_clear_queue_on_logout_wipes_pending_ops(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9276, user_id=42)
+    assert sm._queue.size() == 2
+    sm.clear_queue_on_logout()
+    assert sm._queue.size() == 0
+
+
+def test_clear_queue_on_logout_also_stops_retry_timer(tmp_path, mock_tags):
+    sm, client = _make_sm_with_fake(tmp_path)
+    sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
+    sm._schedule_drain()
+    sm._drain_queue()
+    client.flush_all()
+    # Timer is running after the scheduled drain
+    assert sm._retry_timer_id is not None
+    sm.clear_queue_on_logout()
+    # Timer stopped (no point retrying after logout)
+    assert sm._retry_timer_id is None

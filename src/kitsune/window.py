@@ -93,6 +93,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 self._sync.pause_for_expired_session)
             self._session.connect_session_restored(
                 self._sync.resume_after_expired_session)
+            self._session.connect_logged_out(
+                self._sync.clear_queue_on_logout)
             if self._session.is_logged_in():
                 self._session.validate_session(self._on_session_validated)
 

@@ -477,3 +477,79 @@ def test_expired_flag_is_true_during_on_logged_in_callback(client_stub):
     # Simulate successful re-login
     sm._set_token('new-token')
     assert observed_expired_during_login == [True]  # flag still True in callback
+
+
+# --- Extended logout ---
+
+def test_logout_calls_force_logout_cleanup_before_server(client_stub, mock_tags):
+    """logout() wipes synced local data before the server POST.
+
+    Even if the server POST fails or hangs, the local data is already
+    cleared — the user sees an empty profile immediately after clicking
+    Log out.
+    """
+    from kitsune.auth.session import SessionManager
+    from kitsune.storage import tags_store
+    tags_store.add_release('favorites', 9275)
+    tags_store.add_release('watching', 9276)
+
+    sm = SessionManager(client_stub)
+    sm._token = 'some-token'
+    # Mock client.logout to simulate server call
+    call_order = []
+
+    class InstrumentedClient:
+        def logout(self, callback=None):
+            call_order.append('server_logout')
+            if callback:
+                callback(None, None)
+
+    sm._client = InstrumentedClient()
+    # Wrap force_logout_cleanup to record order
+    original_cleanup = sm.force_logout_cleanup
+    def wrapped_cleanup():
+        call_order.append('force_logout_cleanup')
+        original_cleanup()
+    sm.force_logout_cleanup = wrapped_cleanup
+
+    sm.logout()
+
+    # Local cleanup BEFORE server call
+    assert call_order == ['force_logout_cleanup', 'server_logout']
+    # Synced tags actually wiped
+    assert tags_store.get_release_ids_for_tag('favorites') == []
+    assert tags_store.get_release_ids_for_tag('watching') == []
+
+
+def test_logout_fires_logged_out_signal_after_cleanup(
+        client_stub, mock_tags):
+    """logged_out signal fires AFTER local cleanup so subscribers see
+    the clean state."""
+    from kitsune.auth.session import SessionManager
+    from kitsune.storage import tags_store
+    tags_store.add_release('favorites', 9275)
+
+    sm = SessionManager(client_stub)
+    sm._token = 'some-token'
+
+    observed_tags_at_logout = []
+    sm.connect_logged_out(
+        lambda: observed_tags_at_logout.append(
+            list(tags_store.get_release_ids_for_tag('favorites'))))
+
+    sm.logout()
+
+    # Subscriber sees empty tags (cleanup happened first)
+    assert observed_tags_at_logout == [[]]
+
+
+def test_logout_resets_expired_flag(client_stub):
+    """logout on an expired session correctly resets the _expired flag."""
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    sm._token = 'some-token'
+    sm._on_token_expired()
+    assert sm.is_expired() is True
+    sm.logout()
+    assert sm.is_expired() is False
+    assert sm.is_logged_in() is False

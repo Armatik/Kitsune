@@ -361,6 +361,17 @@ class SyncManager:
         self._drain_scheduled = False
         self._schedule_drain()
 
+    def clear_queue_on_logout(self):
+        """Drop all pending queue ops and stop the retry timer.
+
+        Called via session.connect_logged_out() on explicit logout —
+        unsent ops are discarded because the user accepted that by
+        clicking Log out.
+        """
+        self._queue.clear()
+        self._stop_retry_timer()
+        self._emit_queue_changed()
+
     # --- Initial sync with strategy ---
 
     def initial_sync(self, callback=None, strategy=MergeStrategy.MERGE):
