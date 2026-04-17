@@ -276,3 +276,64 @@ def test_apply_server_entry_resolves_via_episode_index(monkeypatch, tmp_path):
     assert result == 'applied'
     assert wp.get_position(9275, 1.0) == 120
     assert wp.get_episode_id(9275, 1.0) == 'ep.0'
+
+
+# --- Post-review robustness coverage (Stage 4 final) ---
+
+def test_load_malformed_json_returns_empty(monkeypatch, tmp_path):
+    f = _setup_tmp(monkeypatch, tmp_path)
+    f.write_text('{not valid json')
+    assert wp._load() == {}
+
+
+def test_load_unknown_version_leaves_disk_unchanged(monkeypatch, tmp_path):
+    f = _setup_tmp(monkeypatch, tmp_path)
+    import json as _json
+    original = _json.dumps({'version': 99, 'entries': {'42_1.0': {'pos': 120}}})
+    f.write_text(original)
+    # Read via _load — must not trigger any disk write
+    assert wp._load() == {}
+    # File content is bit-identical to before
+    assert f.read_text() == original
+
+
+def test_clear_all_removes_file_and_next_load_empty(monkeypatch, tmp_path):
+    f = _setup_tmp(monkeypatch, tmp_path)
+    wp.save_position(42, 1.0, 60.0)
+    assert f.exists()
+    wp.clear_all()
+    assert not f.exists()
+    assert wp._load() == {}
+
+
+def test_v1_migrated_entry_overwritten_by_server_with_newer_timestamp(
+        monkeypatch, tmp_path):
+    """v1-migrated entry (no episode_id) + server sends data with episode_id
+    for same (release_id, ordinal): server wins if its updated_at is newer.
+
+    This is the real migration+sync interaction path: user upgraded, old
+    v1 data became v2 with updated_at=mtime, then server sent a fresh
+    timecode with a proper episode_id. The server's authoritative data
+    should replace the stale local entry.
+    """
+    from kitsune.storage import episode_index
+    f = _setup_tmp(monkeypatch, tmp_path)
+    idx_file = tmp_path / 'episode_index.json'
+    monkeypatch.setattr(episode_index, '_INDEX_FILE', idx_file)
+    monkeypatch.setattr(episode_index, '_cache', None)
+    # Write v1 file directly (simulating pre-upgrade state)
+    import json as _json
+    import os as _os
+    f.write_text(_json.dumps({'9275_1.0': 30.0}))
+    # Force an old mtime on the file (v1 entry "from the past")
+    _os.utime(f, (1000.0, 1000.0))
+    # Index knows the episode (release was opened after upgrade)
+    episode_index.add_from_release_data(
+        9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+    # Server sends fresh data for this episode
+    result = wp.apply_server_entry(
+        'ep.0', pos=120, is_watched=False, updated_at=5000.0)
+    assert result == 'applied'
+    assert wp.get_position(9275, 1.0) == 120
+    assert wp.get_episode_id(9275, 1.0) == 'ep.0'
+    assert wp.get_updated_at(9275, 1.0) == 5000.0

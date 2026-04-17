@@ -123,7 +123,8 @@ def get_all_for_release(release_id: int) -> dict[float, float]:
             try:
                 ordinal = float(key[len(prefix):])
                 result[ordinal] = entry['pos']
-            except (ValueError, TypeError, KeyError):
+            except (ValueError, TypeError, KeyError) as exc:
+                log.warning('Skipping malformed watch_positions entry %r: %s', key, exc)
                 continue
     return result
 
@@ -191,6 +192,7 @@ def iter_pushable():
             release_id = int(prefix)
             ordinal = float(ord_part)
         except ValueError:
+            log.warning('Skipping malformed watch_positions key %r in iter_pushable', key)
             continue
         yield (release_id, ordinal, entry)
 
@@ -198,8 +200,12 @@ def iter_pushable():
 def _find_key_by_episode_id(episode_id: str, entries: dict) -> str | None:
     """Internal: return the raw storage key (e.g. '42_1.0') for an episode_id.
 
-    Scans the provided entries dict. Returns None if not found.
+    Scans the provided entries dict. Returns None if not found or if
+    `episode_id` is falsy (guard against matching v1-migrated entries
+    whose episode_id is None, and against '' from malformed server data).
     """
+    if not episode_id:
+        return None
     for key, entry in entries.items():
         if entry.get('episode_id') == episode_id:
             return key
