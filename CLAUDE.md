@@ -54,6 +54,26 @@ src/kitsune/
 - **Navigation**: Adw.NavigationView, push/pop pages, Adw.MultiLayoutView for adaptive layout
 - **Widget binding**: `@Gtk.Template(resource_path=...)` + `Gtk.Template.Child()`
 
+## Sync subsystem
+
+Bidirectional sync with the AniLibria account (favorites, 5 built-in collections,
+watch positions) is organized around a persistent operation queue. Every local
+write (star a release, mark an episode as watched, etc.) is enqueued in
+`PendingQueue` and then drained asynchronously to the server:
+
+- `src/kitsune/storage/pending_queue.py` — persistent FIFO queue (`~/.local/share/kitsune/pending_ops.json`) with coalescing, exponential backoff retry `[10, 30, 60, 120, 300, 600]`, and in-memory in-flight tracking.
+- `src/kitsune/storage/sync_manager.py` — `SyncManager` routes write-through through the queue, drains via `GLib.idle_add`, batches save_timecode ops (up to 50 per HTTP call), reacts to `session-expired` (pause) / `session-restored` (resume) / `logged-out` (clear queue).
+- `src/kitsune/storage/watch_positions.py` — v2 schema `{version, entries: {key: {pos, episode_id, updated_at}}}` with lazy v1 migration. `apply_server_entry` does conflict resolution (local wins on tie).
+- `src/kitsune/storage/episode_index.py` — reverse index `episode_id → (release_id, ordinal)`, populated opportunistically by `release_cache.save`, used as fallback for pulled timecodes.
+- `src/kitsune/auth/session.py` — `SessionManager` has `is_expired()` / `clear_expired()` / `force_logout_cleanup()`; 401 from server flips `_expired=True`. `logout()` wipes all synced local data before the server POST.
+- `src/kitsune/ui/session_expired_banner.py` — custom banner widget (two buttons: "Log in again" + dismiss).
+- `src/kitsune/ui/profile_view.py` — pending-ops indicator with retry-now button, subscribed to `queue-changed` / `sync-complete`.
+
+Pub/sub everywhere uses the callback-list pattern (`connect_*` methods storing callables in a list), NOT GObject signals.
+
+For the full architecture + stage-by-stage history see
+`docs/superpowers/specs/2026-04-12-sync-overhaul-design.md`.
+
 ## Gotchas
 
 - `Adw.LayoutSlot` uses GtkWidget `id` property, NOT `slot-name`
