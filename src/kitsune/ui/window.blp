@@ -7,8 +7,9 @@ template $KitsuneWindow: Adw.ApplicationWindow {
   default-width: 900;
   default-height: 600;
 
-  content: Gtk.Box {
-    orientation: vertical;
+  content: Adw.ToastOverlay toast_overlay {
+    child: Gtk.Box {
+      orientation: vertical;
 
     Adw.NavigationView nav_view {
       vexpand: true;
@@ -245,6 +246,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
       revealed: false;
       button-clicked => $on_retry();
     }
+    };
   };
 
   Adw.Breakpoint {

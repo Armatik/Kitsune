@@ -39,6 +39,7 @@ _NAV_CSS = (
 class KitsuneWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'KitsuneWindow'
 
+    toast_overlay = Gtk.Template.Child()
     nav_view = Gtk.Template.Child()
     offline_banner = Gtk.Template.Child()
     multi = Gtk.Template.Child()
@@ -89,6 +90,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 self._sync.resume_after_expired_session)
             if self._session.is_logged_in():
                 self._session.validate_session(self._on_session_validated)
+
+        # Sync-error toast wiring with 5-second throttle
+        self._last_sync_error_toast_at = 0.0
+        self._sync.connect_sync_error(self._on_sync_error)
 
     def _setup_window_state(self):
         self.set_default_size(
@@ -1013,6 +1018,23 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_network_ok(self):
         self.offline_banner.set_revealed(False)
+
+    def _on_sync_error(self, op_kind, release_id, error):
+        """Show a throttled toast when a write-through op fails.
+
+        Throttle at 5 seconds so a burst of failures (e.g. network
+        outage) does not stack multiple toasts. The profile indicator is
+        the persistent channel — toast is just the shout-out for the
+        first one.
+        """
+        import time
+        now = time.monotonic()
+        if now - self._last_sync_error_toast_at < 5.0:
+            return
+        self._last_sync_error_toast_at = now
+        toast = Adw.Toast.new(_('Failed to sync your change with the server'))
+        toast.set_timeout(4)
+        self.toast_overlay.add_toast(toast)
 
     @Gtk.Template.Callback()
     def on_retry(self, _banner):
