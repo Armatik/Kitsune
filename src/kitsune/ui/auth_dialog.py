@@ -91,10 +91,11 @@ class AuthDialog(Adw.Dialog):
     otp_code_label = Gtk.Template.Child()
     otp_timer_label = Gtk.Template.Child()
 
-    def __init__(self, session_manager, **kwargs):
+    def __init__(self, session_manager, sync_manager=None, **kwargs):
         super().__init__(**kwargs)
         register_css(_AUTH_CSS)
         self._session = session_manager
+        self._sync = sync_manager
         self._otp_code = None
         self._otp_timer_id = 0
         self._otp_poll_id = 0
@@ -213,11 +214,56 @@ class AuthDialog(Adw.Dialog):
 
     def _on_login_result(self, success, error):
         self.login_button.set_sensitive(True)
-        if success:
-            self.close()
+        if not success:
+            self._show_error(error)
             return
+        self._finalize_login()
 
-        self._show_error(error)
+    def _apply_login_to_session(self, new_user, old_user_id, was_expired):
+        """Decide between resume-same-user and cleanup-different-user.
+
+        Pure state transition on session + sync; no UI side effects here
+        (the caller handles closing the dialog).
+
+        - was_expired=True and new.id != old.id → account switch: wipe
+          the previous account's synced data and drop its pending queue
+          ops, then clear_expired.
+        - was_expired=True and new.id == old.id → same user resume:
+          just clear_expired (emits session-restored → SyncManager
+          resumes from Stage 6 wiring).
+        - was_expired=False → fresh login: nothing to do here.
+        """
+        if not was_expired:
+            return
+        if old_user_id is not None and new_user.id != old_user_id:
+            self._session.force_logout_cleanup()
+            if self._sync is not None:
+                self._sync._queue.clear_for_user(old_user_id)
+        self._session.clear_expired()
+
+    def _finalize_login(self):
+        """Post-login sequence shared by all three login flows.
+
+        Captures was_expired and old_user_id before fetching the profile
+        (since fetch_profile mutates self._session._user), then invokes
+        the account-switch decision and closes the dialog.
+        """
+        was_expired = self._session.is_expired() if self._session else False
+        old_user = self._session.get_user() if self._session else None
+        old_user_id = old_user.id if old_user else None
+
+        def on_profile(new_user, err):
+            if err or not new_user:
+                # Profile fetch failed — keep dialog open, surface error
+                self._show_error(err or 'no profile')
+                return
+            self._apply_login_to_session(new_user, old_user_id, was_expired)
+            self.close()
+
+        if self._session:
+            self._session.fetch_profile(on_profile)
+        else:
+            self.close()
 
     def _show_error(self, error):
         """Show appropriate error toast based on error string from API client."""
@@ -292,7 +338,7 @@ class AuthDialog(Adw.Dialog):
     def _on_social_poll_result(self, success, error):
         if success:
             self._stop_social_poll()
-            self.close()
+            self._finalize_login()
 
     def _stop_social_poll(self):
         if self._social_poll_id:
@@ -374,7 +420,7 @@ class AuthDialog(Adw.Dialog):
     def _on_otp_poll_result(self, success, error):
         if success:
             self._stop_otp_timers()
-            self.close()
+            self._finalize_login()
 
     def _reset_otp(self):
         """Reset OTP UI to idle state."""

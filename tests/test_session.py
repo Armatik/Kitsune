@@ -322,3 +322,140 @@ def test_logged_out_during_401_flow_leaves_clean_state(client_stub):
     assert sm.is_expired() is False
     assert sm.is_logged_in() is False
     assert logged_out_events == [True]
+
+
+# --- AuthDialog account-switch decision logic ---
+
+def test_auth_dialog_same_user_relogin_clears_expired(client_stub):
+    """Same-user re-login during expired: clear_expired + no cleanup."""
+    from kitsune.auth.session import SessionManager
+    from kitsune.ui.auth_dialog import AuthDialog
+    from kitsune.models.user import User
+    sm = SessionManager(client_stub)
+    sm._user = User(id=42, login='u', email='', nickname='', avatar=None,
+                    is_banned=False, created_at='')
+    sm._on_token_expired()
+    assert sm.is_expired() is True
+
+    # Mock the cleanup path to prove it's NOT called
+    called_force = []
+    sm.force_logout_cleanup = lambda: called_force.append(True)
+
+    class FakeSync:
+        class _Queue:
+            cleared_for = []
+            def clear_for_user(self, uid):
+                type(self).cleared_for.append(uid)
+        _queue = _Queue()
+
+    fake_sync = FakeSync()
+
+    # Simulate AuthDialog instance (bypass __init__ to avoid GTK setup)
+    dialog = AuthDialog.__new__(AuthDialog)
+    dialog._session = sm
+    dialog._sync = fake_sync
+
+    new_user = User(id=42, login='u2', email='', nickname='',
+                    avatar=None, is_banned=False, created_at='')
+    dialog._apply_login_to_session(new_user, old_user_id=42, was_expired=True)
+
+    assert sm.is_expired() is False
+    assert called_force == []  # no cleanup on same-user
+    assert FakeSync._Queue.cleared_for == []
+
+
+def test_auth_dialog_different_user_relogin_force_cleanup(client_stub):
+    """Different-user re-login during expired: force_logout_cleanup +
+    queue wipe + clear_expired."""
+    from kitsune.auth.session import SessionManager
+    from kitsune.ui.auth_dialog import AuthDialog
+    from kitsune.models.user import User
+    sm = SessionManager(client_stub)
+    sm._user = User(id=42, login='u', email='', nickname='', avatar=None,
+                    is_banned=False, created_at='')
+    sm._on_token_expired()
+
+    called_force = []
+    sm.force_logout_cleanup = lambda: called_force.append(True)
+
+    class FakeSync:
+        class _Queue:
+            cleared_for = []
+            def clear_for_user(self, uid):
+                type(self).cleared_for.append(uid)
+        _queue = _Queue()
+
+    dialog = AuthDialog.__new__(AuthDialog)
+    dialog._session = sm
+    dialog._sync = FakeSync()
+
+    new_user = User(id=999, login='other', email='', nickname='',
+                    avatar=None, is_banned=False, created_at='')
+    dialog._apply_login_to_session(new_user, old_user_id=42, was_expired=True)
+
+    assert sm.is_expired() is False
+    assert called_force == [True]
+    assert FakeSync._Queue.cleared_for == [42]
+
+
+def test_auth_dialog_fresh_login_no_session_transitions(client_stub):
+    """Fresh login (not expired): no cleanup, no clear_expired emit."""
+    from kitsune.auth.session import SessionManager
+    from kitsune.ui.auth_dialog import AuthDialog
+    from kitsune.models.user import User
+    sm = SessionManager(client_stub)
+    assert sm.is_expired() is False
+
+    called_force = []
+    sm.force_logout_cleanup = lambda: called_force.append(True)
+    restored_events = []
+    sm.connect_session_restored(lambda: restored_events.append(True))
+
+    dialog = AuthDialog.__new__(AuthDialog)
+    dialog._session = sm
+    dialog._sync = None
+
+    new_user = User(id=42, login='u', email='', nickname='',
+                    avatar=None, is_banned=False, created_at='')
+    dialog._apply_login_to_session(new_user, old_user_id=None, was_expired=False)
+
+    assert called_force == []
+    assert restored_events == []  # clear_expired wasn't called
+
+
+def test_auth_dialog_first_login_during_expired_is_safe(client_stub):
+    """Edge case: was_expired=True but no prior user (app started with
+    a stale token whose validate_session failed — _clear_token was
+    called, _user is None, but _expired flag re-flipped on some later
+    request). Logging in should clear_expired without calling the
+    cleanup path (there's nothing to clean)."""
+    from kitsune.auth.session import SessionManager
+    from kitsune.ui.auth_dialog import AuthDialog
+    from kitsune.models.user import User
+    sm = SessionManager(client_stub)
+    sm._on_token_expired()
+    assert sm.is_expired() is True
+    assert sm.get_user() is None
+
+    called_force = []
+    sm.force_logout_cleanup = lambda: called_force.append(True)
+
+    class FakeSync:
+        class _Queue:
+            cleared_for = []
+            def clear_for_user(self, uid):
+                type(self).cleared_for.append(uid)
+        _queue = _Queue()
+
+    dialog = AuthDialog.__new__(AuthDialog)
+    dialog._session = sm
+    dialog._sync = FakeSync()
+
+    new_user = User(id=42, login='u', email='', nickname='',
+                    avatar=None, is_banned=False, created_at='')
+    dialog._apply_login_to_session(new_user, old_user_id=None, was_expired=True)
+
+    # clear_expired called but no cleanup fired
+    assert sm.is_expired() is False
+    assert called_force == []
+    assert FakeSync._Queue.cleared_for == []

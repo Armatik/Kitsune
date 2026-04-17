@@ -1028,7 +1028,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _show_auth_dialog(self):
         if not self._session:
             return
-        dialog = AuthDialog(self._session)
+        dialog = AuthDialog(self._session, sync_manager=self._sync)
         dialog.present(self)
 
     def _on_network_error(self):
@@ -1100,7 +1100,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _on_banner_login_requested(self, _banner):
         """User clicked 'Log in again' — open auth_dialog."""
         from kitsune.ui.auth_dialog import AuthDialog
-        dialog = AuthDialog(self._session)
+        dialog = AuthDialog(self._session, sync_manager=self._sync)
         dialog.present(self)
 
     def _on_banner_dismissed(self, _banner):
