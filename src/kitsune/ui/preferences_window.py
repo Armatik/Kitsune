@@ -30,6 +30,8 @@ _STYLE_DESCRIPTIONS = {
 class PreferencesWindow(Adw.PreferencesDialog):
     __gtype_name__ = 'KitsunePreferencesWindow'
 
+    auto_watch_events_row = Gtk.Template.Child()
+    auto_idle_scan_row = Gtk.Template.Child()
     cache_size_row = Gtk.Template.Child()
     preview_size_row = Gtk.Template.Child()
     release_size_row = Gtk.Template.Child()
@@ -88,6 +90,18 @@ class PreferencesWindow(Adw.PreferencesDialog):
             self._settings.get_boolean('player-show-rotate-button'))
         self.rotate_button_row.connect('notify::active', self._on_rotate_button_changed)
         check_available(self._on_rotate_check)
+
+        # Auto-collections preferences — bound directly to GSettings so
+        # toggle state survives restarts and the schema's default kicks
+        # in cleanly when the key is unset.
+        self._settings.bind(
+            'auto-collections-watch-events', self.auto_watch_events_row,
+            'active', Gio.SettingsBindFlags.DEFAULT,
+        )
+        self._settings.bind(
+            'auto-collections-idle-scan', self.auto_idle_scan_row,
+            'active', Gio.SettingsBindFlags.DEFAULT,
+        )
 
         self._update_cache_size()
         self._update_preview_cache()

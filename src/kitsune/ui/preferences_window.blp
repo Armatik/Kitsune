@@ -162,6 +162,26 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
   }
 
   Adw.PreferencesPage {
+    title: _("Collections");
+    icon-name: "view-list-bullet-symbolic";
+
+    Adw.PreferencesGroup {
+      title: _("Automatic management");
+      description: _("Automatically move releases between built-in collections (Watching, Watched, Paused, Abandoned) based on what you watch");
+
+      Adw.SwitchRow auto_watch_events_row {
+        title: _("From watch activity");
+        subtitle: _("Add to Watching when you start an episode; move to Watched when all episodes are watched; suggest moving back to Watching when you resume from Planned, Paused or Abandoned");
+      }
+
+      Adw.SwitchRow auto_idle_scan_row {
+        title: _("Idle timer");
+        subtitle: _("Once per day, move to Paused after 30 days without progress and to Abandoned after 180 days");
+      }
+    }
+  }
+
+  Adw.PreferencesPage {
     title: _("Storage");
     icon-name: "drive-harddisk-symbolic";
 

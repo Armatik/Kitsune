@@ -178,6 +178,11 @@ class ReleaseView(Adw.NavigationPage):
         self.tag_split_btn.set_popover(self._tag_popover)
         self._update_favorite_icon()
 
+        # External tag mutations (auto_collections moves, toast clicks,
+        # write-through from another view) refresh our pills/star.
+        if self._sync:
+            self._sync.connect_tags_changed(self._on_external_tags_changed)
+
         # Always refresh from API
         self._start_refresh()
 
@@ -843,6 +848,16 @@ class ReleaseView(Adw.NavigationPage):
         self._update_tag_pills()
         if self._on_tags_changed_ext:
             self._on_tags_changed_ext(self._release.id)
+
+    def _on_external_tags_changed(self, release_id):
+        # Triggered by sync_manager any time some release's tags change.
+        # Filter to current release; bail if widget already detached so
+        # leftover subscriptions on dead views don't crash on access.
+        if release_id != self._release.id:
+            return
+        if self.get_root() is None:
+            return
+        self._on_tags_changed()
 
     def _update_tag_pills(self):
         if not hasattr(self, '_tag_pills_wrap'):

@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import logging
+
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -18,6 +20,8 @@ from kitsune.ui.auth_dialog import AuthDialog
 from kitsune.ui.catalog_view import CatalogView
 
 _T = ADW_TRANSITION
+
+log = logging.getLogger('kitsune.window')
 _NAV_CSS = (
     '.nav-tab { background: none;'
     ' border-radius: 12px; padding: 6px 8px;'
@@ -111,6 +115,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # Sync-error toast wiring with 5-second throttle
         self._last_sync_error_toast_at = 0.0
         self._sync.connect_sync_error(self._on_sync_error)
+
+        # Auto-collection daily idle scan — fire 30s after launch (UI is
+        # idle by then), and re-check every hour. Each tick respects
+        # the 24h debounce inside auto_collections.should_scan_now().
+        GLib.timeout_add_seconds(30, self._auto_collections_tick, True)
+        GLib.timeout_add_seconds(3600, self._auto_collections_tick, False)
 
     def _setup_window_state(self):
         self.set_default_size(
@@ -1089,6 +1099,67 @@ class KitsuneWindow(Adw.ApplicationWindow):
         toast = Adw.Toast.new(_('Failed to sync your change with the server'))
         toast.set_timeout(4)
         self.toast_overlay.add_toast(toast)
+
+    def _auto_collections_tick(self, is_initial: bool):
+        """Daily idle-scan tick. The 24h debounce lives inside
+        auto_collections.should_scan_now() — we poll periodically and
+        let it decide whether enough time has passed. Idle-driven moves
+        are auto-applied (no toast) when the user has the feature on.
+        """
+        from kitsune.storage import auto_collections
+        if not self._settings.get_boolean('auto-collections-idle-scan'):
+            return GLib.SOURCE_REMOVE if is_initial else GLib.SOURCE_CONTINUE
+        if auto_collections.should_scan_now():
+            actions = auto_collections.scan_all()
+            auto_collections.record_scan_time()
+            for action in actions:
+                if action.type == 'auto':
+                    auto_collections.apply_action(action, self._sync)
+                    log.info(
+                        'auto-collection idle %s release=%d → %s',
+                        action.reason, action.release_id, action.to_tag,
+                    )
+        # Initial 30s tick is single-shot; the periodic 1h tick repeats.
+        return GLib.SOURCE_REMOVE if is_initial else GLib.SOURCE_CONTINUE
+
+    def show_collection_suggestion(self, action):
+        """Surface a suggest-type CollectionAction as a Move toast."""
+        title = self._format_collection_suggestion(action)
+        toast = Adw.Toast.new(title)
+        toast.set_button_label(_('Move'))
+        toast.set_timeout(15)
+        toast.connect('button-clicked',
+                      self._on_collection_toast_clicked, action)
+        self.toast_overlay.add_toast(toast)
+
+    def _format_collection_suggestion(self, action):
+        target_names = {
+            'watching': _('Watching'),
+            'watched': _('Watched'),
+            'planned': _('Planned'),
+            'postponed': _('Paused'),
+            'abandoned': _('Abandoned'),
+        }
+        target = target_names.get(action.to_tag, action.to_tag)
+        title = self._lookup_release_name(action.release_id)
+        prefix = f'«{title}» — ' if title else ''
+        return _('{prefix}move to {target}?').format(
+            prefix=prefix, target=target)
+
+    def _lookup_release_name(self, release_id):
+        try:
+            from kitsune.storage import release_cache
+            data = release_cache.get(release_id)
+            if data and isinstance(data.get('name'), dict):
+                return data['name'].get('main') or None
+        except Exception:
+            return None
+        return None
+
+    def _on_collection_toast_clicked(self, _toast, action):
+        if action.from_tag:
+            self._sync.remove_from_tag_synced(action.from_tag, action.release_id)
+        self._sync.add_to_tag_synced(action.to_tag, action.release_id)
 
     @Gtk.Template.Callback()
     def on_retry(self, _banner):

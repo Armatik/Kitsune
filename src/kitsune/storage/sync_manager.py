@@ -81,6 +81,7 @@ class SyncManager:
         self._on_sync_error_cbs = []
         self._on_queue_changed_cbs = []
         self._on_sync_complete_cbs = []
+        self._on_tags_changed_cbs = []
 
     @property
     def is_syncing(self):
@@ -109,6 +110,10 @@ class SyncManager:
         """callback(success: bool)"""
         self._on_sync_complete_cbs.append(callback)
 
+    def connect_tags_changed(self, callback):
+        """callback(release_id: int) — fired after add/remove on any tag."""
+        self._on_tags_changed_cbs.append(callback)
+
     def _emit_sync_error(self, op_kind, release_id, error):
         for cb in self._on_sync_error_cbs:
             cb(op_kind, release_id, error)
@@ -121,6 +126,10 @@ class SyncManager:
     def _emit_sync_complete(self, success):
         for cb in self._on_sync_complete_cbs:
             cb(success)
+
+    def _emit_tags_changed(self, release_id):
+        for cb in self._on_tags_changed_cbs:
+            cb(release_id)
 
     # --- Public queue accessors (for profile UI) ---
 
@@ -447,6 +456,7 @@ class SyncManager:
     def add_to_tag_synced(self, tag_id, release_id):
         """Add release to tag locally + enqueue server push."""
         tags_store.add_release(tag_id, release_id)
+        self._emit_tags_changed(release_id)
         if not self.is_logged_in():
             return
         if tag_id == 'favorites':
@@ -464,6 +474,7 @@ class SyncManager:
     def remove_from_tag_synced(self, tag_id, release_id):
         """Remove release from tag locally + enqueue server push."""
         tags_store.remove_release(tag_id, release_id)
+        self._emit_tags_changed(release_id)
         if not self.is_logged_in():
             return
         if tag_id == 'favorites':

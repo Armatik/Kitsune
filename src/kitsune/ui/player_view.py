@@ -541,6 +541,45 @@ class PlayerView(Adw.NavigationPage):
             self.skip_btn.set_visible(False)
             self._skip_target = None
 
+    def _handle_auto_collections(self, pos):
+        # Forward position-update to auto_collections; apply 'auto'
+        # actions immediately (sync-aware) and forward 'suggest' actions
+        # to the window for toast display. Gated by user setting so the
+        # whole mechanism can be disabled without disconnecting the hook.
+        if not self._sync:
+            return
+        try:
+            settings = Gio.Settings(schema_id='net.armatik.Kitsune')
+            if not settings.get_boolean('auto-collections-watch-events'):
+                return
+        except Exception:
+            pass
+        from kitsune.storage import auto_collections
+        release_meta = {
+            'episodes_total': self._release.episodes_total,
+            'is_ongoing': self._release.is_ongoing,
+            'episodes': [
+                {'id': e.id, 'ordinal': e.ordinal}
+                for e in self._release.episodes
+            ],
+        }
+        actions = auto_collections.evaluate_position_change(
+            self._release.id, pos, release_meta,
+        )
+        if not actions:
+            return
+        root = self.get_root()
+        for action in actions:
+            if action.type == 'auto':
+                auto_collections.apply_action(action, self._sync)
+                log.info(
+                    'auto-collection %s release=%d → %s',
+                    action.reason, action.release_id, action.to_tag,
+                )
+            elif action.type == 'suggest' and root is not None and \
+                    hasattr(root, 'show_collection_suggestion'):
+                root.show_collection_suggestion(action)
+
     def _save_watch_position(self):
         pos = self._player.get_position()
         dur = self._player.get_duration()
@@ -557,6 +596,7 @@ class PlayerView(Adw.NavigationPage):
                     pos=pos,
                     is_watched=False,
                 )
+            self._handle_auto_collections(pos)
         elif dur > 0 and (dur - pos) <= 60:
             watch_positions.mark_completed(
                 self._release.id, self._episode.ordinal,
@@ -569,6 +609,7 @@ class PlayerView(Adw.NavigationPage):
                     pos=0,
                     is_watched=True,
                 )
+            self._handle_auto_collections(-1)
 
     def _on_state_changed(self, _player, state):
         log.debug('ui state: %s (buffering=%s)', state, self._buffering)
@@ -594,6 +635,7 @@ class PlayerView(Adw.NavigationPage):
                 pos=0,
                 is_watched=True,
             )
+        self._handle_auto_collections(-1)
         if self._current_idx >= 0 \
                 and self._current_idx < len(self._episodes) - 1:
             self._switch_episode(self._episodes[self._current_idx + 1])

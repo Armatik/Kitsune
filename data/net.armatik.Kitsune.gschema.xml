@@ -112,5 +112,15 @@
       <default>600</default>
       <summary>Window height</summary>
     </key>
+    <key name="auto-collections-watch-events" type="b">
+      <default>true</default>
+      <summary>Auto-manage collections from watch events</summary>
+      <description>Automatically add to "Watching" on first episode and to "Watched" when all episodes are completed; suggest moving back to "Watching" from Planned/Paused/Abandoned when watching resumes</description>
+    </key>
+    <key name="auto-collections-idle-scan" type="b">
+      <default>true</default>
+      <summary>Auto-move idle releases</summary>
+      <description>Once per day, move releases with no progress for 30+ days to "Paused" and 180+ days to "Abandoned"</description>
+    </key>
   </schema>
 </schemalist>

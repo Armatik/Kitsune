@@ -18,6 +18,7 @@ test_files = [
   'test_episode_index.py',
   'test_sync_flow.py',
   'test_api_client.py',
+  'test_auto_collections.py',
 ]
 
 foreach test_file : test_files
