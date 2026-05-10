@@ -11,27 +11,46 @@ from gi.repository import Gtk
 from kitsune import tags_store
 
 
+def _make_symbolic_image(tag: dict, pixel_size: int) -> Gtk.Image:
+    image = Gtk.Image.new_from_icon_name(tag['icon_value'])
+    image.set_pixel_size(pixel_size)
+    image.set_valign(Gtk.Align.CENTER)
+    if tag.get('color'):
+        css = Gtk.CssProvider()
+        css.load_from_string(f"image {{ color: {tag['color']}; }}")
+        image.get_style_context().add_provider(
+            css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+        )
+    return image
+
+
+def _make_color_circle(color_name: str, color_map: dict) -> Gtk.Box:
+    hex_c = color_map.get(color_name, '#6e7781')
+    circle = Gtk.Box(
+        width_request=14, height_request=14,
+        valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
+    )
+    css = Gtk.CssProvider()
+    css.load_from_string(
+        f'box {{ background: {hex_c}; border-radius: 50%;'
+        f' min-width: 14px; min-height: 14px;'
+        f' border: 1px solid alpha(currentColor, 0.2); }}'
+    )
+    circle.get_style_context().add_provider(
+        css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+    )
+    return circle
+
+
 def create_full_tag_pill(tag: dict) -> Gtk.Button:
     from kitsune.ui.widgets.tag_card import COLOR_MAP
     box = Gtk.Box(spacing=5, halign=Gtk.Align.CENTER)
     if tag['icon_type'] == 'emoji':
         box.append(Gtk.Label(label=tag['icon_value']))
+    elif tag['icon_type'] == 'symbolic':
+        box.append(_make_symbolic_image(tag, 16))
     else:
-        hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-        circle = Gtk.Box(
-            width_request=14, height_request=14,
-            valign=Gtk.Align.CENTER,
-        )
-        css = Gtk.CssProvider()
-        css.load_from_string(
-            f'box {{ background: {hex_c}; border-radius: 50%;'
-            f' min-width: 14px; min-height: 14px;'
-            f' border: 1px solid alpha(currentColor, 0.2); }}'
-        )
-        circle.get_style_context().add_provider(
-            css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
-        box.append(circle)
+        box.append(_make_color_circle(tag['icon_value'], COLOR_MAP))
     box.append(Gtk.Label(label=tag['name']))
     return Gtk.Button(child=box, css_classes=['pill', 'release-chip'])
 
@@ -40,21 +59,10 @@ def create_compact_tag_pill(tag: dict) -> Gtk.Button:
     from kitsune.ui.widgets.tag_card import COLOR_MAP
     if tag['icon_type'] == 'emoji':
         child = Gtk.Label(label=tag['icon_value'])
+    elif tag['icon_type'] == 'symbolic':
+        child = _make_symbolic_image(tag, 16)
     else:
-        hex_c = COLOR_MAP.get(tag['icon_value'], '#6e7781')
-        child = Gtk.Box(
-            width_request=14, height_request=14,
-            valign=Gtk.Align.CENTER, halign=Gtk.Align.CENTER,
-        )
-        css = Gtk.CssProvider()
-        css.load_from_string(
-            f'box {{ background: {hex_c}; border-radius: 50%;'
-            f' min-width: 14px; min-height: 14px;'
-            f' border: 1px solid alpha(currentColor, 0.2); }}'
-        )
-        child.get_style_context().add_provider(
-            css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )
+        child = _make_color_circle(tag['icon_value'], COLOR_MAP)
     return Gtk.Button(
         child=child, css_classes=['release-chip-compact'],
         tooltip_text=tag['name'],

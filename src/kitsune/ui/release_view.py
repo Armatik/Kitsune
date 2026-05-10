@@ -34,6 +34,9 @@ _RELEASE_CSS = (
     ' .release-chip-compact:hover { background: alpha(currentColor, 0.18); }'
     ' .poster-fade { background: linear-gradient(to bottom,'
     ' transparent 40%, @window_bg_color 100%); }'
+    # Active favorite state: paint the headerbar star in the same gold
+    # used everywhere else for the favorites tag (#f5c211).
+    ' .favorite-active image { color: #f5c211; }'
 )
 
 
@@ -830,6 +833,10 @@ class ReleaseView(Adw.NavigationPage):
         self.tag_split_btn.set_icon_name(
             'starred-symbolic' if is_fav else 'non-starred-symbolic'
         )
+        if is_fav:
+            self.tag_split_btn.add_css_class('favorite-active')
+        else:
+            self.tag_split_btn.remove_css_class('favorite-active')
 
     def _on_tags_changed(self):
         self._update_favorite_icon()

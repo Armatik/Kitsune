@@ -181,6 +181,18 @@ class TagsView(Gtk.Box):
             icon.get_style_context().add_provider(
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )
+        elif tag['icon_type'] == 'symbolic':
+            icon = Gtk.Image.new_from_icon_name(tag['icon_value'])
+            icon.set_pixel_size(24)
+            icon.set_valign(Gtk.Align.CENTER)
+            if tag.get('color'):
+                css = Gtk.CssProvider()
+                css.load_from_string(
+                    f"image {{ color: {tag['color']}; }}"
+                )
+                icon.get_style_context().add_provider(
+                    css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                )
         else:
             icon = create_color_circle(tag['icon_value'], 28)
         row.add_prefix(icon)

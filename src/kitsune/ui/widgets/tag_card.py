@@ -81,6 +81,8 @@ class TagCard(Gtk.FlowBoxChild):
 
         if tag['icon_type'] == 'emoji':
             self._setup_emoji(tag['icon_value'])
+        elif tag['icon_type'] == 'symbolic':
+            self._setup_symbolic(tag['icon_value'], tag.get('color'))
         else:
             self._setup_color(tag['icon_value'])
 
@@ -98,6 +100,24 @@ class TagCard(Gtk.FlowBoxChild):
         self.card_bg.set_baseline_position(Gtk.BaselinePosition.CENTER)
         bg_label.set_valign(Gtk.Align.FILL)
         self.card_bg.append(bg_label)
+
+    def _setup_symbolic(self, icon_name: str, hex_color: str | None):
+        # Hide the text label, replace with a symbolic image tinted in
+        # the tag's accent color via currentColor.
+        self.icon_label.set_visible(False)
+        image = Gtk.Image.new_from_icon_name(icon_name)
+        image.set_pixel_size(36)
+        image.set_halign(Gtk.Align.CENTER)
+        image.set_valign(Gtk.Align.CENTER)
+        if hex_color:
+            css = Gtk.CssProvider()
+            css.load_from_string(f'image {{ color: {hex_color}; }}')
+            image.get_style_context().add_provider(
+                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+            )
+        parent = self.icon_label.get_parent()
+        parent.prepend(image)
+        self.card_bg.add_css_class('tag-card-bg-emoji')
 
     def _setup_color(self, color_name: str):
         hex_color = COLOR_MAP.get(color_name, '#6e7781')

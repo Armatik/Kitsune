@@ -96,6 +96,18 @@ class TagPopover(Gtk.Popover):
                     label=tag['icon_value'],
                     css_classes=['tag-popover-emoji'],
                 ))
+            elif tag['icon_type'] == 'symbolic':
+                image = Gtk.Image.new_from_icon_name(tag['icon_value'])
+                image.set_pixel_size(20)
+                if tag.get('color'):
+                    css = Gtk.CssProvider()
+                    css.load_from_string(
+                        f"image {{ color: {tag['color']}; }}"
+                    )
+                    image.get_style_context().add_provider(
+                        css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                    )
+                row.add_prefix(image)
             else:
                 row.add_prefix(create_color_circle(tag['icon_value'], 22))
 

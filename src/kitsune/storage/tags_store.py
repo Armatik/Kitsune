@@ -18,8 +18,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'favorites',
         'name': 'Favorites',
-        'icon_type': 'emoji',
-        'icon_value': '⭐',
+        'icon_type': 'symbolic',
+        'icon_value': 'starred-symbolic',
         'builtin': True,
         'order': 0,
         'releases': [],
@@ -28,8 +28,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'watching',
         'name': 'Watching',
-        'icon_type': 'emoji',
-        'icon_value': '▶',
+        'icon_type': 'symbolic',
+        'icon_value': 'media-playback-start-symbolic',
         'builtin': True,
         'order': 1,
         'releases': [],
@@ -38,8 +38,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'watched',
         'name': 'Watched',
-        'icon_type': 'emoji',
-        'icon_value': '✓',
+        'icon_type': 'symbolic',
+        'icon_value': 'object-select-symbolic',
         'builtin': True,
         'order': 2,
         'releases': [],
@@ -48,8 +48,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'planned',
         'name': 'Planned',
-        'icon_type': 'emoji',
-        'icon_value': '📋',
+        'icon_type': 'symbolic',
+        'icon_value': 'view-list-bullet-symbolic',
         'builtin': True,
         'order': 3,
         'releases': [],
@@ -58,8 +58,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'postponed',
         'name': 'Postponed',
-        'icon_type': 'emoji',
-        'icon_value': '⏸',
+        'icon_type': 'symbolic',
+        'icon_value': 'media-playback-pause-symbolic',
         'builtin': True,
         'order': 4,
         'releases': [],
@@ -68,8 +68,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'abandoned',
         'name': 'Abandoned',
-        'icon_type': 'emoji',
-        'icon_value': '✕',
+        'icon_type': 'symbolic',
+        'icon_value': 'net.armatik.Kitsune.cross-large-symbolic',
         'builtin': True,
         'order': 5,
         'releases': [],
@@ -107,6 +107,20 @@ def _load() -> dict:
     for bt in _BUILTIN_TAGS:
         if bt['id'] not in existing_ids:
             data['tags'].insert(bt['order'], copy.deepcopy(bt))
+
+    # Migrate built-in tags from the legacy emoji icon set to Adwaita
+    # symbolic icons. Only touches built-ins; user-created tags keep
+    # whatever icon they were saved with.
+    builtin_by_id = {bt['id']: bt for bt in _BUILTIN_TAGS}
+    for tag in data['tags']:
+        if not tag.get('builtin'):
+            continue
+        latest = builtin_by_id.get(tag['id'])
+        if not latest:
+            continue
+        if tag.get('icon_type') == 'emoji':
+            tag['icon_type'] = latest['icon_type']
+            tag['icon_value'] = latest['icon_value']
 
     return data
 

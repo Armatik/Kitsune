@@ -84,6 +84,18 @@ class ReleaseCard(Gtk.FlowBoxChild):
                     label=tag['icon_value'],
                     css_classes=['tag-badge-emoji'],
                 ))
+            elif tag['icon_type'] == 'symbolic':
+                image = Gtk.Image.new_from_icon_name(tag['icon_value'])
+                image.set_pixel_size(16)
+                if tag.get('color'):
+                    css = Gtk.CssProvider()
+                    css.load_from_string(
+                        f"image {{ color: {tag['color']}; }}"
+                    )
+                    image.get_style_context().add_provider(
+                        css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                    )
+                pill.append(image)
             else:
                 from kitsune.ui.widgets.tag_card import create_color_circle
                 pill.append(create_color_circle(tag['icon_value'], 16))
