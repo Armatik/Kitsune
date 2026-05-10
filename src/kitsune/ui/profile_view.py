@@ -52,6 +52,13 @@ _PROFILE_CSS = (
     ' border-radius: 16px;'
     ' border: 1px solid alpha(currentColor, 0.1);'
     ' box-shadow: 0 2px 12px alpha(black, 0.1); }'
+    # Narrow / mobile: strip the card chrome so the profile flows
+    # edge-to-edge of the window instead of sitting inside a virtual
+    # rounded card. Hero stays — just loses its top rounding.
+    ' .profile-card.profile-card-narrow { background: none;'
+    ' border: none; box-shadow: none; border-radius: 0; }'
+    ' .profile-card.profile-card-narrow .profile-hero-image {'
+    ' border-radius: 0; }'
     # Hero image rounded top
     ' .profile-hero-image { border-radius: 15px 15px 0 0; }'
     # Hero gradient — matches card bg (@window_bg_color)
@@ -109,6 +116,7 @@ def _hex_to_rgba(hex_color, alpha):
 class ProfileView(Gtk.Box):
     __gtype_name__ = 'KitsuneProfileView'
 
+    clamp = Gtk.Template.Child()
     card_box = Gtk.Template.Child()
     profile_overlay = Gtk.Template.Child()
     content_box = Gtk.Template.Child()
@@ -138,6 +146,7 @@ class ProfileView(Gtk.Box):
         self._sync_manager = sync_manager
         self._cards = {}
         self._anim = None
+        self._narrow = False
 
         # Clip card content
         self.card_box.set_overflow(Gtk.Overflow.HIDDEN)
@@ -321,6 +330,30 @@ class ProfileView(Gtk.Box):
         self.content_box.set_margin_top(_CONTENT_MARGIN_START)
         self.hero_picture.set_opacity(0)
         self._load_hero_image()
+
+    def set_narrow(self, narrow: bool):
+        if self._narrow == narrow:
+            return
+        self._narrow = narrow
+        if narrow:
+            self.card_box.add_css_class('profile-card-narrow')
+            self.clamp.set_margin_start(0)
+            self.clamp.set_margin_end(0)
+            self.clamp.set_margin_top(0)
+            # Reserve space for the BottomSheet bottom-bar (separator +
+            # tab buttons ≈ 56-64px) so the logout/settings row can
+            # scroll fully into view instead of being hidden behind it.
+            self.clamp.set_margin_bottom(72)
+            # Disable Adw.Clamp width cap so content reaches the window
+            # edges instead of staying inside a 520px column.
+            self.clamp.set_maximum_size(2**30)
+        else:
+            self.card_box.remove_css_class('profile-card-narrow')
+            self.clamp.set_margin_start(16)
+            self.clamp.set_margin_end(16)
+            self.clamp.set_margin_top(20)
+            self.clamp.set_margin_bottom(20)
+            self.clamp.set_maximum_size(520)
 
     def update_profile(self, user):
         if user is None:

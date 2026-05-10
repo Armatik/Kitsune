@@ -59,6 +59,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
     narrow_drag_handle = Gtk.Template.Child()
     narrow_tabs_box = Gtk.Template.Child()
     narrow_sheet_box = Gtk.Template.Child()
+    narrow_toolbar = Gtk.Template.Child()
+    narrow_header = Gtk.Template.Child()
 
     def __init__(self, client=None, session_manager=None, **kwargs):
         super().__init__(**kwargs)
@@ -621,6 +623,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._franchises_view.set_narrow(True)
         if self._tags_view:
             self._tags_view.set_narrow(True)
+        if self._profile_view:
+            self._profile_view.set_narrow(True)
+        self._update_narrow_header_for_profile()
 
     @Gtk.Template.Callback()
     def on_narrow_unapply(self, _bp):
@@ -632,8 +637,26 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._franchises_view.set_narrow(False)
         if self._tags_view:
             self._tags_view.set_narrow(False)
+        if self._profile_view:
+            self._profile_view.set_narrow(False)
+        self._update_narrow_header_for_profile()
 
     # --- Internal Methods ---
+
+    def _update_narrow_header_for_profile(self):
+        # Profile in narrow mode: hero stretches edge-to-edge under a
+        # transparent headerbar. Any other case (wide mode, or any other
+        # tab while narrow) gets the standard opaque headerbar back.
+        on_profile_narrow = (
+            self._narrow
+            and self.content_stack.get_visible_child_name() == 'profile'
+        )
+        if on_profile_narrow:
+            self.narrow_header.add_css_class('flat')
+            self.narrow_toolbar.set_extend_content_to_top_edge(True)
+        else:
+            self.narrow_header.remove_css_class('flat')
+            self.narrow_toolbar.set_extend_content_to_top_edge(False)
 
     def _switch_tab(self, name: str):
         self.filter_split.set_show_sidebar(False)
@@ -659,6 +682,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self.content_stack.set_visible_child_name(name)
         self._update_content_header()
         self._update_nav_tabs(name)
+        self._update_narrow_header_for_profile()
 
     def _update_nav_tabs(self, active: str):
         for tab_id, btn in self._narrow_tab_buttons.items():
@@ -894,6 +918,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             sync_manager=self._sync,
         )
         self.content_stack.add_named(self._profile_view, 'profile')
+        if self._narrow:
+            self._profile_view.set_narrow(True)
         user = self._session.get_user() if self._session else None
         if user:
             self._profile_view.update_profile(user)
