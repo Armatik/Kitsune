@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-17 19:40+0300\n"
+"POT-Creation-Date: 2026-05-10 22:52+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -45,82 +45,82 @@ msgstr ""
 msgid "Uses"
 msgstr ""
 
-#: src/kitsune/window.py:189 src/kitsune/window.py:228
-#: src/kitsune/window.py:678 src/kitsune/ui/preferences_window.py:246
-#: src/kitsune/ui/window.blp:112
+#: src/kitsune/window.py:187 src/kitsune/window.py:226
+#: src/kitsune/window.py:698 src/kitsune/ui/preferences_window.py:246
+#: src/kitsune/ui/window.blp:108
 msgid "Catalog"
 msgstr ""
 
-#: src/kitsune/window.py:190 src/kitsune/window.py:229
-#: src/kitsune/window.py:679 src/kitsune/ui/filter_dialog.py:148
+#: src/kitsune/window.py:188 src/kitsune/window.py:227
+#: src/kitsune/window.py:699 src/kitsune/ui/filter_dialog.py:148
 #: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:232
 #: src/kitsune/ui/preferences_window.py:247 src/kitsune/ui/search_dialog.py:71
 msgid "Genres"
 msgstr ""
 
-#: src/kitsune/window.py:191 src/kitsune/window.py:230
-#: src/kitsune/window.py:680 src/kitsune/ui/preferences_window.py:233
+#: src/kitsune/window.py:189 src/kitsune/window.py:228
+#: src/kitsune/window.py:700 src/kitsune/ui/preferences_window.py:233
 #: src/kitsune/ui/preferences_window.py:248 src/kitsune/ui/search_dialog.py:71
 msgid "Franchises"
 msgstr ""
 
-#: src/kitsune/window.py:192 src/kitsune/window.py:681
+#: src/kitsune/window.py:190 src/kitsune/window.py:701
 #: src/kitsune/ui/preferences_window.py:249
 msgid "Favorites & Tags"
 msgstr ""
 
-#: src/kitsune/window.py:231
+#: src/kitsune/window.py:229
 msgid "Favorites"
 msgstr ""
 
-#: src/kitsune/window.py:331 src/kitsune/window.py:437
-#: src/kitsune/ui/window.blp:268
+#: src/kitsune/window.py:329 src/kitsune/window.py:435
+#: src/kitsune/ui/window.blp:269
 msgid "Preferences"
 msgstr ""
 
-#: src/kitsune/window.py:338 src/kitsune/window.py:438
-#: src/kitsune/ui/window.blp:269
+#: src/kitsune/window.py:336 src/kitsune/window.py:436
+#: src/kitsune/ui/window.blp:270
 msgid "About Kitsune"
 msgstr ""
 
-#: src/kitsune/window.py:410 src/kitsune/window.py:860
-#: src/kitsune/window.py:875 src/kitsune/window.py:889
+#: src/kitsune/window.py:408 src/kitsune/window.py:880
+#: src/kitsune/window.py:895 src/kitsune/window.py:909
 msgid "Login"
 msgstr ""
 
-#: src/kitsune/window.py:539 src/kitsune/window.py:596
+#: src/kitsune/window.py:537 src/kitsune/window.py:594
 msgid "Card view"
 msgstr ""
 
-#: src/kitsune/window.py:599 src/kitsune/ui/release_view.py:355
+#: src/kitsune/window.py:597 src/kitsune/ui/release_view.py:355
 msgid "List view"
 msgstr ""
 
-#: src/kitsune/window.py:682
+#: src/kitsune/window.py:702
 msgid "Profile"
 msgstr ""
 
-#: src/kitsune/window.py:773 src/kitsune/ui/release_view.blp:25
+#: src/kitsune/window.py:793 src/kitsune/ui/release_view.blp:25
 msgid "Home"
 msgstr ""
 
-#: src/kitsune/window.py:949
+#: src/kitsune/window.py:978
 msgid "Sync data"
 msgstr ""
 
-#: src/kitsune/window.py:952
+#: src/kitsune/window.py:981
 msgid "Merge"
 msgstr ""
 
-#: src/kitsune/window.py:953
+#: src/kitsune/window.py:982
 msgid "Keep local"
 msgstr ""
 
-#: src/kitsune/window.py:954
+#: src/kitsune/window.py:983
 msgid "Keep server"
 msgstr ""
 
-#: src/kitsune/window.py:1053
+#: src/kitsune/window.py:1082
 msgid "Failed to sync your change with the server"
 msgstr ""
 
@@ -160,7 +160,7 @@ msgstr ""
 msgid "Slate"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:54 src/kitsune/ui/window.blp:54
+#: src/kitsune/ui/create_tag_dialog.py:54 src/kitsune/ui/window.blp:52
 msgid "New Tag"
 msgstr ""
 
@@ -489,47 +489,35 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:206
+#: src/kitsune/ui/profile_view.py:242
 msgid "Total titles"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:220
+#: src/kitsune/ui/profile_view.py:259
 msgid "Episodes watched"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:309
+#: src/kitsune/ui/profile_view.py:375
 #, python-format
 msgid "Member since %s"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:355
+#: src/kitsune/ui/profile_view.py:421
 #, python-format
 msgid "Synced at %s"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:382
+#: src/kitsune/ui/profile_view.py:448
 msgid "1 operation waiting to sync"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:385
+#: src/kitsune/ui/profile_view.py:451
 #, python-brace-format
 msgid "{n} operations waiting to sync"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:394
+#: src/kitsune/ui/profile_view.py:460
 msgid "Unknown error"
-msgstr ""
-
-#: src/kitsune/ui/session_expired_banner.blp:24
-msgid "Your session has expired. Log in again to resume sync."
-msgstr ""
-
-#: src/kitsune/ui/session_expired_banner.blp:31
-msgid "Log in again"
-msgstr ""
-
-#: src/kitsune/ui/session_expired_banner.blp:39
-msgid "Dismiss"
 msgstr ""
 
 #: src/kitsune/ui/filter_dialog.blp:17 src/kitsune/ui/player_view.blp:65
@@ -556,28 +544,28 @@ msgstr ""
 msgid "Reset"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.blp:107
+#: src/kitsune/ui/profile_view.blp:119
 msgid "Sync now"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.blp:136
+#: src/kitsune/ui/profile_view.blp:148
 msgid "Last error:"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.blp:150
+#: src/kitsune/ui/profile_view.blp:162
 msgid "Retry now"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.blp:189
-msgid "Account settings ↗"
+#: src/kitsune/ui/profile_view.blp:199
+msgid "Account settings"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.blp:196
+#: src/kitsune/ui/profile_view.blp:206
 msgid "Log out"
 msgstr ""
 
-#: src/kitsune/ui/player_view.blp:42 src/kitsune/ui/window.blp:118
-#: src/kitsune/ui/window.blp:167
+#: src/kitsune/ui/player_view.blp:42 src/kitsune/ui/window.blp:114
+#: src/kitsune/ui/window.blp:161
 msgid "Back"
 msgstr ""
 
@@ -817,8 +805,8 @@ msgstr ""
 msgid "No torrents available"
 msgstr ""
 
-#: src/kitsune/ui/search_dialog.blp:9 src/kitsune/ui/window.blp:87
-#: src/kitsune/ui/window.blp:175
+#: src/kitsune/ui/search_dialog.blp:9 src/kitsune/ui/window.blp:83
+#: src/kitsune/ui/window.blp:169
 msgid "Search"
 msgstr ""
 
@@ -842,33 +830,41 @@ msgstr ""
 msgid "Scroll to top"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:38
+#: src/kitsune/ui/window.blp:7 data/net.armatik.Kitsune.desktop.in:3
+#: data/net.armatik.Kitsune.metainfo.xml.in:7
+msgid "Kitsune"
+msgstr ""
+
+#: src/kitsune/ui/window.blp:36
 msgid "Filters"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:45
+#: src/kitsune/ui/window.blp:43
 msgid "Toggle view"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:64
+#: src/kitsune/ui/window.blp:62
 msgid "Delete Tag"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:95
+#: src/kitsune/ui/window.blp:91
 msgid "Main Menu"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:247
-msgid "No internet connection. App is working in limited mode."
+#: src/kitsune/ui/window.blp:241
+msgid "Your session has expired. Log in again to resume sync."
+msgstr ""
+
+#: src/kitsune/ui/window.blp:242
+msgid "Log in again"
 msgstr ""
 
 #: src/kitsune/ui/window.blp:248
-msgid "Retry"
+msgid "No internet connection. App is working in limited mode."
 msgstr ""
 
-#: data/net.armatik.Kitsune.desktop.in:3
-#: data/net.armatik.Kitsune.metainfo.xml.in:7
-msgid "Kitsune"
+#: src/kitsune/ui/window.blp:249
+msgid "Retry"
 msgstr ""
 
 #: data/net.armatik.Kitsune.desktop.in:4
