@@ -21,6 +21,8 @@ action_icons = [
   'plus-circle-symbolic',
   'home-symbolic',
   'angled-arrows-symbolic',
+  'update-symbolic',
+  'settings-symbolic',
 ]
 
 foreach icon : action_icons

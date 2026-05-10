@@ -41,19 +41,24 @@ template $KitsuneProfileView: Gtk.Box {
 
               [overlay]
               Gtk.Box {
-                height-request: 520;
                 orientation: vertical;
+                hexpand: true;
+                vexpand: true;
 
                 styles ["profile-hero-gradient"]
               }
             }
           }
 
-          // Overlay (drawn on top): all content
+          // Overlay (drawn on top): all content. Side margins live here
+          // so every inner block shares the same left/right bounds; do
+          // not set margin-start/end on children.
           [overlay]
           Gtk.Box content_box {
             orientation: vertical;
             margin-top: 16;
+            margin-start: 16;
+            margin-end: 16;
 
             // Avatar + name
             Gtk.Box {
@@ -69,18 +74,25 @@ template $KitsuneProfileView: Gtk.Box {
               Gtk.Label nickname_label {
                 halign: center;
                 margin-top: 8;
+                ellipsize: end;
+                max-width-chars: 16;
 
                 styles ["title-1"]
               }
 
               Gtk.Label email_label {
                 halign: center;
+                ellipsize: end;
+                max-width-chars: 24;
 
                 styles ["dim-label"]
               }
 
               Gtk.Label member_since_label {
                 halign: center;
+                wrap: true;
+                max-width-chars: 24;
+                justify: center;
 
                 styles ["dim-label", "caption"]
               }
@@ -103,7 +115,7 @@ template $KitsuneProfileView: Gtk.Box {
                 }
 
                 Gtk.Button sync_button {
-                  icon-name: "emblem-synchronizing-symbolic";
+                  icon-name: "net.armatik.Kitsune.update-symbolic";
                   tooltip-text: _("Sync now");
                   clicked => $on_sync_clicked();
 
@@ -139,7 +151,7 @@ template $KitsuneProfileView: Gtk.Box {
                 }
 
                 Gtk.Label error_text_label {
-                  max-width-chars: 50;
+                  max-width-chars: 24;
                   ellipsize: end;
 
                   styles ["caption"]
@@ -156,44 +168,43 @@ template $KitsuneProfileView: Gtk.Box {
               }
             }
 
-            // Collection cards
+            // Collection cards — FlowBox reflows 3 → 2 per line on narrow
             Gtk.FlowBox collections_flow {
               homogeneous: true;
-              min-children-per-line: 3;
+              min-children-per-line: 2;
               max-children-per-line: 3;
               selection-mode: none;
               row-spacing: 8;
               column-spacing: 8;
-              margin-start: 16;
-              margin-end: 16;
+              hexpand: true;
               margin-bottom: 8;
             }
 
             // Total stats
             Gtk.Box totals_box {
               spacing: 8;
-              margin-start: 16;
-              margin-end: 16;
               margin-bottom: 16;
               homogeneous: true;
             }
 
-            // Actions
+            // Actions — settings icon pill + logout pill on one row
             Gtk.Box {
-              orientation: vertical;
+              orientation: horizontal;
               spacing: 8;
-              halign: center;
+              halign: fill;
               margin-bottom: 20;
 
-              Gtk.Button {
-                label: _("Account settings ↗");
+              Gtk.Button settings_button {
+                icon-name: "net.armatik.Kitsune.settings-symbolic";
+                tooltip-text: _("Account settings");
                 clicked => $on_settings_site_clicked();
 
-                styles ["flat"]
+                styles ["pill", "profile-settings-pill"]
               }
 
               Gtk.Button logout_button {
                 label: _("Log out");
+                hexpand: true;
                 clicked => $on_logout_clicked();
 
                 styles ["destructive-action", "pill"]

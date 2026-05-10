@@ -19,12 +19,12 @@ from kitsune.ui import register_css
 log = logging.getLogger('kitsune.profile_view')
 
 _COLLECTION_TAGS = [
-    ('favorites', 'Favorites', '⭐', '#f5c211'),
-    ('watching', 'Watching', '▶', '#9141ac'),
-    ('watched', 'Watched', '✓', '#26a269'),
-    ('planned', 'Planned', '📋', '#3584e4'),
-    ('postponed', 'Postponed', '⏸', '#e66100'),
-    ('abandoned', 'Abandoned', '✕', '#e01b24'),
+    ('favorites', 'Favorites', 'starred-symbolic', '#f5c211'),
+    ('watching', 'Watching', 'media-playback-start-symbolic', '#9141ac'),
+    ('watched', 'Watched', 'object-select-symbolic', '#26a269'),
+    ('planned', 'Planned', 'view-list-bullet-symbolic', '#3584e4'),
+    ('postponed', 'Postponed', 'media-playback-pause-symbolic', '#e66100'),
+    ('abandoned', 'Abandoned', 'net.armatik.Kitsune.cross-large-symbolic', '#e01b24'),
 ]
 
 _HERO_IMAGES = [
@@ -73,13 +73,28 @@ _PROFILE_CSS = (
     ' .total-card { border-radius: 14px; padding: 20px 16px;'
     ' background: alpha(@accent_bg_color, 0.08);'
     ' border: 1px solid alpha(@accent_bg_color, 0.10); }'
-    # FlowBox
-    ' flowboxchild { padding: 0; background: none; }'
-    ' flowboxchild:hover { background: none; }'
-    ' flowboxchild:active { background: none; }'
-    ' .profile-card flowboxchild button.flat { background: none; }'
+    # FlowBox — system Adwaita has `flowbox > flowboxchild { padding: 3px }`
+    # which is more specific than a plain `flowboxchild` selector, so our
+    # zero-padding override must match that specificity or higher, else
+    # each cell steals 6px horizontal and the row overflows the parent.
+    ' .profile-card flowbox > flowboxchild { padding: 0; background: none; }'
+    ' .profile-card flowbox > flowboxchild:hover { background: none; }'
+    ' .profile-card flowbox > flowboxchild:active { background: none; }'
+    # Button.flat ships with its own internal padding (~5×10px) and a
+    # min-width/min-height baseline; without zeroing them, the visible
+    # .collection-card paint sits inset from the flowboxchild edges,
+    # making the 6-card row appear narrower than the action row below
+    # and inflating the visible column gap past the declared 8px.
+    ' .profile-card flowboxchild button.flat {'
+    ' padding: 0; min-width: 0; min-height: 0;'
+    ' background: none; box-shadow: none; }'
     ' .profile-card flowboxchild button.flat:hover { background: none; }'
     ' .profile-card flowboxchild button.flat:active { background: none; }'
+    # Icon-only pill next to logout — large and square so it reads as a
+    # peer of the text pill rather than a tiny icon button
+    ' button.profile-settings-pill {'
+    ' min-width: 56px; min-height: 40px; padding: 8px 14px; }'
+    ' button.profile-settings-pill > image { -gtk-icon-size: 20px; }'
 )
 
 
@@ -112,6 +127,7 @@ class ProfileView(Gtk.Box):
     retry_button = Gtk.Template.Child()
     collections_flow = Gtk.Template.Child()
     totals_box = Gtk.Template.Child()
+    settings_button = Gtk.Template.Child()
     logout_button = Gtk.Template.Child()
 
     def __init__(self, session_manager, on_navigate_tag, sync_manager=None, **kwargs):
@@ -144,7 +160,7 @@ class ProfileView(Gtk.Box):
             self._refresh_indicator()
 
     def _setup_collection_cards(self):
-        for tag_id, label, emoji, color in _COLLECTION_TAGS:
+        for tag_id, label, icon_name, color in _COLLECTION_TAGS:
             count = len(tags_store.get_release_ids_for_tag(tag_id))
 
             card_btn = Gtk.Button(css_classes=['flat'])
@@ -159,18 +175,23 @@ class ProfileView(Gtk.Box):
                 spacing=4,
                 css_classes=['collection-card'],
             )
+            # Color is scoped to .collection-icon (not the whole card) so
+            # title_lbl's dim-label keeps its neutral grey instead of
+            # picking up the tag tint via currentColor inheritance.
             css_provider = Gtk.CssProvider()
             css_provider.load_from_string(
                 f'.collection-card {{ background:'
                 f' linear-gradient(135deg, {bg_start}, {bg_end});'
                 f' border-color: {border}; }}'
+                f'.collection-card > .collection-icon {{ color: {color}; }}'
             )
             card_box.get_style_context().add_provider(
                 css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-            emoji_lbl = Gtk.Label()
-            emoji_lbl.set_markup(f'<span size="x-large">{emoji}</span>')
-            card_box.append(emoji_lbl)
+            icon = Gtk.Image.new_from_icon_name(icon_name)
+            icon.set_pixel_size(28)
+            icon.add_css_class('collection-icon')
+            card_box.append(icon)
 
             count_lbl = Gtk.Label()
             count_lbl.set_markup(
@@ -181,6 +202,12 @@ class ProfileView(Gtk.Box):
             title_lbl = Gtk.Label(
                 label=_(label),
                 css_classes=['caption', 'dim-label'],
+                # Allow narrow shrink: without this the label's natural
+                # width ("Просмотренные") drives FlowBox natural request
+                # past the parent, causing the row to overflow.
+                wrap=True,
+                max_width_chars=10,
+                justify=Gtk.Justification.CENTER,
             )
             card_box.append(title_lbl)
 
@@ -205,6 +232,9 @@ class ProfileView(Gtk.Box):
         box1.append(Gtk.Label(
             label=_('Total titles'),
             css_classes=['caption', 'dim-label'],
+            wrap=True,
+            max_width_chars=12,
+            justify=Gtk.Justification.CENTER,
         ))
         self.totals_box.append(box1)
 
@@ -219,6 +249,9 @@ class ProfileView(Gtk.Box):
         box2.append(Gtk.Label(
             label=_('Episodes watched'),
             css_classes=['caption', 'dim-label'],
+            wrap=True,
+            max_width_chars=12,
+            justify=Gtk.Justification.CENTER,
         ))
         self.totals_box.append(box2)
 
