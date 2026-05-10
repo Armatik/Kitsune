@@ -37,6 +37,14 @@ template $KitsuneWindow: Adw.ApplicationWindow {
             clicked => $on_filter_clicked();
           }
 
+          [refresh]
+          Gtk.Button refresh_btn {
+            icon-name: "net.armatik.Kitsune.update-symbolic";
+            tooltip-text: _("Refresh");
+            visible: false;
+            clicked => $on_refresh_clicked();
+          }
+
           [mode]
           Gtk.Button mode_btn {
             icon-name: "view-list-symbolic";
@@ -134,6 +142,11 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                   [end]
                   Adw.LayoutSlot {
                     id: "filter";
+                  }
+
+                  [end]
+                  Adw.LayoutSlot {
+                    id: "refresh";
                   }
                 }
 

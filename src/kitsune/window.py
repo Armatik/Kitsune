@@ -46,6 +46,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     multi = Gtk.Template.Child()
     content_stack = Gtk.Template.Child()
     filter_btn = Gtk.Template.Child()
+    refresh_btn = Gtk.Template.Child()
     mode_btn = Gtk.Template.Child()
     add_tag_btn = Gtk.Template.Child()
     delete_tag_btn = Gtk.Template.Child()
@@ -556,6 +557,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._open_search_dialog()
 
     @Gtk.Template.Callback()
+    def on_refresh_clicked(self, _button):
+        self._catalog_view.refresh()
+
+    @Gtk.Template.Callback()
     def on_back_clicked(self, _button):
         tab = self.content_stack.get_visible_child_name()
         if tab == 'genres' and self._genres_view:
@@ -714,6 +719,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             show_back = True
 
         show_filter = (tab == 'catalog')
+        show_refresh = (tab == 'catalog')
         show_tags_controls = (tab == 'tags' and not show_back)
         show_delete_tag = (
             tab == 'tags' and show_back
@@ -725,6 +731,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self.back_btn.set_visible(show_back)
         self.narrow_back_btn.set_visible(show_back)
         self.filter_btn.set_visible(show_filter)
+        self.refresh_btn.set_visible(show_refresh)
         self.mode_btn.set_visible(show_tags_controls)
         self.add_tag_btn.set_visible(show_tags_controls)
         self.delete_tag_btn.set_visible(show_delete_tag)

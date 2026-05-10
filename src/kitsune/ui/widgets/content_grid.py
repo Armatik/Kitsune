@@ -25,6 +25,7 @@ class ContentGrid(Gtk.Box):
     initial_spinner = Gtk.Template.Child()
     end_label = Gtk.Template.Child()
     scroll_up_revealer = Gtk.Template.Child()
+    pull_refresh_revealer = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -56,6 +57,12 @@ class ContentGrid(Gtk.Box):
             self.spinner.set_visible(visible)
         else:
             self.initial_spinner.set_visible(visible)
+
+    def set_pull_refresh_active(self, active: bool):
+        # Revealer's slide_down transition animates the spinner area in
+        # from height 0, pushing the grid below it; on hide it slides
+        # back up smoothly.
+        self.pull_refresh_revealer.set_reveal_child(active)
 
     def show_error(self):
         self.spinner.set_visible(False)

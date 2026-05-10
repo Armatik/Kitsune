@@ -20,6 +20,20 @@ template $KitsuneContentGrid: Gtk.Box {
         Gtk.Box content_box {
           orientation: vertical;
 
+          Gtk.Revealer pull_refresh_revealer {
+            transition-type: slide_down;
+            transition-duration: 250;
+            reveal-child: false;
+
+            child: Adw.Spinner {
+              halign: center;
+              width-request: 32;
+              height-request: 32;
+              margin-top: 16;
+              margin-bottom: 16;
+            };
+          }
+
           Gtk.FlowBox flowbox {
             homogeneous: true;
             min-children-per-line: 2;

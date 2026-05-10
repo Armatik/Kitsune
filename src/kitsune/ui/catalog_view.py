@@ -7,6 +7,8 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
+import time
+
 from gi.repository import Gio, GLib, Gtk
 
 from kitsune.api import AniLibriaClient
@@ -37,6 +39,15 @@ class CatalogView(Gtk.Box):
         self._grid.set_on_child_activated(self._on_child_activated)
         self.append(self._grid)
 
+        # Pull-to-refresh: fires when the kinetic gesture overshoots the
+        # top edge. Gated to narrow mode so desktop scrollwheel doesn't
+        # trigger it accidentally; debounced to avoid spam from a single
+        # bouncy gesture that can emit the signal more than once.
+        self._narrow = False
+        self._last_overshot = 0.0
+        self._pull_refresh_active = False
+        self._grid.scrolled.connect('edge-overshot', self._on_edge_overshot)
+
         self.connect('map', self._on_map)
         self._load_next_page()
 
@@ -45,7 +56,31 @@ class CatalogView(Gtk.Box):
         return self._grid.flowbox
 
     def set_narrow(self, narrow: bool):
+        self._narrow = narrow
         self._grid.set_narrow(narrow)
+
+    def _on_edge_overshot(self, _scrolled, position):
+        if position != Gtk.PositionType.TOP:
+            return
+        if not self._narrow:
+            return
+        if self._loading:
+            return
+        now = time.monotonic()
+        if now - self._last_overshot < 2.0:
+            return
+        self._last_overshot = now
+        self._pull_refresh_active = True
+        self._grid.set_pull_refresh_active(True)
+        # 1-second deliberate hold before firing the network request so
+        # the spinner is visible for a clear beat first — without it the
+        # whole interaction can finish in <100ms when the cache is warm
+        # and the user never sees a refresh actually happened.
+        GLib.timeout_add(1000, self._fire_pull_refresh)
+
+    def _fire_pull_refresh(self):
+        self.refresh()
+        return GLib.SOURCE_REMOVE
 
     def set_on_release_activated(self, callback):
         self._on_release_activated = callback
@@ -134,12 +169,23 @@ class CatalogView(Gtk.Box):
         self._reached_end = False
         self._load_next_page()
 
+    def refresh(self):
+        if self._cancellable:
+            self._cancellable.cancel()
+        self._pending_releases = []
+        if self._batch_idle:
+            GLib.source_remove(self._batch_idle)
+            self._batch_idle = 0
+        self._reset_catalog()
+        self._load_next_page()
+
     def _on_catalog_loaded(self, catalog_response, error):
         self._loading = False
 
         if error:
             self._page = max(0, self._page - 1)
             self._grid.show_error()
+            self._end_pull_refresh()
             return
 
         self._last_page = catalog_response.meta.last_page
@@ -159,12 +205,18 @@ class CatalogView(Gtk.Box):
             self._batch_idle = GLib.idle_add(self._add_pending_batch)
         else:
             self._grid.set_spinner_visible(False)
+            self._end_pull_refresh()
             if self._page >= self._last_page:
                 self._show_end()
 
     def _show_end(self):
         self._reached_end = True
         self._grid.show_end()
+
+    def _end_pull_refresh(self):
+        if self._pull_refresh_active:
+            self._pull_refresh_active = False
+            self._grid.set_pull_refresh_active(False)
 
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):
