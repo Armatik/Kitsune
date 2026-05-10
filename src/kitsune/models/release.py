@@ -218,6 +218,7 @@ class Release:
     age_rating: str = ''
     episodes_total: int | None = None
     is_ongoing: bool = False
+    publish_day: str = ''
     genres: list[Genre] = field(default_factory=list)
     episodes: list[Episode] = field(default_factory=list)
     members: list[Member] = field(default_factory=list)
@@ -229,6 +230,7 @@ class Release:
         type_data = data.get('type', {})
         season_data = data.get('season')
         age_data = data.get('age_rating', {})
+        publish_day_data = data.get('publish_day')
 
         genres = [Genre.from_dict(g) for g in data.get('genres', [])]
         episodes = [Episode.from_dict(e) for e in data.get('episodes', [])]
@@ -249,6 +251,10 @@ class Release:
             age_rating=age_data.get('value', '') if isinstance(age_data, dict) else str(age_data),
             episodes_total=data.get('episodes_total'),
             is_ongoing=data.get('is_ongoing', False),
+            publish_day=(
+                publish_day_data.get('description', '')
+                if isinstance(publish_day_data, dict) else ''
+            ),
             genres=genres,
             episodes=episodes,
             members=members,

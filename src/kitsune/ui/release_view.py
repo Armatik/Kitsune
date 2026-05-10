@@ -504,6 +504,10 @@ class ReleaseView(Adw.NavigationPage):
             ))
         status = _('Ongoing') if self._release.is_ongoing else _('Completed')
         meta_box.append(self._meta_row(_('Status'), status))
+        if self._release.is_ongoing and self._release.publish_day:
+            meta_box.append(self._meta_row(
+                _('Release day'), self._release.publish_day,
+            ))
         self.info_box.append(meta_box)
 
         if self._release.description:
