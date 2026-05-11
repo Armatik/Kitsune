@@ -9,3 +9,4 @@ Categories=AudioVideo;Video;Player;GTK;
 Keywords=anime;video;aniliberty;
 StartupNotify=true
 X-GNOME-UsesNotifications=false
+X-Purism-FormFactor=Workstation;Mobile;
