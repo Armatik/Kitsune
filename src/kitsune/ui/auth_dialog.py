@@ -40,9 +40,14 @@ _AUTH_CSS = (
     ' .auth-error-field { border-color: @error_color; }'
     ' .monospace { font-family: monospace; letter-spacing: 4px; }'
     ' .auth-title { color: #e01b24; }'
-    # Opaque input fields
+    # Translucent input fields. `@card_bg_color` is opaque white in
+    # Adwaita's light theme but a subtle alpha-tint in dark, which
+    # produced visually different inputs across themes. Switching to
+    # an explicit alpha of the foreground color gives the same soft
+    # translucency in both themes (8% black on light bg, 8% white on
+    # dark bg), and lets the hero image bleed through the field bg.
     ' .auth-dialog entry, .auth-dialog password-entry'
-    ' { background: @card_bg_color; }'
+    ' { background: alpha(@window_fg_color, 0.08); }'
     # Red accent for all interactive elements
     ' .auth-dialog .suggested-action'
     ' { background: #e01b24; color: white; }'
