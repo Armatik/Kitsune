@@ -117,7 +117,7 @@ def populate_episode_list(list_widget, episodes, watch_data: dict, on_play):
         )
         if is_completed(pos, episode.duration):
             check = Gtk.Image(
-                icon_name='object-select-symbolic',
+                icon_name='net.armatik.Kitsune.object-select-symbolic',
                 css_classes=['accent'],
                 valign=Gtk.Align.CENTER,
             )
@@ -133,7 +133,7 @@ def populate_episode_list(list_widget, episodes, watch_data: dict, on_play):
             row.add_suffix(prog)
 
         play_btn = Gtk.Button(
-            icon_name='media-playback-start-symbolic',
+            icon_name='net.armatik.Kitsune.media-playback-start-symbolic',
             valign=Gtk.Align.CENTER, css_classes=['flat'],
         )
         play_btn.connect('clicked', lambda _b, ep=episode: on_play(ep))
@@ -285,7 +285,7 @@ def build_episode_card(episode: Episode, watch_data: dict,
             margin_top=6, margin_end=6,
         )
         check_icon = Gtk.Image(
-            icon_name='object-select-symbolic',
+            icon_name='net.armatik.Kitsune.object-select-symbolic',
             pixel_size=16,
             css_classes=['episode-check'],
         )

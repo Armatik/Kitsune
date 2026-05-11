@@ -256,10 +256,10 @@ class PreferencesWindow(Adw.PreferencesDialog):
         'tags': _('Tags'),
     }
     _SEARCH_CAT_ICONS = {
-        'anime': 'view-grid-symbolic',
+        'anime': 'net.armatik.Kitsune.view-grid-symbolic',
         'genres': 'net.armatik.Kitsune.genres-symbolic',
         'franchises': 'net.armatik.Kitsune.franchises-symbolic',
-        'tags': 'starred-symbolic',
+        'tags': 'net.armatik.Kitsune.starred-symbolic',
     }
 
     # --- Navigation Preferences ---

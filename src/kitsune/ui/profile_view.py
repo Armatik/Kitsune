@@ -19,11 +19,11 @@ from kitsune.ui import register_css
 log = logging.getLogger('kitsune.profile_view')
 
 _COLLECTION_TAGS = [
-    ('favorites', 'Favorites', 'starred-symbolic', '#f5c211'),
-    ('watching', 'Watching', 'media-playback-start-symbolic', '#9141ac'),
-    ('watched', 'Watched', 'object-select-symbolic', '#26a269'),
-    ('planned', 'Planned', 'view-list-bullet-symbolic', '#3584e4'),
-    ('postponed', 'Postponed', 'media-playback-pause-symbolic', '#e66100'),
+    ('favorites', 'Favorites', 'net.armatik.Kitsune.starred-symbolic', '#f5c211'),
+    ('watching', 'Watching', 'net.armatik.Kitsune.media-playback-start-symbolic', '#9141ac'),
+    ('watched', 'Watched', 'net.armatik.Kitsune.object-select-symbolic', '#26a269'),
+    ('planned', 'Planned', 'net.armatik.Kitsune.view-list-bullet-symbolic', '#3584e4'),
+    ('postponed', 'Postponed', 'net.armatik.Kitsune.media-playback-pause-symbolic', '#e66100'),
     ('abandoned', 'Abandoned', 'net.armatik.Kitsune.cross-large-symbolic', '#e01b24'),
 ]
 

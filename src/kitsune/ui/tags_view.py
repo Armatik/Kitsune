@@ -206,7 +206,7 @@ class TagsView(Gtk.Box):
 
         if not tag.get('builtin'):
             del_btn = Gtk.Button(
-                icon_name='user-trash-symbolic',
+                icon_name='net.armatik.Kitsune.user-trash-symbolic',
                 css_classes=['flat', 'error'],
                 valign=Gtk.Align.CENTER,
             )

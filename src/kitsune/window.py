@@ -561,7 +561,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._tags_mode_is_list = saved_mode == 'list'
         if self._tags_mode_is_list:
             self._tags_view.toggle_mode()
-            self.mode_btn.set_icon_name('view-grid-symbolic')
+            self.mode_btn.set_icon_name('net.armatik.Kitsune.view-grid-symbolic')
             self.mode_btn.set_tooltip_text(_('Card view'))
         self.content_stack.add_named(self._tags_view, 'tags')
 
@@ -622,10 +622,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
             mode = 'list' if self._tags_mode_is_list else 'cards'
             self._settings.set_string('tags-view-mode', mode)
             if self._tags_mode_is_list:
-                btn.set_icon_name('view-grid-symbolic')
+                btn.set_icon_name('net.armatik.Kitsune.view-grid-symbolic')
                 btn.set_tooltip_text(_('Card view'))
             else:
-                btn.set_icon_name('view-list-symbolic')
+                btn.set_icon_name('net.armatik.Kitsune.view-list-symbolic')
                 btn.set_tooltip_text(_('List view'))
 
     @Gtk.Template.Callback()

@@ -134,7 +134,7 @@ class ReleaseView(Adw.NavigationPage):
         # Header refresh indicator
         self._header_spinner = Adw.Spinner()
         self._header_check = Gtk.Image(
-            icon_name='object-select-symbolic',
+            icon_name='net.armatik.Kitsune.object-select-symbolic',
             css_classes=['success'],
         )
         self._header_check.set_opacity(0)
@@ -337,7 +337,7 @@ class ReleaseView(Adw.NavigationPage):
             row._filter_name = name
             self._filter_rows.append(row)
             self._filter_pop_list.append(row)
-        self._filter_rows[0].add_prefix(Gtk.Image(icon_name='object-select-symbolic'))
+        self._filter_rows[0].add_prefix(Gtk.Image(icon_name='net.armatik.Kitsune.object-select-symbolic'))
         self._filter_pop_list.connect('row-activated', self._on_filter_row_activated)
         popover.set_child(self._filter_pop_list)
         self._filter_menu_btn.set_popover(popover)
@@ -359,11 +359,11 @@ class ReleaseView(Adw.NavigationPage):
 
         self._view_toggle = Adw.ToggleGroup()
         self._view_toggle.add(Adw.Toggle(
-            name='list', icon_name='view-list-symbolic',
+            name='list', icon_name='net.armatik.Kitsune.view-list-symbolic',
             tooltip=_('List view'),
         ))
         self._view_toggle.add(Adw.Toggle(
-            name='grid', icon_name='view-grid-symbolic',
+            name='grid', icon_name='net.armatik.Kitsune.view-grid-symbolic',
             tooltip=_('Grid view'),
         ))
         self._view_toggle.set_active_name(self._episodes_view)
@@ -373,7 +373,7 @@ class ReleaseView(Adw.NavigationPage):
         # Mark all watched / Unmark all
         mark_box = Gtk.Box(css_classes=['linked'])
         mark_btn = Gtk.Button(
-            icon_name='object-select-symbolic',
+            icon_name='net.armatik.Kitsune.object-select-symbolic',
             tooltip_text=_('Mark all as watched'),
             sensitive=False,
         )
@@ -426,7 +426,7 @@ class ReleaseView(Adw.NavigationPage):
                     r.remove(child)
                     break
                 child = child.get_next_sibling()
-        row.add_prefix(Gtk.Image(icon_name='object-select-symbolic'))
+        row.add_prefix(Gtk.Image(icon_name='net.armatik.Kitsune.object-select-symbolic'))
         self._filter_menu_btn.get_popover().popdown()
         self._refresh_episodes()
 
@@ -834,7 +834,7 @@ class ReleaseView(Adw.NavigationPage):
     def _update_favorite_icon(self):
         is_fav = tags_store.is_favorited(self._release.id)
         self.tag_split_btn.set_icon_name(
-            'starred-symbolic' if is_fav else 'non-starred-symbolic'
+            'net.armatik.Kitsune.starred-symbolic' if is_fav else 'non-net.armatik.Kitsune.starred-symbolic'
         )
         if is_fav:
             self.tag_split_btn.add_css_class('favorite-active')

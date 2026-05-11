@@ -47,7 +47,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
           [mode]
           Gtk.Button mode_btn {
-            icon-name: "view-list-symbolic";
+            icon-name: "net.armatik.Kitsune.view-list-symbolic";
             tooltip-text: _("Toggle view");
             visible: false;
             clicked => $on_mode_toggled();
@@ -66,7 +66,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
           [delete-tag]
           Gtk.Button delete_tag_btn {
-            icon-name: "user-trash-symbolic";
+            icon-name: "net.armatik.Kitsune.user-trash-symbolic";
             tooltip-text: _("Delete Tag");
             visible: false;
             clicked => $on_delete_tag_clicked();
@@ -87,14 +87,14 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
                   [start]
                   Gtk.Button {
-                    icon-name: "system-search-symbolic";
+                    icon-name: "net.armatik.Kitsune.system-search-symbolic";
                     tooltip-text: _("Search");
                     clicked => $on_search_clicked();
                   }
 
                   [end]
                   Gtk.MenuButton {
-                    icon-name: "open-menu-symbolic";
+                    icon-name: "net.armatik.Kitsune.open-menu-symbolic";
                     menu-model: primary_menu;
                     tooltip-text: _("Main Menu");
                     primary: true;
@@ -118,7 +118,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
                   [start]
                   Gtk.Button back_btn {
-                    icon-name: "go-previous-symbolic";
+                    icon-name: "net.armatik.Kitsune.go-previous-symbolic";
                     tooltip-text: _("Back");
                     visible: false;
                     clicked => $on_back_clicked();
@@ -172,7 +172,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
                   [start]
                   Gtk.Button narrow_back_btn {
-                    icon-name: "go-previous-symbolic";
+                    icon-name: "net.armatik.Kitsune.go-previous-symbolic";
                     tooltip-text: _("Back");
                     visible: false;
                     clicked => $on_back_clicked();
@@ -180,7 +180,7 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
                   [start]
                   Gtk.Button {
-                    icon-name: "system-search-symbolic";
+                    icon-name: "net.armatik.Kitsune.system-search-symbolic";
                     tooltip-text: _("Search");
                     clicked => $on_search_clicked();
                   }

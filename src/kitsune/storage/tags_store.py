@@ -19,7 +19,7 @@ _BUILTIN_TAGS = [
         'id': 'favorites',
         'name': 'Favorites',
         'icon_type': 'symbolic',
-        'icon_value': 'starred-symbolic',
+        'icon_value': 'net.armatik.Kitsune.starred-symbolic',
         'builtin': True,
         'order': 0,
         'releases': [],
@@ -29,7 +29,7 @@ _BUILTIN_TAGS = [
         'id': 'watching',
         'name': 'Watching',
         'icon_type': 'symbolic',
-        'icon_value': 'media-playback-start-symbolic',
+        'icon_value': 'net.armatik.Kitsune.media-playback-start-symbolic',
         'builtin': True,
         'order': 1,
         'releases': [],
@@ -39,7 +39,7 @@ _BUILTIN_TAGS = [
         'id': 'watched',
         'name': 'Watched',
         'icon_type': 'symbolic',
-        'icon_value': 'object-select-symbolic',
+        'icon_value': 'net.armatik.Kitsune.object-select-symbolic',
         'builtin': True,
         'order': 2,
         'releases': [],
@@ -49,7 +49,7 @@ _BUILTIN_TAGS = [
         'id': 'planned',
         'name': 'Planned',
         'icon_type': 'symbolic',
-        'icon_value': 'view-list-bullet-symbolic',
+        'icon_value': 'net.armatik.Kitsune.view-list-bullet-symbolic',
         'builtin': True,
         'order': 3,
         'releases': [],
@@ -59,7 +59,7 @@ _BUILTIN_TAGS = [
         'id': 'postponed',
         'name': 'Postponed',
         'icon_type': 'symbolic',
-        'icon_value': 'media-playback-pause-symbolic',
+        'icon_value': 'net.armatik.Kitsune.media-playback-pause-symbolic',
         'builtin': True,
         'order': 4,
         'releases': [],
@@ -109,8 +109,9 @@ def _load() -> dict:
             data['tags'].insert(bt['order'], copy.deepcopy(bt))
 
     # Migrate built-in tags from the legacy emoji icon set to Adwaita
-    # symbolic icons. Only touches built-ins; user-created tags keep
-    # whatever icon they were saved with.
+    # symbolic icons, and refresh stored icon_value when the bundled
+    # name changes (e.g. unprefixed → "net.armatik.Kitsune.*").
+    # User-created tags keep whatever icon they were saved with.
     builtin_by_id = {bt['id']: bt for bt in _BUILTIN_TAGS}
     for tag in data['tags']:
         if not tag.get('builtin'):
@@ -120,6 +121,9 @@ def _load() -> dict:
             continue
         if tag.get('icon_type') == 'emoji':
             tag['icon_type'] = latest['icon_type']
+            tag['icon_value'] = latest['icon_value']
+        elif (tag.get('icon_type') == latest['icon_type']
+                and tag.get('icon_value') != latest['icon_value']):
             tag['icon_value'] = latest['icon_value']
 
     return data

@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 
 TAB_REGISTRY = [
-    {'id': 'catalog', 'label': 'Catalog', 'icon': 'view-grid-symbolic'},
+    {'id': 'catalog', 'label': 'Catalog', 'icon': 'net.armatik.Kitsune.view-grid-symbolic'},
     {'id': 'genres', 'label': 'Genres', 'icon': 'net.armatik.Kitsune.genres-symbolic'},
     {'id': 'franchises', 'label': 'Franchises', 'icon': 'net.armatik.Kitsune.franchises-symbolic'},
-    {'id': 'tags', 'label': 'Favorites & Tags', 'icon': 'starred-symbolic'},
+    {'id': 'tags', 'label': 'Favorites & Tags', 'icon': 'net.armatik.Kitsune.starred-symbolic'},
 ]
 
 ALL_TAB_IDS = tuple(t['id'] for t in TAB_REGISTRY)

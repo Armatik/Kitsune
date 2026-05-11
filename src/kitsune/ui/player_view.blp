@@ -37,7 +37,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           spacing: 8;
 
           Gtk.Button {
-            icon-name: "go-previous-symbolic";
+            icon-name: "net.armatik.Kitsune.go-previous-symbolic";
             focusable: false;
             tooltip-text: _("Back");
             clicked => $on_back();
@@ -50,7 +50,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           }
 
           Gtk.Button fullscreen_btn {
-            icon-name: "view-fullscreen-symbolic";
+            icon-name: "net.armatik.Kitsune.view-fullscreen-symbolic";
             focusable: false;
             tooltip-text: _("Fullscreen");
             clicked => $on_fullscreen();
@@ -59,7 +59,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
           }
 
           Gtk.Button close_btn {
-            icon-name: "window-close-symbolic";
+            icon-name: "net.armatik.Kitsune.window-close-symbolic";
             focusable: false;
             visible: false;
             tooltip-text: _("Close");
@@ -88,7 +88,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
         }
 
         Gtk.Button play_btn {
-          icon-name: "media-playback-start-symbolic";
+          icon-name: "net.armatik.Kitsune.media-playback-start-symbolic";
           focusable: false;
           valign: center;
           tooltip-text: _("Play / Pause");
@@ -111,7 +111,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
       // Episode navigation
       [overlay]
       Gtk.Button prev_btn {
-        icon-name: "media-skip-backward-symbolic";
+        icon-name: "net.armatik.Kitsune.media-skip-backward-symbolic";
         focusable: false;
         halign: start;
         valign: center;
@@ -124,7 +124,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
 
       [overlay]
       Gtk.Button next_btn {
-        icon-name: "media-skip-forward-symbolic";
+        icon-name: "net.armatik.Kitsune.media-skip-forward-symbolic";
         focusable: false;
         halign: end;
         valign: center;
@@ -206,7 +206,7 @@ template $KitsunePlayerView: Adw.NavigationPage {
             valign: center;
 
             Gtk.Button volume_btn {
-              icon-name: "audio-volume-high-symbolic";
+              icon-name: "net.armatik.Kitsune.audio-volume-high-symbolic";
               focusable: false;
               tooltip-text: _("Volume");
               clicked => $on_volume_toggle();

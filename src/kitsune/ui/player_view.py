@@ -261,7 +261,7 @@ class PlayerView(Adw.NavigationPage):
         elif volume < 0.66:
             name = 'audio-volume-medium-symbolic'
         else:
-            name = 'audio-volume-high-symbolic'
+            name = 'net.armatik.Kitsune.audio-volume-high-symbolic'
         self.volume_btn.set_icon_name(name)
 
     def _setup_nav_buttons(self):
@@ -491,7 +491,7 @@ class PlayerView(Adw.NavigationPage):
             self.fullscreen_btn.set_icon_name('view-restore-symbolic')
         else:
             root.unfullscreen()
-            self.fullscreen_btn.set_icon_name('view-fullscreen-symbolic')
+            self.fullscreen_btn.set_icon_name('net.armatik.Kitsune.view-fullscreen-symbolic')
 
     # --- Player events ---
 
@@ -499,7 +499,7 @@ class PlayerView(Adw.NavigationPage):
         if self._buffering and self._player.is_playing:
             log.debug('buffering done (position update), pos=%d dur=%d', position, duration)
             self._buffering = False
-            self.play_btn.set_icon_name('media-playback-pause-symbolic')
+            self.play_btn.set_icon_name('net.armatik.Kitsune.media-playback-pause-symbolic')
         if self._restore_position is not None and duration > 0:
             pos = self._restore_position
             self._restore_position = None
@@ -615,9 +615,9 @@ class PlayerView(Adw.NavigationPage):
         log.debug('ui state: %s (buffering=%s)', state, self._buffering)
         if state == 'playing':
             self._buffering = False
-            self.play_btn.set_icon_name('media-playback-pause-symbolic')
+            self.play_btn.set_icon_name('net.armatik.Kitsune.media-playback-pause-symbolic')
         elif not self._buffering:
-            self.play_btn.set_icon_name('media-playback-start-symbolic')
+            self.play_btn.set_icon_name('net.armatik.Kitsune.media-playback-start-symbolic')
             self._reveal_controls()
             if state == 'paused':
                 self._save_watch_position()
@@ -658,9 +658,9 @@ class PlayerView(Adw.NavigationPage):
         else:
             self._buffering = False
             if self._player.is_playing:
-                self.play_btn.set_icon_name('media-playback-pause-symbolic')
+                self.play_btn.set_icon_name('net.armatik.Kitsune.media-playback-pause-symbolic')
             else:
-                self.play_btn.set_icon_name('media-playback-start-symbolic')
+                self.play_btn.set_icon_name('net.armatik.Kitsune.media-playback-start-symbolic')
 
     # --- Episode navigation ---
 
