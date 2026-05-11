@@ -102,7 +102,8 @@ TAG_COLORS = (
 
 
 def _load() -> dict:
-    if _TAGS_FILE.exists():
+    file_existed = _TAGS_FILE.exists()
+    if file_existed:
         try:
             with open(_TAGS_FILE) as f:
                 data = json.load(f)
@@ -111,16 +112,17 @@ def _load() -> dict:
     else:
         data = {'tags': []}
 
-    # Ensure all builtin tags exist (migration for existing installs)
+    migrated = False
+
     existing_ids = {t['id'] for t in data['tags']}
     for bt in _BUILTIN_TAGS:
         if bt['id'] not in existing_ids:
             data['tags'].insert(bt['order'], copy.deepcopy(bt))
+            migrated = True
 
     # Migrate built-in tags from the legacy emoji icon set to Adwaita
     # symbolic icons, and refresh stored icon_value when the bundled
-    # name changes (e.g. unprefixed → "net.armatik.Kitsune.*").
-    # User-created tags keep whatever icon they were saved with.
+    # name changes. User-created tags keep their saved icon.
     builtin_by_id = {bt['id']: bt for bt in _BUILTIN_TAGS}
     for tag in data['tags']:
         if not tag.get('builtin'):
@@ -131,11 +133,19 @@ def _load() -> dict:
         if tag.get('icon_type') == 'emoji':
             tag['icon_type'] = latest['icon_type']
             tag['icon_value'] = latest['icon_value']
+            migrated = True
         elif (tag.get('icon_type') == latest['icon_type']
                 and tag.get('icon_value') != latest['icon_value']):
             tag['icon_value'] = latest['icon_value']
+            migrated = True
         if latest.get('color') and tag.get('color') != latest['color']:
             tag['color'] = latest['color']
+            migrated = True
+
+    # Persist the migrated shape so subsequent loads are no-ops. Without
+    # this, every _load on an old store re-runs the migration in memory.
+    if migrated and file_existed:
+        _save(data)
 
     return data
 
