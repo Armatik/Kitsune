@@ -362,10 +362,22 @@ class ProfileView(Gtk.Box):
             self.email_label.set_label('')
             self.member_since_label.set_label('')
             self.avatar.set_text('')
+            self.avatar.set_custom_image(None)
             return
         nickname = user.nickname or ''
         self.nickname_label.set_label(nickname)
         self.avatar.set_text(nickname)
+        # Adw.Avatar shows initials by default; load the server-side
+        # avatar (already resolved to a full URL by User.from_dict) and
+        # set it as the custom image when it arrives. If the fetch
+        # fails, the initials fallback stays visible.
+        if user.avatar:
+            from kitsune.ui.image_cache import load_image
+            load_image(user.avatar, lambda tex, err:
+                       self.avatar.set_custom_image(tex) if tex else None,
+                       category='avatars')
+        else:
+            self.avatar.set_custom_image(None)
         self.email_label.set_label(user.email or '')
         if user.created_at:
             try:
