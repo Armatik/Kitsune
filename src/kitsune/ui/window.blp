@@ -107,6 +107,14 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
                   styles ["navigation-sidebar"]
                 };
+
+                [bottom]
+                Gtk.ListBox auth_sidebar_list {
+                  selection-mode: single;
+                  row-selected => $on_sidebar_row_selected();
+
+                  styles ["navigation-sidebar"]
+                }
               };
 
               content: Adw.ToolbarView {

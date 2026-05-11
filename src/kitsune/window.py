@@ -36,6 +36,10 @@ _NAV_CSS = (
     ' .sheet-grid flowboxchild { background: none; }'
     ' .sheet-grid flowboxchild:hover { background: none; }'
     ' .sheet-grid flowboxchild:active { background: none; }'
+    # Bold the user's nickname in the sidebar auth row so the
+    # identity reads at a glance against the dim sync-time
+    # subtitle right below it.
+    ' .auth-row-bold .title { font-weight: bold; }'
     # Elevation hint applied to the narrow headerbar during the catalog
     # pull-refresh animation. The drop-shadow visually anchors the bar
     # as the revealer pushes content downward, so the bar reads as a
@@ -64,6 +68,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     delete_tag_btn = Gtk.Template.Child()
     filter_split = Gtk.Template.Child()
     sidebar_list = Gtk.Template.Child()
+    auth_sidebar_list = Gtk.Template.Child()
     wide_content_title = Gtk.Template.Child()
     back_btn = Gtk.Template.Child()
     narrow_back_btn = Gtk.Template.Child()
@@ -136,6 +141,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # Sync-error toast wiring with 5-second throttle
         self._last_sync_error_toast_at = 0.0
         self._sync.connect_sync_error(self._on_sync_error)
+        # Refresh the sidebar's "Synced at HH:MM" subtitle when a sync
+        # completes — the time was set by _sync_done minutes/seconds
+        # before this callback fires, so the subtitle would otherwise
+        # remain stale until the next manual auth-sidebar rebuild.
+        self._sync.connect_sync_complete(
+            lambda _ok: self._refresh_auth_sidebar_subtitle())
 
         # Auto-collection daily idle scan — fire 30s after launch (UI is
         # idle by then), and re-check every hour. Each tick respects
@@ -351,10 +362,9 @@ class KitsuneWindow(Adw.ApplicationWindow):
             margin_top=4, margin_bottom=4))
         auth_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
         auth_list.add_css_class('navigation-sidebar')
-        self._narrow_auth_row = Adw.ActionRow(
-            icon_name='avatar-default-symbolic',
-            activatable=True,
-        )
+        self._narrow_auth_row = Adw.ActionRow(activatable=True)
+        self._narrow_auth_avatar = Adw.Avatar(size=24, show_initials=True)
+        self._narrow_auth_row.add_prefix(self._narrow_auth_avatar)
         self._narrow_auth_row._action = 'auth'
         self._update_narrow_auth_row()
         auth_list.append(self._narrow_auth_row)
@@ -443,9 +453,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
             spacing=4, halign=Gtk.Align.CENTER,
             valign=Gtk.Align.CENTER,
         )
-        self._narrow_auth_icon = Gtk.Image(
-            icon_name='avatar-default-symbolic')
-        auth_box.append(self._narrow_auth_icon)
+        # Adw.Avatar is roughly square; cap height to match the
+        # neighbouring nav-tab icon pixel-size (24px) so the grid row
+        # heights stay aligned across the auth cell and the rest.
+        self._narrow_auth_grid_avatar = Adw.Avatar(
+            size=24, show_initials=True)
+        auth_box.append(self._narrow_auth_grid_avatar)
         self._narrow_auth_label = Gtk.Label(label=_('Login'))
         self._narrow_auth_label.add_css_class('caption')
         auth_box.append(self._narrow_auth_label)
@@ -622,8 +635,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 self._switch_tab('profile')
             else:
                 self._show_auth_dialog()
-                # Deselect so clicking again re-triggers the signal
-                self.sidebar_list.unselect_row(row)
+                # Deselect on the listbox that actually holds the row
+                # (auth_sidebar_list since the split) so clicking
+                # again re-triggers the signal. self.sidebar_list
+                # was a stale carryover from the pre-split layout.
+                listbox.unselect_row(row)
             return
         index = row.get_index()
         if 0 <= index < len(self._sidebar_tab_ids):
@@ -756,20 +772,30 @@ class KitsuneWindow(Adw.ApplicationWindow):
         `_suppress_sidebar_callback` flag so this programmatic update
         does not recurse back into _switch_tab.
         """
+        target_list = None
+        target_row = None
         if name == 'profile':
-            target = getattr(self, '_auth_row', None)
+            target_row = getattr(self, '_auth_row', None)
+            target_list = self.auth_sidebar_list
         else:
             try:
                 idx = self._sidebar_tab_ids.index(name)
             except ValueError:
-                target = None
+                pass
             else:
-                target = self.sidebar_list.get_row_at_index(idx)
-        if target is None:
+                target_row = self.sidebar_list.get_row_at_index(idx)
+                target_list = self.sidebar_list
+        if target_row is None or target_list is None:
             return
         self._suppress_sidebar_callback = True
         try:
-            self.sidebar_list.select_row(target)
+            # Single-select each list independently, then deselect the
+            # other list so only one row appears active at a time
+            # across the whole sidebar.
+            target_list.select_row(target_row)
+            other = (self.auth_sidebar_list if target_list is self.sidebar_list
+                     else self.sidebar_list)
+            other.unselect_all()
         finally:
             self._suppress_sidebar_callback = False
 
@@ -1016,38 +1042,101 @@ class KitsuneWindow(Adw.ApplicationWindow):
     # --- Auth integration ---
 
     def _setup_auth_sidebar(self):
-        """Add login/profile row at the bottom of sidebar."""
+        """Pin the login/profile row to the bottom of the sidebar.
+
+        Uses a separate Gtk.ListBox (`auth_sidebar_list`) attached to
+        the sidebar's Adw.ToolbarView bottom slot so the row stays
+        anchored to the foot of the pane regardless of how many tabs
+        the user has visible. Selection state is kept in sync across
+        the two listboxes via `_sync_sidebar_selection`.
+        """
         if hasattr(self, '_auth_row') and self._auth_row.get_parent():
-            self.sidebar_list.remove(self._auth_row)
-        self._auth_row = Adw.ActionRow(icon_name='avatar-default-symbolic')
-        self.sidebar_list.append(self._auth_row)
+            self._auth_row.get_parent().remove(self._auth_row)
+        self._auth_row = Adw.ActionRow()
+        # Adw.Avatar as a prefix gives us the server-side avatar image
+        # when logged in (loaded via image_cache) and falls back to
+        # nickname initials otherwise. set_icon_name on ActionRow would
+        # paint the symbolic on top of the avatar, so we use add_prefix
+        # exclusively and never touch the icon-name property.
+        self._auth_avatar = Adw.Avatar(size=28, show_initials=True)
+        self._auth_row.add_prefix(self._auth_avatar)
+        self._auth_row.add_css_class('auth-row-bold')
+        self.auth_sidebar_list.append(self._auth_row)
 
         self._update_auth_sidebar()
+
+    def _apply_user_to_avatar(self, avatar_widget, user):
+        """Mirror the auth state into an Adw.Avatar (sidebar or sheet).
+
+        On login: set the nickname as the initials fallback and kick an
+        async image load — the custom image fades in when the network
+        request completes, falling back to initials on failure. On
+        logout: clear both so the next user starts fresh.
+        """
+        if user:
+            avatar_widget.set_text(user.nickname or '')
+            if user.avatar:
+                from kitsune.ui.image_cache import load_image
+                load_image(user.avatar, lambda tex, err, a=avatar_widget:
+                           a.set_custom_image(tex) if tex else None,
+                           category='avatars')
+            else:
+                avatar_widget.set_custom_image(None)
+        else:
+            avatar_widget.set_text('')
+            avatar_widget.set_custom_image(None)
 
     def _update_auth_sidebar(self):
         if self._session and self._session.is_logged_in():
             user = self._session.get_user()
             nick = user.nickname if user else '...'
             self._auth_row.set_title(nick)
-            self._auth_row.set_icon_name('system-users-symbolic')
+            self._auth_row.set_subtitle(self._format_last_sync())
+            self._apply_user_to_avatar(self._auth_avatar, user)
         else:
             self._auth_row.set_title(_('Login'))
-            self._auth_row.set_icon_name('avatar-default-symbolic')
+            self._auth_row.set_subtitle('')
+            self._apply_user_to_avatar(self._auth_avatar, None)
         self._update_narrow_auth_row()
         self._update_narrow_auth_grid()
 
+    def _format_last_sync(self) -> str:
+        """Format the last sync timestamp for the sidebar subtitle.
+
+        Shows a short time-of-day when the last sync ran today, full
+        date+time when the last sync was on a prior day. Falls back to
+        'Not synced yet' when the session is new — both before the
+        first pull and immediately after login on a fresh install.
+        """
+        ts = self._sync.get_last_sync_time() if self._sync else None
+        if not ts:
+            return _('Not synced yet')
+        import datetime
+        dt = datetime.datetime.fromtimestamp(ts)
+        today = datetime.date.today()
+        if dt.date() == today:
+            return _('Synced at %s') % dt.strftime('%H:%M')
+        return _('Synced %s') % dt.strftime('%b %d %H:%M')
+
+    def _refresh_auth_sidebar_subtitle(self):
+        """Update only the sync-time subtitle, without re-fetching the
+        avatar — fired on every sync_complete tick so it can stay
+        accurate without burning HTTP on the avatar URL each time."""
+        if self._session and self._session.is_logged_in():
+            self._auth_row.set_subtitle(self._format_last_sync())
+
     def _update_narrow_auth_row(self):
         """Update the narrow sheet list auth row."""
-        if not hasattr(self, '_narrow_auth_row'):
+        if not hasattr(self, '_narrow_auth_avatar'):
             return
         if self._session and self._session.is_logged_in():
             user = self._session.get_user()
             nick = user.nickname if user else '...'
             self._narrow_auth_row.set_title(nick)
-            self._narrow_auth_row.set_icon_name('system-users-symbolic')
+            self._apply_user_to_avatar(self._narrow_auth_avatar, user)
         else:
             self._narrow_auth_row.set_title(_('Login'))
-            self._narrow_auth_row.set_icon_name('avatar-default-symbolic')
+            self._apply_user_to_avatar(self._narrow_auth_avatar, None)
 
     def _update_narrow_auth_grid(self):
         """Update the narrow sheet grid auth button."""
@@ -1057,12 +1146,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
             user = self._session.get_user()
             nick = user.nickname if user else '...'
             self._narrow_auth_label.set_label(nick)
-            self._narrow_auth_icon.set_from_icon_name(
-                'system-users-symbolic')
+            self._apply_user_to_avatar(self._narrow_auth_grid_avatar, user)
         else:
             self._narrow_auth_label.set_label(_('Login'))
-            self._narrow_auth_icon.set_from_icon_name(
-                'avatar-default-symbolic')
+            self._apply_user_to_avatar(self._narrow_auth_grid_avatar, None)
 
     def _create_profile_view(self):
         from kitsune.ui.profile_view import ProfileView
@@ -1224,7 +1311,20 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _show_auth_dialog(self):
         if not self._session:
             return
+        # Capture the currently active sidebar row so we can return
+        # focus to it once the dialog closes. Without this, dismissing
+        # the auth dialog leaves keyboard focus on the auth_row in the
+        # bottom listbox, even though the visible content tab hasn't
+        # changed — confusing for keyboard users and for screen
+        # readers, and aesthetically inconsistent with the highlighted
+        # tab above.
+        prev_row = self.sidebar_list.get_selected_row()
         dialog = AuthDialog(self._session, sync_manager=self._sync)
+        if prev_row is not None:
+            dialog.connect(
+                'closed',
+                lambda *_: GLib.idle_add(prev_row.grab_focus),
+            )
         dialog.present(self)
 
     def _on_network_error(self):
