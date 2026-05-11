@@ -73,6 +73,9 @@ class AniLibriaClient:
     def set_token_getter(self, getter):
         self._get_token = getter
 
+    def is_authenticated(self) -> bool:
+        return bool(self._get_token and self._get_token())
+
     def set_token_expired_handler(self, callback):
         """Register a callback invoked when the server returns 401.
 
