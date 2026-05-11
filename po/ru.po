@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune 0.7.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 06:22+0300\n"
+"POT-Creation-Date: 2026-05-11 06:33+0300\n"
 "PO-Revision-Date: 2026-03-17 15:00+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
@@ -16,6 +16,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n"
 "%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+#: src/kitsune/application.py:54 src/kitsune/ui/window.blp:7
+#: src/kitsune/ui/window.blp:19 data/net.armatik.Kitsune.desktop.in:3
+#: data/net.armatik.Kitsune.metainfo.xml.in:7
+msgid "Kitsune"
+msgstr "Кицунэ"
 
 #: src/kitsune/application.py:61
 msgid "Libadwaita client for watching anime from AniLiberty"
@@ -942,11 +948,6 @@ msgstr "Это всё!"
 #: src/kitsune/ui/widgets/content_grid.blp:101
 msgid "Scroll to top"
 msgstr "Наверх"
-
-#: src/kitsune/ui/window.blp:7 data/net.armatik.Kitsune.desktop.in:3
-#: data/net.armatik.Kitsune.metainfo.xml.in:7
-msgid "Kitsune"
-msgstr "Кицунэ"
 
 #: src/kitsune/ui/window.blp:36
 msgid "Filters"

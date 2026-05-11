@@ -51,7 +51,7 @@ class KitsuneApplication(Adw.Application):
 
     def _on_about(self, _action, _param):
         about = Adw.AboutDialog(
-            application_name='Kitsune',
+            application_name=_('Kitsune'),
             application_icon='net.armatik.Kitsune',
             version=self._version,
             developer_name='Armatik',
