@@ -284,6 +284,7 @@ class SyncManager:
                 for op_id in op_ids:
                     self._queue.mark_success(op_id)
                 self._emit_queue_changed()
+                self._stop_retry_timer_if_idle()
             self._drain_next()
         except Exception:
             log.exception('Timecode batch result handler raised; resetting drain state')
@@ -310,11 +311,23 @@ class SyncManager:
             else:
                 self._queue.mark_success(op.id)
                 self._emit_queue_changed()
+                self._stop_retry_timer_if_idle()
             self._drain_next()
         except Exception:
             log.exception('Drain result handler raised; resetting drain state')
             self._draining = False
             self._schedule_drain()
+
+    def _stop_retry_timer_if_idle(self):
+        """Drop the 10s retry tick once the queue is fully drained.
+
+        Without this the timer wakes the GLib main loop indefinitely
+        after every drained operation, burning ~9000 idle wakeups per
+        day on a logged-in app — wasteful on mobile (Phosh battery).
+        Re-armed automatically on the next _schedule_drain.
+        """
+        if self._queue.size() == 0:
+            self._stop_retry_timer()
 
     def _schedule_drain(self):
         """Schedule a drain on the next GLib idle tick.
@@ -491,8 +504,13 @@ class SyncManager:
             self._queue.enqueue(
                 OP_REMOVE_FAVORITE, release_id, user_id=self._user_id)
         elif tag_id in _TAG_TO_COLLECTION:
+            # collection_type must be carried so coalescing in PendingQueue
+            # can match this remove against an add on the same (release,
+            # type) pair. Without it _try_coalesce sees payload['collection_type']
+            # = None and never cancels add↔remove pairs.
             self._queue.enqueue(
-                OP_REMOVE_COLLECTION, release_id, user_id=self._user_id)
+                OP_REMOVE_COLLECTION, release_id, user_id=self._user_id,
+                payload={'collection_type': _TAG_TO_COLLECTION[tag_id]})
         else:
             return
         self._emit_queue_changed()
@@ -657,6 +675,7 @@ class SyncManager:
         self._last_sync = time.time()
         self._pull_snapshot = set()
         log.debug('Sync complete')
+        self._emit_sync_complete(True)
         if callback:
             callback(True, None)
 

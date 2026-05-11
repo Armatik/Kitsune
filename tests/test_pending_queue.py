@@ -333,15 +333,21 @@ def test_coalesce_skips_in_flight_ops_opposite(tmp_path):
     assert q.size() == 2
 
 
-def test_coalesce_skips_in_flight_ops_duplicate(tmp_path):
-    """A duplicate op is enqueued normally if the matching existing op is in flight."""
+def test_coalesce_dedups_in_flight_same_kind(tmp_path):
+    """A same-kind duplicate is deduped against an in-flight op.
+
+    The in-flight POST will satisfy the same intent (e.g. add_favorite),
+    so enqueueing a second add for the same release would just generate
+    a wasted server call after drain completes. Dropping it via
+    coalescing keeps the queue tight without changing observable state.
+    """
     path = tmp_path / 'pending_ops.json'
     q = PendingQueue(path)
     first_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     q.mark_in_flight(first_id)
     second_id = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
-    assert second_id is not None
-    assert q.size() == 2
+    assert second_id is None
+    assert q.size() == 1
 
 
 def test_load_clears_in_flight(tmp_path):
@@ -596,34 +602,46 @@ def test_reset_all_retries_keeps_attempt_count(tmp_path, monkeypatch):
     assert q._ops[0].last_error == 'timeout again'
 
 
-def test_coalesce_preserves_remove_when_in_flight_add_and_pending_dup(tmp_path):
-    """Regression: opposite op must NOT cancel a pending dup if an in-flight
-    op on the same key exists — otherwise user's last intent is lost."""
+def test_coalesce_preserves_remove_when_in_flight_add(tmp_path):
+    """Regression: an opposite op must reach the queue even when the
+    matching op is in-flight — otherwise the user's last intent (the
+    remove) would be lost after the in-flight add commits server-side.
+
+    With same-kind in-flight dedup, the second add is dropped (good —
+    intent already covered by the in-flight one), but the subsequent
+    remove must still be enqueued.
+    """
     path = tmp_path / 'pending_ops.json'
     q = PendingQueue(path)
     op_a = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     q.mark_in_flight(op_a)
-    # Second add enqueued because A is in-flight (invisible to coalesce)
+    # Second add is deduped against in-flight A
     op_b = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
-    assert op_b is not None
-    assert q.size() == 2
-    # Now user clicks remove — must NOT silently drop it
+    assert op_b is None
+    assert q.size() == 1
+    # Remove must reach the queue so the server eventually unfavorites
     op_c = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
-    assert op_c is not None  # remove must be enqueued, not coalesced away
-    assert q.size() == 3     # all three ops present
+    assert op_c is not None
+    assert q.size() == 2
+    ops_by_kind = {op.op for op in q._ops}
+    assert OP_ADD_FAVORITE in ops_by_kind
+    assert OP_REMOVE_FAVORITE in ops_by_kind
 
 
-def test_coalesce_preserves_add_when_in_flight_remove_and_pending_dup(tmp_path):
-    """Same bug, opposite direction."""
+def test_coalesce_preserves_add_when_in_flight_remove(tmp_path):
+    """Same invariant, opposite direction."""
     path = tmp_path / 'pending_ops.json'
     q = PendingQueue(path)
     op_a = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
     q.mark_in_flight(op_a)
     op_b = q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
-    assert op_b is not None
+    assert op_b is None
     op_c = q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     assert op_c is not None
-    assert q.size() == 3
+    assert q.size() == 2
+    ops_by_kind = {op.op for op in q._ops}
+    assert OP_REMOVE_FAVORITE in ops_by_kind
+    assert OP_ADD_FAVORITE in ops_by_kind
 
 
 def test_coalesce_still_works_when_no_in_flight_conflict(tmp_path):

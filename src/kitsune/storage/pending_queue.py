@@ -195,9 +195,15 @@ class PendingQueue:
         needs_collection_match = op_kind in (OP_ADD_COLLECTION, OP_REMOVE_COLLECTION)
         new_collection_type = payload.get('collection_type') if needs_collection_match else None
 
-        # If an in-flight op exists on the same key, skip coalescing entirely.
-        # Otherwise a pending dup could be cancelled by an opposite enqueue
-        # while the in-flight op is invisible, silently losing user intent.
+        # In-flight ops on the same key short-circuit the second-loop
+        # coalescing pass, which would otherwise silently lose intent by
+        # cancelling pending opposites while the in-flight op continues
+        # to commit. Two cases:
+        #   - same-kind in-flight: the new click expresses the same
+        #     intent the server is about to satisfy, so drop the new op
+        #     to avoid a redundant POST after drain completes.
+        #   - opposite in-flight: enqueue the new op separately so its
+        #     dispatch reverses the in-flight result on the server.
         for existing in self._ops:
             if existing.id not in self._in_flight:
                 continue
@@ -211,7 +217,8 @@ class PendingQueue:
             else:
                 if existing.op not in (op_kind, opposite):
                     continue
-            # Found an in-flight op on the same key — skip coalescing
+            if existing.op == op_kind:
+                return True
             return False
 
         for existing in list(self._ops):

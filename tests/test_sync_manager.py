@@ -1185,12 +1185,13 @@ def test_fake_client_trigger_without_handler_is_noop(tmp_path):
 
 def test_pause_for_expired_session_stops_retry_timer(tmp_path, mock_tags, monkeypatch):
     sm, client = _make_sm_with_fake(tmp_path)
-    # Kick a drain so the retry timer starts
+    # Kick a drain so the retry timer starts. The HTTP response is NOT
+    # flushed — the op stays in-flight, so the post-success retry-timer
+    # stop in _on_op_result does not fire and the timer keeps running
+    # until pause_for_expired_session explicitly cancels it.
     sm.enqueue_timecode(
         release_id=9275, episode_id='ep.0', pos=30.0, is_watched=False)
     sm._drain_queue()
-    client.flush_all()
-    # Timer is now started
     assert sm._retry_timer_id is not None
     sm.pause_for_expired_session()
     assert sm._retry_timer_id is None
@@ -1242,8 +1243,10 @@ def test_clear_queue_on_logout_also_stops_retry_timer(tmp_path, mock_tags):
     sm._queue.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     sm._schedule_drain()
     sm._drain_queue()
-    client.flush_all()
-    # Timer is running after the scheduled drain
+    # Do NOT flush HTTP — the op stays in-flight so the timer keeps
+    # running until clear_queue_on_logout cancels it explicitly. (After
+    # H5, a successful drain that empties the queue also stops the
+    # timer, but that's covered by other tests.)
     assert sm._retry_timer_id is not None
     sm.clear_queue_on_logout()
     # Timer stopped (no point retrying after logout)
