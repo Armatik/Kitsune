@@ -113,10 +113,12 @@ class SyncManager:
         return self._last_sync
 
     def is_logged_in(self):
-        return bool(self._client and
-                     hasattr(self._client, '_get_token') and
-                     self._client._get_token and
-                     self._client._get_token())
+        if self._client is None:
+            return False
+        if hasattr(self._client, 'is_authenticated'):
+            return self._client.is_authenticated()
+        getter = getattr(self._client, '_get_token', None)
+        return bool(getter and getter())
 
     # --- Pub/sub (callback-list pattern, see SessionManager) ---
 
@@ -485,8 +487,8 @@ class SyncManager:
             log.debug('Pull snapshot holds %d release ids', len(self._pull_snapshot))
         self._schedule_drain()
         self._sync_favorites(
-            lambda: self._sync_collections(
-                lambda: self._sync_done(callback)))
+            lambda ok_f: self._sync_collections(
+                lambda ok_c: self._sync_done(callback, ok_f and ok_c)))
 
     def sync_now(self, callback=None):
         """Manual sync — always merge."""
@@ -735,20 +737,23 @@ class SyncManager:
 
     # --- Internal sync logic ---
 
-    def _sync_done(self, callback):
+    def _sync_done(self, callback, success=True):
         self._syncing = False
-        self._last_sync = time.time()
         self._pull_snapshot = set()
-        log.debug('Sync complete')
-        self._emit_sync_complete(True)
+        if success:
+            self._last_sync = time.time()
+            log.debug('Sync complete')
+        else:
+            log.debug('Sync finished with errors; not advancing last_sync')
+        self._emit_sync_complete(success)
         if callback:
-            callback(True, None)
+            callback(success, None if success else 'sync_partial')
 
     def _sync_favorites(self, then):
         def on_server_favs(server_ids, error):
             if error:
                 log.debug('Favorites sync failed: %s', error)
-                then()
+                then(False)
                 return
             local_ids = set(tags_store.get_release_ids_for_tag('favorites'))
             server_set = set(server_ids) if server_ids else set()
@@ -762,7 +767,7 @@ class SyncManager:
                     tags_store.remove_release('favorites', rid)
                 for rid in (server_set - local_ids) - snapshot:
                     tags_store.add_release('favorites', rid)
-                then()
+                then(True)
             elif strategy == MergeStrategy.PREFER_LOCAL:
                 # Push all local to server — snapshot ids go via queue
                 to_add = (local_ids - server_set) - snapshot
@@ -771,7 +776,7 @@ class SyncManager:
                     self._client.add_favorites(list(to_add), _noop)
                 if to_remove:
                     self._client.remove_favorites(list(to_remove), _noop)
-                then()
+                then(True)
             else:
                 # MERGE: server wins conflicts — snapshot ids excluded
                 for rid in (server_set - local_ids) - snapshot:
@@ -779,9 +784,9 @@ class SyncManager:
                 local_only = (local_ids - server_set) - snapshot
                 if local_only:
                     self._client.add_favorites(
-                        list(local_only), lambda d, e: then())
+                        list(local_only), lambda d, e: then(True))
                 else:
-                    then()
+                    then(True)
 
         self._client.get_favorite_ids(on_server_favs)
 
@@ -789,7 +794,7 @@ class SyncManager:
         def on_server_collections(server_entries, error):
             if error:
                 log.debug('Collections sync failed: %s', error)
-                then()
+                then(False)
                 return
 
             server_by_tag = {}
@@ -826,7 +831,7 @@ class SyncManager:
                         if ctype:
                             push_queue.append((rid, ctype))
 
-            self._push_collections(push_queue, then)
+            self._push_collections(push_queue, lambda: then(True))
 
         self._client.get_collection_ids(on_server_collections)
 
