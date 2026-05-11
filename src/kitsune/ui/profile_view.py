@@ -14,17 +14,17 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 from kitsune import tags_store
 from kitsune.storage import watch_positions
-from kitsune.ui import register_css
+from kitsune.ui import register_css, resolved_tag_color
 
 log = logging.getLogger('kitsune.profile_view')
 
 _COLLECTION_TAGS = [
-    ('favorites', 'Favorites', 'net.armatik.Kitsune.starred-symbolic', '#f5c211'),
-    ('watching', 'Watching', 'net.armatik.Kitsune.media-playback-start-symbolic', '#9141ac'),
-    ('watched', 'Watched', 'net.armatik.Kitsune.object-select-symbolic', '#26a269'),
-    ('planned', 'Planned', 'net.armatik.Kitsune.view-list-bullet-symbolic', '#3584e4'),
-    ('postponed', 'Postponed', 'net.armatik.Kitsune.media-playback-pause-symbolic', '#e66100'),
-    ('abandoned', 'Abandoned', 'net.armatik.Kitsune.cross-large-symbolic', '#e01b24'),
+    ('favorites', 'Favorites', 'net.armatik.Kitsune.starred-symbolic'),
+    ('watching', 'Watching', 'net.armatik.Kitsune.media-playback-start-symbolic'),
+    ('watched', 'Watched', 'net.armatik.Kitsune.object-select-symbolic'),
+    ('planned', 'Planned', 'net.armatik.Kitsune.view-list-bullet-symbolic'),
+    ('postponed', 'Postponed', 'net.armatik.Kitsune.media-playback-pause-symbolic'),
+    ('abandoned', 'Abandoned', 'net.armatik.Kitsune.cross-large-symbolic'),
 ]
 
 _HERO_IMAGES = [
@@ -169,7 +169,8 @@ class ProfileView(Gtk.Box):
             self._refresh_indicator()
 
     def _setup_collection_cards(self):
-        for tag_id, label, icon_name, color in _COLLECTION_TAGS:
+        for tag_id, label, icon_name in _COLLECTION_TAGS:
+            color = resolved_tag_color({'id': tag_id})
             count = len(tags_store.get_release_ids_for_tag(tag_id))
 
             card_btn = Gtk.Button(css_classes=['flat'])
@@ -227,7 +228,7 @@ class ProfileView(Gtk.Box):
     def _setup_total_cards(self):
         total = sum(
             len(tags_store.get_release_ids_for_tag(tid))
-            for tid, _, _, _ in _COLLECTION_TAGS
+            for tid, _, _ in _COLLECTION_TAGS
         )
 
         box1 = Gtk.Box(

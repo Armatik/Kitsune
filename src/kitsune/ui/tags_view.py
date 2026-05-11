@@ -206,11 +206,11 @@ class TagsView(Gtk.Box):
             icon = Gtk.Image.new_from_icon_name(tag['icon_value'])
             icon.set_pixel_size(24)
             icon.set_valign(Gtk.Align.CENTER)
-            if tag.get('color'):
+            from kitsune.ui import resolved_tag_color
+            color = resolved_tag_color(tag)
+            if color:
                 css = Gtk.CssProvider()
-                css.load_from_string(
-                    f"image {{ color: {tag['color']}; }}"
-                )
+                css.load_from_string(f"image {{ color: {color}; }}")
                 icon.get_style_context().add_provider(
                     css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
                 )

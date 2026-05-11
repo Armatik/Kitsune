@@ -11,15 +11,15 @@ from gi.repository import Adw, Gio, Gtk
 
 from kitsune.models import Release
 from kitsune import tags_store
-from kitsune.ui import apply_adult_blur, register_css
+from kitsune.ui import apply_adult_blur, register_css, resolved_tag_color
 from kitsune.ui.image_cache import load_image
 
 _BADGE_CSS = (
     '.tag-badge-pill { padding: 5px 8px; border-radius: 9999px;'
-    ' background: alpha(@accent_bg_color, 0.85); }'
-    ' .tag-badge-pill image { -gtk-icon-style: symbolic;'
-    ' color: @accent_fg_color; }'
+    ' background: alpha(black, 0.55);'
+    ' border: 1px solid alpha(white, 0.08); }'
     ' .tag-badge-emoji { font-size: 16px; }'
+    ' .tag-badge-fallback-fg image { color: white; }'
 )
 
 
@@ -98,25 +98,28 @@ class ReleaseCard(Gtk.FlowBoxChild):
             elif tag['icon_type'] == 'symbolic':
                 image = Gtk.Image.new_from_icon_name(tag['icon_value'])
                 image.set_pixel_size(16)
-                if tag.get('color'):
+                color = resolved_tag_color(tag, on_osd=True)
+                if color:
                     css = Gtk.CssProvider()
-                    css.load_from_string(
-                        f"image {{ color: {tag['color']}; }}"
-                    )
+                    css.load_from_string(f"image {{ color: {color}; }}")
                     image.get_style_context().add_provider(
                         css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
                     )
+                else:
+                    image.add_css_class('tag-badge-fallback-fg')
                 pill.append(image)
             else:
                 from kitsune.ui.widgets.tag_card import create_color_circle
                 pill.append(create_color_circle(tag['icon_value'], 16))
 
         if has_more:
-            pill.append(Gtk.Image(
+            more = Gtk.Image(
                 icon_name='net.armatik.Kitsune.plus-circle-symbolic',
                 pixel_size=16,
                 valign=Gtk.Align.CENTER,
-            ))
+            )
+            more.add_css_class('tag-badge-fallback-fg')
+            pill.append(more)
 
         self.tag_badges.append(pill)
 

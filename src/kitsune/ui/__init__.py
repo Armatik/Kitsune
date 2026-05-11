@@ -49,6 +49,45 @@ def apply_adult_blur(picture_widget, is_adult: bool) -> None:
     picture_widget.add_css_class('adult-blur')
 
 
+_PALETTE_LIGHT = {
+    'favorites': '#e5a50a',
+    'watching':  '#dc8add',
+    'watched':   '#26a269',
+    'planned':   '#1c71d8',
+    'postponed': '#c64600',
+    'abandoned': '#c01c28',
+}
+_PALETTE_DARK = {
+    'favorites': '#f6d32d',
+    'watching':  '#dc8add',
+    'watched':   '#57e389',
+    'planned':   '#62a0ea',
+    'postponed': '#ffa348',
+    'abandoned': '#f66151',
+}
+
+
+def resolved_tag_color(tag: dict, on_osd: bool = False) -> str | None:
+    """Pick the right HIG shade for a tag, given the render context.
+
+    OSD pills always sit on a dark translucent backdrop, so they get
+    the brighter dark-mode shade regardless of the system theme.
+    Non-OSD callers pick based on the live Adw color scheme.
+    """
+    tag_id = tag.get('id')
+    if on_osd:
+        return _PALETTE_DARK.get(tag_id) or tag.get('color')
+    palette = _PALETTE_LIGHT
+    try:
+        gi.require_version('Adw', '1')
+        from gi.repository import Adw
+        if Adw.StyleManager.get_default().get_dark():
+            palette = _PALETTE_DARK
+    except Exception:
+        pass
+    return palette.get(tag_id) or tag.get('color')
+
+
 def format_size(size_bytes: int) -> str:
     """Format byte count as human-readable string (B/KB/MB/GB)."""
     if size_bytes < 1024:

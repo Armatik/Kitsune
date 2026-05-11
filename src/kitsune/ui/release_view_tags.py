@@ -9,15 +9,17 @@ gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 
 from kitsune import tags_store
+from kitsune.ui import resolved_tag_color
 
 
 def _make_symbolic_image(tag: dict, pixel_size: int) -> Gtk.Image:
     image = Gtk.Image.new_from_icon_name(tag['icon_value'])
     image.set_pixel_size(pixel_size)
     image.set_valign(Gtk.Align.CENTER)
-    if tag.get('color'):
+    color = resolved_tag_color(tag)
+    if color:
         css = Gtk.CssProvider()
-        css.load_from_string(f"image {{ color: {tag['color']}; }}")
+        css.load_from_string(f"image {{ color: {color}; }}")
         image.get_style_context().add_provider(
             css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
         )

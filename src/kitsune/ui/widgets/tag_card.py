@@ -137,16 +137,16 @@ class TagCard(Gtk.FlowBoxChild):
         self.card_bg.append(bg_label)
 
     def _setup_symbolic(self, icon_name: str, hex_color: str | None):
-        # Hide the text label, replace with a symbolic image tinted in
-        # the tag's accent color via currentColor.
         self.icon_label.set_visible(False)
         image = Gtk.Image.new_from_icon_name(icon_name)
         image.set_pixel_size(36)
         image.set_halign(Gtk.Align.CENTER)
         image.set_valign(Gtk.Align.CENTER)
-        if hex_color:
+        from kitsune.ui import resolved_tag_color
+        color = resolved_tag_color(self.tag) or hex_color
+        if color:
             css = Gtk.CssProvider()
-            css.load_from_string(f'image {{ color: {hex_color}; }}')
+            css.load_from_string(f'image {{ color: {color}; }}')
             image.get_style_context().add_provider(
                 css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
             )

@@ -32,7 +32,7 @@ _BUILTIN_TAGS = [
         'builtin': True,
         'order': 0,
         'releases': [],
-        'color': '#f5c211',
+        'color': '#e5a50a',
     },
     {
         'id': 'watching',
@@ -42,7 +42,7 @@ _BUILTIN_TAGS = [
         'builtin': True,
         'order': 1,
         'releases': [],
-        'color': '#9141ac',
+        'color': '#dc8add',
     },
     {
         'id': 'watched',
@@ -62,7 +62,7 @@ _BUILTIN_TAGS = [
         'builtin': True,
         'order': 3,
         'releases': [],
-        'color': '#3584e4',
+        'color': '#1c71d8',
     },
     {
         'id': 'postponed',
@@ -72,7 +72,7 @@ _BUILTIN_TAGS = [
         'builtin': True,
         'order': 4,
         'releases': [],
-        'color': '#e66100',
+        'color': '#c64600',
     },
     {
         'id': 'abandoned',
@@ -82,7 +82,7 @@ _BUILTIN_TAGS = [
         'builtin': True,
         'order': 5,
         'releases': [],
-        'color': '#e01b24',
+        'color': '#c01c28',
     },
 ]
 
@@ -134,6 +134,8 @@ def _load() -> dict:
         elif (tag.get('icon_type') == latest['icon_type']
                 and tag.get('icon_value') != latest['icon_value']):
             tag['icon_value'] = latest['icon_value']
+        if latest.get('color') and tag.get('color') != latest['color']:
+            tag['color'] = latest['color']
 
     return data
 
