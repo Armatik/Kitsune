@@ -122,15 +122,60 @@ class TagPopover(Gtk.Popover):
 
             self._list.append(row)
 
+    _COLLECTION_TAGS = frozenset(
+        ('watching', 'watched', 'planned', 'postponed', 'abandoned'))
+
+    _COLLECTION_NAMES = {
+        'watching':  _('Watching'),
+        'watched':   _('Watched'),
+        'planned':   _('Planned'),
+        'postponed': _('Paused'),
+        'abandoned': _('Abandoned'),
+    }
+
+    def _current_collection(self):
+        for tag in tags_store.get_tags_for_release(self._release_id):
+            if tag['id'] in self._COLLECTION_TAGS:
+                return tag['id']
+        return None
+
+    def _toast_moved(self, from_tag):
+        name = self._COLLECTION_NAMES.get(from_tag, from_tag)
+        toast = Adw.Toast.new(_('Removed from "%s"') % name)
+        toast.set_timeout(4)
+        root = self.get_root()
+        if root is not None and hasattr(root, 'toast_overlay'):
+            root.toast_overlay.add_toast(toast)
+
     def _on_tag_toggled(self, check):
         tag_id = check._tag_id
+        activating = check.get_active()
+        # Server collections (watching/watched/planned/postponed/abandoned)
+        # are mutually exclusive — adding to a second one auto-evicts
+        # the first server-side. Mirror that locally and surface a
+        # toast so the user understands why the previous tag's badge
+        # disappeared.
+        if activating and tag_id in self._COLLECTION_TAGS:
+            prev = self._current_collection()
+            if prev and prev != tag_id:
+                if self._sync:
+                    self._sync.move_collection(
+                        self._release_id, prev, tag_id)
+                else:
+                    tags_store.remove_release(prev, self._release_id)
+                    tags_store.add_release(tag_id, self._release_id)
+                self._toast_moved(prev)
+                self._populate()
+                if self._on_changed:
+                    self._on_changed()
+                return
         if self._sync and self._is_synced_tag(tag_id):
-            if check.get_active():
+            if activating:
                 self._sync.add_to_tag_synced(tag_id, self._release_id)
             else:
                 self._sync.remove_from_tag_synced(tag_id, self._release_id)
         else:
-            if check.get_active():
+            if activating:
                 tags_store.add_release(tag_id, self._release_id)
             else:
                 tags_store.remove_release(tag_id, self._release_id)
