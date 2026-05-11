@@ -84,7 +84,8 @@ class TagCard(Gtk.FlowBoxChild):
     sync_badge = Gtk.Template.Child()
     delete_badge = Gtk.Template.Child()
 
-    def __init__(self, tag: dict, on_delete=None, **kwargs):
+    def __init__(self, tag: dict, on_delete=None, is_synced: bool = False,
+                 **kwargs):
         super().__init__(**kwargs)
         register_css(_TAG_CARD_CSS)
         self.tag = tag
@@ -98,13 +99,13 @@ class TagCard(Gtk.FlowBoxChild):
             self.count_label.set_label(f'{release_count}')
         else:
             self.count_label.set_visible(False)
-        # Builtin tags (favorites + 5 collections) sync with the AniLibria
-        # account; custom user tags are local-only. Show the cloud badge
-        # only on synced ones; show the delete button only on custom ones
-        # so the two badges never overlap and the user always knows what
-        # category they're looking at.
+        # Builtin tags (favorites + 5 collections) can sync with the
+        # AniLibria account, but the cloud badge only makes sense when
+        # the user is actually signed in — otherwise the tag is just a
+        # local placeholder. is_synced reflects the live session state
+        # so the badge disappears on logout and reappears on login.
         is_builtin = bool(tag.get('builtin'))
-        self.sync_badge.set_visible(is_builtin)
+        self.sync_badge.set_visible(is_builtin and is_synced)
         self.delete_badge.set_visible(not is_builtin)
         if not is_builtin:
             self.delete_badge.connect('clicked', self._on_delete_clicked)

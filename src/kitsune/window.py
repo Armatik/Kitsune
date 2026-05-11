@@ -584,6 +584,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._tags_view.set_on_navigation_changed(self._on_sub_navigation_changed)
         self._tags_view.set_on_tags_changed(self._on_tags_bulk_changed)
         self._tags_view.set_narrow(self._narrow)
+        # Seed the synced flag from the current session — without this,
+        # opening Tags for the first time after login would show
+        # builtin tags without cloud badges until the next set_synced
+        # call (which only happens on session-state changes).
+        self._tags_view.set_synced(
+            bool(self._session and self._session.is_logged_in()))
         self._tags_mode_is_list = saved_mode == 'list'
         if self._tags_mode_is_list:
             self._tags_view.toggle_mode()
@@ -1247,6 +1253,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
             now = datetime.datetime.now().strftime('%H:%M')
             self._profile_view.set_sync_time(now)
             self._profile_view.refresh_counts()
+        # After a successful pull, local tag state mirrors the server.
+        # Refresh views that visualise that state — the tags page (for
+        # counts + cloud badges) and every visible release card (for
+        # tag badges that newly-added releases would carry).
+        if ok:
+            self._refresh_synced_views(synced=True)
         # Start periodic sync if not already running
         if ok and not self._sync_timer_id:
             self._start_periodic_sync()
@@ -1254,6 +1266,46 @@ class KitsuneWindow(Adw.ApplicationWindow):
             import logging
             logging.getLogger('kitsune.sync').warning(
                 'Sync failed: %s', error)
+
+    def _refresh_synced_views(self, synced: bool):
+        """Re-render views whose contents change with auth state.
+
+        Two visible side-effects need to follow login / logout / sync
+        completion:
+          - the Tags page must re-render so builtin tags carry the
+            cloud badge (or drop it) and counts match the just-changed
+            local state;
+          - release cards in catalog / genres / franchises / tag
+            sub-views must refresh their tag badges because the tag
+            membership of every release may have just changed via the
+            server pull or the force_logout_cleanup wipe.
+        """
+        if self._tags_view:
+            self._tags_view.set_synced(synced)
+            self._tags_view.refresh()
+        self._refresh_all_card_tag_badges()
+
+    def _refresh_all_card_tag_badges(self):
+        """Walk every visible release flowbox and re-render the tag
+        badge pills on each card. Mirrors `_refresh_all_adult_blur`'s
+        traversal so the set of containers stays in sync."""
+        from kitsune.ui.widgets.release_card import ReleaseCard
+        flowboxes = []
+        if self._catalog_view:
+            flowboxes.append(self._catalog_view.flowbox)
+        for view in (self._genres_view, self._franchises_view):
+            if view and view._releases_view and hasattr(view._releases_view, '_grid'):
+                flowboxes.append(view._releases_view._grid.flowbox)
+        if self._tags_view and self._tags_view.in_releases:
+            releases = self._tags_view._nav_stack.get_child_by_name('releases')
+            if releases and hasattr(releases, '_grid'):
+                flowboxes.append(releases._grid.flowbox)
+        for flowbox in flowboxes:
+            child = flowbox.get_first_child()
+            while child:
+                if isinstance(child, ReleaseCard):
+                    child.refresh_tag_badges()
+                child = child.get_next_sibling()
 
     def _start_periodic_sync(self):
         """Pull from server every 5 minutes."""
@@ -1280,6 +1332,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._profile_view.update_profile(None)
         if self.content_stack.get_visible_child_name() == 'profile':
             self._switch_tab('catalog')
+        # SessionManager.logout has already wiped favorites,
+        # collections, watch positions and the pending queue. Mirror
+        # that wipe into the visible UI: cloud badges off, tag pills
+        # on cards refreshed so the just-removed tags disappear.
+        self._refresh_synced_views(synced=False)
         # Forget the user id so the next login starts clean and an
         # interrupted re-login (token typed, profile fetch fails) cannot
         # accidentally reuse the previous account's identity.

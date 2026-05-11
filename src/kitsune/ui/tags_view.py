@@ -35,6 +35,10 @@ class TagsView(Gtk.Box):
         self._narrow = False
         self._current_tag = None
         self._view_mode = 'cards'
+        # Live login state — controls whether builtin tags carry the
+        # cloud sync badge (grid) or the cloud suffix (list). Window
+        # flips this via set_synced on login / logout / sync_complete.
+        self._synced = False
         register_css(_TAGS_CSS)
 
         # Navigation stack: main (cards/list) + releases detail
@@ -119,6 +123,19 @@ class TagsView(Gtk.Box):
     def refresh(self):
         self._populate()
 
+    def set_synced(self, synced: bool):
+        """Update the visible-sync flag and re-render if it changed.
+
+        Triggered by window.py when the auth session flips (login /
+        logout) or when a full sync completes — both events change the
+        meaning of the builtin tags (locally-isolated → server-mirrored
+        or vice versa), and the cloud badges must follow.
+        """
+        if self._synced == synced:
+            return
+        self._synced = synced
+        self._populate()
+
     def _populate(self):
         tags = tags_store.get_all_tags()
         self._populate_cards(tags)
@@ -128,7 +145,8 @@ class TagsView(Gtk.Box):
         self._card_grid.clear()
         for tag in tags:
             self._card_grid.append_child(
-                TagCard(tag, on_delete=self._confirm_delete_tag))
+                TagCard(tag, on_delete=self._confirm_delete_tag,
+                        is_synced=self._synced))
 
         # "Add new" card — same layout as TagCard
         add_child = Gtk.FlowBoxChild()
@@ -215,11 +233,12 @@ class TagsView(Gtk.Box):
             )
             del_btn.connect('clicked', lambda _b, t=tag: self._confirm_delete_tag(t))
             row.add_suffix(del_btn)
-        else:
-            # Synced-with-server marker — appears just left of the
-            # Adw.ExpanderRow's auto-rendered expand arrow. Only builtin
-            # tags (favorites + 5 collection types) sync; custom tags
-            # stay local-only and get no badge.
+        elif self._synced:
+            # Synced-with-server marker — only attached when the user
+            # is actually signed in (otherwise the badge would be
+            # misleading: the tag is local-only until login). Appears
+            # just left of the Adw.ExpanderRow's auto-rendered expand
+            # arrow.
             sync_icon = Gtk.Image.new_from_icon_name(
                 'net.armatik.Kitsune.cloud-filled-symbolic')
             sync_icon.set_pixel_size(14)
