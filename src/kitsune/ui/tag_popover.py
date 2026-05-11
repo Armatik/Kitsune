@@ -125,13 +125,17 @@ class TagPopover(Gtk.Popover):
     _COLLECTION_TAGS = frozenset(
         ('watching', 'watched', 'planned', 'postponed', 'abandoned'))
 
-    _COLLECTION_NAMES = {
-        'watching':  _('Watching'),
-        'watched':   _('Watched'),
-        'planned':   _('Planned'),
-        'postponed': _('Paused'),
-        'abandoned': _('Abandoned'),
-    }
+    @staticmethod
+    def _collection_name(tag_id):
+        # gettext lookup deferred to call time so the locale that's
+        # active when the toast fires wins, not the one at module import.
+        return {
+            'watching':  _('Watching'),
+            'watched':   _('Watched'),
+            'planned':   _('Planned'),
+            'postponed': _('Paused'),
+            'abandoned': _('Abandoned'),
+        }.get(tag_id, tag_id)
 
     def _current_collection(self):
         for tag in tags_store.get_tags_for_release(self._release_id):
@@ -140,7 +144,7 @@ class TagPopover(Gtk.Popover):
         return None
 
     def _toast_moved(self, from_tag):
-        name = self._COLLECTION_NAMES.get(from_tag, from_tag)
+        name = self._collection_name(from_tag)
         toast = Adw.Toast.new(_('Removed from "%s"') % name)
         toast.set_timeout(4)
         root = self.get_root()
