@@ -357,18 +357,18 @@ class ReleaseView(Adw.NavigationPage):
 
         # Mark all watched / Unmark all
         mark_box = Gtk.Box(css_classes=['linked'])
-        mark_btn = Gtk.Button(
+        self._mark_all_btn = Gtk.Button(
             icon_name='net.armatik.Kitsune.object-select-symbolic',
             tooltip_text=_('Mark all as watched'),
-            sensitive=False,
         )
-        unmark_btn = Gtk.Button(
+        self._unmark_all_btn = Gtk.Button(
             icon_name='net.armatik.Kitsune.cross-large-symbolic',
             tooltip_text=_('Unmark all'),
-            sensitive=False,
         )
-        mark_box.append(mark_btn)
-        mark_box.append(unmark_btn)
+        self._mark_all_btn.connect('clicked', self._on_mark_all_watched)
+        self._unmark_all_btn.connect('clicked', self._on_unmark_all)
+        mark_box.append(self._mark_all_btn)
+        mark_box.append(self._unmark_all_btn)
         self.episodes_controls.append(mark_box)
 
     def _on_episodes_view_changed(self, toggle, _pspec):
@@ -424,6 +424,93 @@ class ReleaseView(Adw.NavigationPage):
             self._sort_btn.set_icon_name('view-sort-descending-symbolic')
             self._sort_btn.set_tooltip_text(_('Newest first'))
         self._refresh_episodes()
+
+    def _on_mark_all_watched(self, _button):
+        # Mark every episode of the release as fully watched. Each
+        # update touches local watch_positions and enqueues a server
+        # push via SyncManager; auto_collections will pick the
+        # completed state up through its standard hook.
+        for ep in self._release.episodes:
+            watch_positions.mark_completed(
+                self._release.id, ep.ordinal, episode_id=ep.id,
+            )
+            if self._sync and ep.id:
+                self._sync.enqueue_timecode(
+                    release_id=self._release.id, episode_id=ep.id,
+                    pos=0, is_watched=True,
+                )
+        self._reload_watch_data()
+        self._refresh_episodes()
+        self._maybe_trigger_completion_check()
+
+    def _on_unmark_all(self, _button):
+        # Inverse of mark-all: drop every local watch_positions entry
+        # and tell the server to reset (pos=0, is_watched=False).
+        for ep in self._release.episodes:
+            watch_positions.remove_position(self._release.id, ep.ordinal)
+            if self._sync and ep.id:
+                self._sync.enqueue_timecode(
+                    release_id=self._release.id, episode_id=ep.id,
+                    pos=0, is_watched=False,
+                )
+        self._reload_watch_data()
+        self._refresh_episodes()
+        self._maybe_suggest_remove_from_watched()
+
+    def _maybe_suggest_remove_from_watched(self):
+        # If the release was sitting in the Watched collection (likely
+        # auto-moved there when all episodes were marked), unmarking
+        # everything means it no longer belongs. Offer a one-click
+        # cleanup via toast instead of doing it silently — user might
+        # be unmarking to rewatch and still want it in Watched.
+        if not self._sync:
+            return
+        if self._release.id not in tags_store.get_release_ids_for_tag('watched'):
+            return
+        root = self.get_root()
+        if root is None or not hasattr(root, 'toast_overlay'):
+            return
+        toast = Adw.Toast.new(_('Remove this title from “Watched”?'))
+        toast.set_button_label(_('Remove'))
+        toast.set_timeout(15)
+        toast.connect('button-clicked', self._on_remove_from_watched_clicked)
+        root.toast_overlay.add_toast(toast)
+
+    def _on_remove_from_watched_clicked(self, _toast):
+        if self._sync:
+            self._sync.remove_from_tag_synced('watched', self._release.id)
+
+    def _reload_watch_data(self):
+        self._watch_data = watch_positions.get_all_for_release(self._release.id)
+
+    def _maybe_trigger_completion_check(self):
+        # Marking everything watched should let auto_collections move
+        # the release to Watched if the user hasn't opted out. The
+        # logic lives in player_view normally; mirror the minimal hook
+        # here so bulk-marking has the same effect.
+        if not self._sync:
+            return
+        try:
+            settings = Gio.Settings(schema_id='net.armatik.Kitsune')
+            if not settings.get_boolean('auto-collections-watch-events'):
+                return
+        except Exception:
+            return
+        from kitsune.storage import auto_collections
+        release_meta = {
+            'episodes_total': self._release.episodes_total,
+            'is_ongoing': self._release.is_ongoing,
+            'episodes': [
+                {'id': e.id, 'ordinal': e.ordinal}
+                for e in self._release.episodes
+            ],
+        }
+        actions = auto_collections.evaluate_position_change(
+            self._release.id, -1, release_meta,
+        )
+        for action in actions:
+            if action.type == 'auto':
+                auto_collections.apply_action(action, self._sync)
 
     def _get_filtered_episodes(self) -> list[Episode]:
         return episodes_helper.get_filtered_episodes(
