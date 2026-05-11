@@ -34,8 +34,7 @@ _RELEASE_CSS = (
     ' .release-chip-compact:hover { background: alpha(currentColor, 0.18); }'
     ' .poster-fade { background: linear-gradient(to bottom,'
     ' transparent 40%, @window_bg_color 100%); }'
-    ' .favorite-active image,'
-    ' .favorite-active button image,'
+    ' button.favorite-active > image,'
     ' splitbutton.favorite-active > button > image { color: #f5c211; }'
 )
 
