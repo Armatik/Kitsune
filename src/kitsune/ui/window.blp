@@ -168,6 +168,8 @@ template $KitsuneWindow: Adw.ApplicationWindow {
                 Adw.HeaderBar narrow_header {
                   title-widget: Adw.WindowTitle { title: ""; };
 
+                  styles ["kitsune-narrow-header"]
+
                   [start]
                   Gtk.Button narrow_back_btn {
                     icon-name: "go-previous-symbolic";

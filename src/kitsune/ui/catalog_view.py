@@ -9,7 +9,7 @@ gi.require_version('Adw', '1')
 
 import time
 
-from gi.repository import Gio, GLib, Gtk
+from gi.repository import Gdk, Gio, GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.ui.widgets.content_grid import ContentGrid
@@ -39,14 +39,25 @@ class CatalogView(Gtk.Box):
         self._grid.set_on_child_activated(self._on_child_activated)
         self.append(self._grid)
 
-        # Pull-to-refresh: fires when the kinetic gesture overshoots the
-        # top edge. Gated to narrow mode so desktop scrollwheel doesn't
-        # trigger it accidentally; debounced to avoid spam from a single
-        # bouncy gesture that can emit the signal more than once.
+        # Pull-to-refresh: fires on kinetic overshoot at the top edge.
+        # Source-device tracking distinguishes touchpad/touchscreen
+        # (which feel natural with pull-to-refresh) from mouse wheel
+        # (where the gesture doesn't map well and would surprise users).
+        # Last-known source updates on every scroll event; edge-overshot
+        # consults it to decide whether to fire.
         self._narrow = False
         self._last_overshot = 0.0
         self._pull_refresh_active = False
+        self._last_scroll_source = None
         self._grid.scrolled.connect('edge-overshot', self._on_edge_overshot)
+
+        scroll_ctrl = Gtk.EventControllerScroll.new(
+            Gtk.EventControllerScrollFlags.VERTICAL
+            | Gtk.EventControllerScrollFlags.KINETIC,
+        )
+        scroll_ctrl.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
+        scroll_ctrl.connect('scroll', self._on_scroll_event)
+        self._grid.scrolled.add_controller(scroll_ctrl)
 
         self.connect('map', self._on_map)
         self._load_next_page()
@@ -59,10 +70,21 @@ class CatalogView(Gtk.Box):
         self._narrow = narrow
         self._grid.set_narrow(narrow)
 
+    def _on_scroll_event(self, controller, _dx, _dy):
+        event = controller.get_current_event()
+        if event is None:
+            return False
+        device = event.get_device()
+        if device is not None:
+            self._last_scroll_source = device.get_source()
+        return False  # don't consume — pass through to ScrolledWindow
+
     def _on_edge_overshot(self, _scrolled, position):
         if position != Gtk.PositionType.TOP:
             return
-        if not self._narrow:
+        # Touchpad / touchscreen / unknown → allow. Mouse-wheel
+        # overshoots are accidental and should not refresh.
+        if self._last_scroll_source == Gdk.InputSource.MOUSE:
             return
         if self._loading:
             return
@@ -72,6 +94,7 @@ class CatalogView(Gtk.Box):
         self._last_overshot = now
         self._pull_refresh_active = True
         self._grid.set_pull_refresh_active(True)
+        self._set_header_elevated(True)
         # 1-second deliberate hold before firing the network request so
         # the spinner is visible for a clear beat first — without it the
         # whole interaction can finish in <100ms when the cache is warm
@@ -217,6 +240,12 @@ class CatalogView(Gtk.Box):
         if self._pull_refresh_active:
             self._pull_refresh_active = False
             self._grid.set_pull_refresh_active(False)
+            self._set_header_elevated(False)
+
+    def _set_header_elevated(self, active):
+        root = self.get_root()
+        if root is not None and hasattr(root, 'set_pull_refresh_header_elevated'):
+            root.set_pull_refresh_header_elevated(active)
 
     def _on_child_activated(self, child):
         if self._on_release_activated and isinstance(child, ReleaseCard):

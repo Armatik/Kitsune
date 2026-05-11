@@ -9,8 +9,21 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Adw, Gtk
 
+from kitsune.ui import register_css
+
 _SCROLL_UP_THRESHOLD = 600
 _SCROLL_NEAR_END_OFFSET = 200
+
+# Soft top→fade backdrop for the pull-refresh revealer area. Matches
+# the tone libadwaita uses for the native overshoot/undershoot glow:
+# alpha-currentColor inverts with the theme (dark on light, light on
+# dark) without a hardcoded literal color.
+_PULL_REFRESH_CSS = (
+    '.pull-refresh-bg {'
+    ' background: linear-gradient(to bottom,'
+    ' alpha(currentColor, 0.07),'
+    ' alpha(currentColor, 0)); }'
+)
 
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/content_grid.ui')
@@ -29,6 +42,7 @@ class ContentGrid(Gtk.Box):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        register_css(_PULL_REFRESH_CSS)
         self._on_scroll_near_end = None
         self._on_child_activated = None
         self._has_content = False

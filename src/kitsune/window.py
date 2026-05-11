@@ -36,6 +36,14 @@ _NAV_CSS = (
     ' .sheet-grid flowboxchild { background: none; }'
     ' .sheet-grid flowboxchild:hover { background: none; }'
     ' .sheet-grid flowboxchild:active { background: none; }'
+    # Elevation hint applied to the narrow headerbar during the catalog
+    # pull-refresh animation. The drop-shadow visually anchors the bar
+    # as the revealer pushes content downward, so the bar reads as a
+    # fixed top layer rather than slipping with the gradient below it.
+    ' headerbar.kitsune-narrow-header {'
+    ' transition: box-shadow 250ms ease; }'
+    ' headerbar.kitsune-narrow-header.pull-refresh-elevated {'
+    ' box-shadow: 0 2px 8px alpha(black, 0.18); }'
 )
 
 
@@ -657,6 +665,17 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._update_narrow_header_for_profile()
 
     # --- Internal Methods ---
+
+    def set_pull_refresh_header_elevated(self, active: bool):
+        """Toggle the elevation drop-shadow on the narrow headerbar
+        during catalog pull-refresh. Only fires when in narrow mode;
+        wide-mode headerbar is left alone. CSS transition smooths the
+        appearance / disappearance to match the revealer's slide-down.
+        """
+        if active and self._narrow:
+            self.narrow_header.add_css_class('pull-refresh-elevated')
+        else:
+            self.narrow_header.remove_css_class('pull-refresh-elevated')
 
     def _update_narrow_header_for_profile(self):
         # Profile in narrow mode: hero stretches edge-to-edge under a
