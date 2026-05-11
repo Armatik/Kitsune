@@ -147,6 +147,7 @@ class ProfileView(Gtk.Box):
         self._cards = {}
         self._anim = None
         self._narrow = False
+        self._hero_session = None
 
         # Clip card content
         self.card_box.set_overflow(Gtk.Overflow.HIDDEN)
@@ -272,21 +273,29 @@ class ProfileView(Gtk.Box):
         url = f'https://cdn.anilibria.top/static/{name}'
         log.debug('Profile hero: loading %s', url)
 
-        session = Soup.Session()
-        session.set_timeout(10)
+        # Hold on the view so the session GC'd with us; navigating away
+        # drops the in-flight request as soon as Python collects.
+        self._hero_session = Soup.Session()
+        self._hero_session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
         def on_image(_session, result):
             try:
                 gbytes = _session.send_and_read_finish(result)
-                if gbytes and gbytes.get_size() > 0:
-                    texture = Gdk.Texture.new_from_bytes(gbytes)
-                    self.hero_picture.set_paintable(texture)
-                    self._start_parallax()
+                if not gbytes or gbytes.get_size() == 0:
+                    return
+                # View may have been unmapped/destroyed while the request
+                # was in flight; bail before touching template children.
+                if not self.get_realized():
+                    return
+                texture = Gdk.Texture.new_from_bytes(gbytes)
+                self.hero_picture.set_paintable(texture)
+                self._start_parallax()
             except Exception as e:
                 log.debug('Profile hero: failed: %s', e)
 
-        session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, None, on_image)
+        self._hero_session.send_and_read_async(
+            msg, GLib.PRIORITY_DEFAULT, None, on_image)
 
     def _start_parallax(self):
         """Parallax animation: hero slides more, content slides less."""

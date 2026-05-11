@@ -13,7 +13,6 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 
 import random
 
-from kitsune import ADW_TRANSITION, SITE_URL
 from kitsune.ui import register_css
 
 log = logging.getLogger('kitsune.auth_dialog')
@@ -109,6 +108,8 @@ class AuthDialog(Adw.Dialog):
         self._social_poll_id = 0
         self._social_state = None
         self._social_attempts = 0
+        self._fade_timer_id = 0
+        self._hero_session = None
 
         # Transparent header over hero image
         self.toolbar.set_top_bar_style(Adw.ToolbarStyle.FLAT)
@@ -152,12 +153,14 @@ class AuthDialog(Adw.Dialog):
         from gi.repository import Soup
 
         log.debug('Hero: downloading %s', url)
-        session = Soup.Session()
+        # Hold on the dialog so the session is GC'd with us, and a
+        # dismissed dialog drops the in-flight request as soon as Python
+        # collects it.
+        self._hero_session = Soup.Session()
         # Without an explicit timeout the underlying GIO socket has no
         # per-request cap, so a flaky CDN can leave the auth dialog with
-        # a blank hero indefinitely. 10s is a generous-but-bounded ceiling
-        # — failure just falls back to the default background.
-        session.set_timeout(10)
+        # a blank hero indefinitely.
+        self._hero_session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
         def on_image(_session, result):
@@ -165,6 +168,11 @@ class AuthDialog(Adw.Dialog):
                 gbytes = _session.send_and_read_finish(result)
                 if not gbytes or gbytes.get_size() == 0:
                     log.debug('Hero: empty response')
+                    return
+                # Dialog may have been dismissed while the request was
+                # in flight; touching template children after dispose
+                # leaks GTK warnings and risks a use-after-free.
+                if not self.get_realized():
                     return
                 log.debug('Hero: %d bytes, creating texture...', gbytes.get_size())
                 texture = Gdk.Texture.new_from_bytes(gbytes)
@@ -174,7 +182,8 @@ class AuthDialog(Adw.Dialog):
             except Exception as e:
                 log.debug('Hero: failed: %s', e)
 
-        session.send_and_read_async(msg, GLib.PRIORITY_DEFAULT, None, on_image)
+        self._hero_session.send_and_read_async(
+            msg, GLib.PRIORITY_DEFAULT, None, on_image)
 
     def _fade_in_hero(self):
         """Fade in hero image, fade out logo block."""
@@ -182,20 +191,27 @@ class AuthDialog(Adw.Dialog):
         step = 0.015  # 0 → 1 in ~67 frames ≈ 1.1s at 60fps
 
         def tick():
+            if not self.get_realized():
+                self._fade_timer_id = 0
+                return GLib.SOURCE_REMOVE
             opacity[0] = min(1.0, opacity[0] + step)
             self.hero_picture.set_opacity(opacity[0])
             # Logo fades out 2x faster than image fades in
             self.logo_block.set_opacity(max(0.0, 1.0 - opacity[0] * 2))
             if opacity[0] >= 1.0:
+                self._fade_timer_id = 0
                 return GLib.SOURCE_REMOVE
             return GLib.SOURCE_CONTINUE
 
-        GLib.timeout_add(16, tick)  # ~60fps
+        self._fade_timer_id = GLib.timeout_add(16, tick)
 
     def _on_closed(self, _dialog):
         """Clean up timers when dialog is closed."""
         self._stop_otp_timers()
         self._stop_social_poll()
+        if self._fade_timer_id:
+            GLib.source_remove(self._fade_timer_id)
+            self._fade_timer_id = 0
 
     # ------------------------------------------------------------------ Login
 
