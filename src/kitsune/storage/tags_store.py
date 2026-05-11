@@ -14,6 +14,15 @@ _TAGS_FILE = Path(
     os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
 ) / 'kitsune' / 'tags.json'
 
+# Anchor for xgettext: the gettext extractor only finds strings inside
+# `_()` calls, but built-in tag names live as dict-literal values in
+# `_BUILTIN_TAGS` below. This unused constant forces the names into
+# the .pot catalogue so `display_name()` can look them up at runtime.
+_TRANSLATABLE_TAG_NAMES = [
+    _('Favorites'), _('Watching'), _('Watched'),
+    _('Planned'), _('Postponed'), _('Abandoned'),
+]
+
 _BUILTIN_TAGS = [
     {
         'id': 'favorites',
@@ -142,6 +151,26 @@ def _find_tag(data: dict, tag_id: str) -> dict | None:
 
 def get_all_tags() -> list[dict]:
     return _load()['tags']
+
+
+def display_name(tag: dict) -> str:
+    """Localised display label for a tag.
+
+    Built-in tags carry stable English source names in storage so the
+    gettext catalogue can translate them at render time. User-created
+    tags are passed through verbatim — they're arbitrary user input
+    and must not be translated.
+    """
+    name = tag.get('name', '')
+    if tag.get('builtin'):
+        # Importing builtins._ at module load would create a cycle on
+        # tests that bind _ later; deferring keeps the lookup tied to
+        # the current locale at the call site.
+        import builtins
+        gettext_fn = getattr(builtins, '_', None)
+        if callable(gettext_fn):
+            return gettext_fn(name)
+    return name
 
 
 def create_tag(name: str, icon_type: str, icon_value: str) -> dict:

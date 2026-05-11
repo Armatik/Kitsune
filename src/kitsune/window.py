@@ -215,7 +215,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             'catalog': _('Catalog'),
             'genres': _('Genres'),
             'franchises': _('Franchises'),
-            'tags': _('Favorites & Tags'),
+            'tags': _('Favorites and Tags'),
         }
 
         for tab_id in tab_ids:
@@ -741,7 +741,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             'catalog': _('Catalog'),
             'genres': _('Genres'),
             'franchises': _('Franchises'),
-            'tags': _('Favorites & Tags'),
+            'tags': _('Favorites and Tags'),
             'profile': _('Profile'),
         }
         title = titles.get(tab, '')

@@ -88,7 +88,7 @@ class TagPopover(Gtk.Popover):
         }
 
         for tag in tags:
-            row = Adw.ActionRow(title=tag['name'])
+            row = Adw.ActionRow(title=tags_store.display_name(tag))
             row._tag = tag
 
             if tag['icon_type'] == 'emoji':

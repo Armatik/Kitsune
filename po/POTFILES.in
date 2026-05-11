@@ -1,4 +1,5 @@
 src/kitsune/application.py
+src/kitsune/storage/tags_store.py
 src/kitsune/window.py
 src/kitsune/ui/create_tag_dialog.py
 src/kitsune/ui/filter_dialog.py

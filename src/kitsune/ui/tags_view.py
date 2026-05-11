@@ -78,7 +78,9 @@ class TagsView(Gtk.Box):
 
     @property
     def current_tag_name(self) -> str:
-        return self._current_tag['name'] if self._current_tag else ''
+        if not self._current_tag:
+            return ''
+        return tags_store.display_name(self._current_tag)
 
     @property
     def current_tag(self) -> dict | None:
@@ -168,7 +170,7 @@ class TagsView(Gtk.Box):
 
     def _create_list_row(self, tag: dict) -> Adw.ExpanderRow:
         from kitsune.ui.widgets.tag_card import create_color_circle
-        row = Adw.ExpanderRow(title=tag['name'])
+        row = Adw.ExpanderRow(title=tags_store.display_name(tag))
 
         if tag['icon_type'] == 'emoji':
             icon = Gtk.Label(

@@ -268,7 +268,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
         'catalog': _('Catalog'),
         'genres': _('Genres'),
         'franchises': _('Franchises'),
-        'tags': _('Favorites & Tags'),
+        'tags': _('Favorites and Tags'),
     }
 
     _SHEET_STYLES = ['grid', 'list']

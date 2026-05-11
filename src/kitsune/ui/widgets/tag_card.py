@@ -72,7 +72,8 @@ class TagCard(Gtk.FlowBoxChild):
         self.tag = tag
         self.card_overlay.add_css_class('tag-card-rounded')
 
-        self.title_label.set_label(tag['name'])
+        from kitsune import tags_store
+        self.title_label.set_label(tags_store.display_name(tag))
         release_count = len(tag.get('releases', []))
         if release_count > 0:
             self.count_label.set_label(f'{release_count}')
