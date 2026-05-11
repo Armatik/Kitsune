@@ -39,61 +39,79 @@
   <screenshots>
     <!-- Catalog -->
     <screenshot type="default">
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-dark.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-dark.png</image>
       <caption>Browse the anime catalog</caption>
     </screenshot>
 
     <!-- Release page (accent color style) -->
     <screenshot>
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-accent-dark.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-accent-dark.png</image>
       <caption>Release page with accent colors from the poster</caption>
+    </screenshot>
+
+    <!-- Profile view -->
+    <screenshot>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/profile-dark.png</image>
+      <caption>Profile page with collection stats and account sync</caption>
+    </screenshot>
+
+    <!-- Auth dialog -->
+    <screenshot>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/auth-dialog-dark.png</image>
+      <caption>Sign in to your AniLiberty account</caption>
     </screenshot>
 
     <!-- Video player -->
     <screenshot>
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/player.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/player.png</image>
       <caption>Built-in video player with quality selection</caption>
     </screenshot>
 
     <!-- Search -->
     <screenshot>
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/search-dark.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/search-dark.png</image>
       <caption>Search across anime, genres, franchises and tags</caption>
     </screenshot>
 
     <!-- Genres -->
     <screenshot>
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/genres-dark.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/genres-dark.png</image>
       <caption>Browse releases by genre</caption>
     </screenshot>
 
     <!-- Favorites and tags -->
     <screenshot>
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/tags-dark.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/tags-dark.png</image>
       <caption>Organize your library with custom tags and favorites</caption>
     </screenshot>
 
     <!-- Filters -->
     <screenshot>
-      <image type="source" width="1250" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/filters-dark.png</image>
+      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/filters-dark.png</image>
       <caption>Filter catalog by genre, year, type and rating</caption>
     </screenshot>
 
     <!-- Mobile layout -->
     <screenshot>
-      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-mobile-dark.png</image>
+      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-mobile-dark.png</image>
       <caption>Adaptive mobile layout</caption>
     </screenshot>
 
     <!-- Mobile release page -->
     <screenshot>
-      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-mobile-dark.png</image>
+      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-mobile-dark.png</image>
       <caption>Release page on mobile</caption>
+    </screenshot>
+
+    <!-- Mobile profile view -->
+    <screenshot>
+      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/profile-mobile-dark.png</image>
+      <caption>Profile page on mobile</caption>
     </screenshot>
 
     <!-- Mobile bottom sheet -->
     <screenshot>
-      <image type="source" width="450" height="850">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/sheet-mobile-dark.png</image>
+      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/sheet-mobile-dark.png</image>
       <caption>Navigation sheet on mobile</caption>
     </screenshot>
   </screenshots>
@@ -125,6 +143,21 @@
   </supports>
 
   <releases>
+    <release version="1.0.0" date="2026-05-11">
+      <description>
+        <p>First major release — Kitsune now signs you in to your AniLiberty account and keeps your library in sync across devices.</p>
+        <p>Account sync. Log in with credentials or OTP through a new dialog backed by libsecret token storage. Favorites, the five built-in collections (Watching, Watched, Planned, Postponed, Abandoned) and per-episode watch positions sync bidirectionally with the server. A persistent pending queue with exponential backoff retries failed pushes forever, coalesces rapid clicks, and survives app restarts. Periodic background sync pulls server changes every five minutes. Session-expired banner and queue pause/resume handle 401 responses gracefully.</p>
+        <p>Profile view. New profile page with parallax hero image, server avatar with initials fallback, collection stat cards with count-up animation, total titles and watched episodes counters, pending-ops indicator with retry, manual sync and logout buttons. The left sidebar gains a bottom-pinned auth row showing nickname and last sync time.</p>
+        <p>Smart collections. Built-in collection tags carry a cloud badge when synced. Mutex enforcement on collection swaps surfaces a toast when a release moves out of its previous collection. Auto-collection logic moves releases between Watching/Watched/Postponed/Abandoned based on watch activity and an idle scan — 30-day pause and 180-day abandon thresholds, all toggleable in preferences. "Mark all watched" and "Unmark all" episode bulk actions on the release page.</p>
+        <p>Player. Playback speed control with pitch-corrected scaletempo audio filter, ranging from 0.5x to 2.5x (contributed by @utlark). Screen rotation button driving Mutter via D-Bus for vertical content on convertible devices. Episode IDs threaded through watch position storage for cross-device timecode sync.</p>
+        <p>Brand refresh. New scalable and symbolic app icons plus a refreshed brand color palette (contributed by @gingercat). Built-in tags switched to Adwaita symbolic icons with theme-aware color tints from the GNOME HIG palette A. Bundled symbolic icons namespaced under the app ID to avoid collisions.</p>
+        <p>Adult content gating. 18+ titles ship with blurred posters and a confirmation dialog before opening the release page, with a global "don't show again" opt-out persisted in GSettings. Content rating bumped to oars-1.1 intense.</p>
+        <p>Catalog improvements. Pull-to-refresh on mobile with tinted spinner and elevated headerbar, dedicated refresh button on desktop, viewport-sized loading that prefetches more cards as the window grows, mobile-only touchpad scroll filter to avoid accidental refreshes.</p>
+        <p>Adaptive layout. Edge-to-edge profile on mobile with transparent headerbar, Phosh form-factor declaration in the desktop file, mobile bottom-sheet navigation accommodating the auth row.</p>
+        <p>Reliability. Atomic JSON writes now fsync before rename so the pending queue and watch positions survive crashes and power loss. Sync errors propagate through the pull pipeline so the sidebar no longer claims success on partial failure. Logout pauses the sync drain before wiping local data to avoid race-commits on the soon-to-be-invalidated session. Hero image fetches no longer touch disposed widgets if the dialog closes mid-load. Watch positions and tags storage are now cached in-process to avoid per-call disk reads.</p>
+        <p>Translations. Russian translation refreshed and completed for all new sync and profile strings.</p>
+      </description>
+    </release>
     <release version="0.8.5" date="2026-03-26">
       <description>
         <p>Removed light theme screenshot variants — AppStream does not support grouping by color scheme, so only dark theme screenshots are kept for a cleaner app listing.</p>
