@@ -16,7 +16,16 @@ from kitsune.ui import register_css
 
 _EPISODE_CSS = (
     '.episode-card { border-radius: 12px;'
-    ' background: alpha(currentColor, 0.08); }'
+    ' background: alpha(currentColor, 0.08);'
+    ' transition: box-shadow 200ms ease; }'
+    ' .episode-card:hover {'
+    ' box-shadow: 0 0 14px 2px alpha(currentColor, 0.35),'
+    ' 0 6px 18px alpha(black, 0.18); }'
+    # Strip the FlowBox cell-level hover/active highlight so only the
+    # rounded card itself reacts to pointer, not the rectangular slot.
+    ' .episodes-grid > flowboxchild { background: none; padding: 0; }'
+    ' .episodes-grid > flowboxchild:hover { background: none; }'
+    ' .episodes-grid > flowboxchild:active { background: none; }'
     ' .episode-overlay { background: linear-gradient(to top,'
     ' alpha(black, 0.7) 0%, transparent 50%); }'
     ' .ep-overlay-text { color: white; text-shadow: 0 1px 3px alpha(black, 0.8); }'
