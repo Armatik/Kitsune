@@ -232,6 +232,12 @@ class AuthDialog(Adw.Dialog):
           just clear_expired (emits session-restored → SyncManager
           resumes from Stage 6 wiring).
         - was_expired=False → fresh login: nothing to do here.
+
+        Tags the sync queue with the new user's id immediately after
+        cleanup — otherwise any write-through op enqueued between this
+        point and the async profile-loaded callback in window.py would
+        carry the previous (stored) user_id and then be wiped by
+        clear_for_user on the next account switch.
         """
         if not was_expired:
             return
@@ -239,6 +245,8 @@ class AuthDialog(Adw.Dialog):
             self._session.force_logout_cleanup()
             if self._sync is not None:
                 self._sync._queue.clear_for_user(old_user_id)
+        if self._sync is not None and getattr(new_user, 'id', None):
+            self._sync.set_user_id(new_user.id)
         self._session.clear_expired()
 
     def _finalize_login(self):
@@ -247,10 +255,28 @@ class AuthDialog(Adw.Dialog):
         Captures was_expired and old_user_id before fetching the profile
         (since fetch_profile mutates self._session._user), then invokes
         the account-switch decision and closes the dialog.
+
+        old_user_id falls back to the persisted `last-user-id` GSetting
+        when `_user` is unset — that happens after a stale-token startup
+        where validate_session got a 401 and `_user` was never populated.
+        Without the fallback the account-switch branch in
+        `_apply_login_to_session` is silently skipped, leaving the
+        previous account's favorites / collections / watch positions to
+        merge into the new account on first sync.
         """
         was_expired = self._session.is_expired() if self._session else False
         old_user = self._session.get_user() if self._session else None
         old_user_id = old_user.id if old_user else None
+        if old_user_id is None:
+            from gi.repository import Gio
+            try:
+                stored = Gio.Settings(
+                    schema_id='net.armatik.Kitsune'
+                ).get_int('last-user-id')
+                if stored:
+                    old_user_id = stored
+            except Exception:
+                pass
 
         def on_profile(new_user, err):
             if err or not new_user:

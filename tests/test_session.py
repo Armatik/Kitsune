@@ -376,6 +376,9 @@ def test_auth_dialog_same_user_relogin_clears_expired(client_stub):
             def clear_for_user(self, uid):
                 type(self).cleared_for.append(uid)
         _queue = _Queue()
+        set_user_id_calls = []
+        def set_user_id(self, uid):
+            type(self).set_user_id_calls.append(uid)
 
     fake_sync = FakeSync()
 
@@ -391,6 +394,7 @@ def test_auth_dialog_same_user_relogin_clears_expired(client_stub):
     assert sm.is_expired() is False
     assert called_force == []  # no cleanup on same-user
     assert FakeSync._Queue.cleared_for == []
+    assert FakeSync.set_user_id_calls == [42]
 
 
 def test_auth_dialog_different_user_relogin_force_cleanup(client_stub):
@@ -413,6 +417,9 @@ def test_auth_dialog_different_user_relogin_force_cleanup(client_stub):
             def clear_for_user(self, uid):
                 type(self).cleared_for.append(uid)
         _queue = _Queue()
+        set_user_id_calls = []
+        def set_user_id(self, uid):
+            type(self).set_user_id_calls.append(uid)
 
     dialog = AuthDialog.__new__(AuthDialog)
     dialog._session = sm
@@ -425,6 +432,7 @@ def test_auth_dialog_different_user_relogin_force_cleanup(client_stub):
     assert sm.is_expired() is False
     assert called_force == [True]
     assert FakeSync._Queue.cleared_for == [42]
+    assert FakeSync.set_user_id_calls == [999]
 
 
 def test_auth_dialog_fresh_login_no_session_transitions(client_stub):
@@ -475,6 +483,9 @@ def test_auth_dialog_first_login_during_expired_is_safe(client_stub):
             def clear_for_user(self, uid):
                 type(self).cleared_for.append(uid)
         _queue = _Queue()
+        set_user_id_calls = []
+        def set_user_id(self, uid):
+            type(self).set_user_id_calls.append(uid)
 
     dialog = AuthDialog.__new__(AuthDialog)
     dialog._session = sm
@@ -488,6 +499,7 @@ def test_auth_dialog_first_login_during_expired_is_safe(client_stub):
     assert sm.is_expired() is False
     assert called_force == []
     assert FakeSync._Queue.cleared_for == []
+    assert FakeSync.set_user_id_calls == [42]
 
 
 def test_expired_flag_is_true_during_on_logged_in_callback(client_stub):

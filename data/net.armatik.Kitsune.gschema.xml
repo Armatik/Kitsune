@@ -127,5 +127,10 @@
       <summary>Disable 18+ content warning</summary>
       <description>When true, posters for 18+ titles are shown without blur and the confirmation dialog is skipped when opening 18+ title pages</description>
     </key>
+    <key name="last-user-id" type="i">
+      <default>0</default>
+      <summary>Last authenticated user id</summary>
+      <description>Owning user id of the local synced cache (favorites, collections, watch positions, pending sync queue). Used to route pending operations to the right account, and to identify the previous user during cross-account re-login cleanup when the cached session has expired and the in-memory user is gone. 0 means no known user.</description>
+    </key>
   </schema>
 </schemalist>

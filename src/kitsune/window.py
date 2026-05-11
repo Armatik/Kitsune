@@ -90,6 +90,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._sync_timer_id = 0
         self._profile_view = None
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
+        # Restore last-known user_id BEFORE any sync work can start so
+        # the pending queue is correctly tagged from the very first
+        # enqueue — even before validate_session has returned a fresh
+        # profile. Without this, write-through ops on app startup would
+        # land in the queue with user_id=0, and a subsequent account
+        # switch would fail to evict them via clear_for_user().
+        stored_uid = self._settings.get_int('last-user-id')
+        if stored_uid:
+            self._sync.set_user_id(stored_uid)
         register_css(_NAV_CSS)
         self._active_player = None
         self._setup_window_state()
@@ -1147,6 +1156,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._profile_view.update_profile(None)
         if self.content_stack.get_visible_child_name() == 'profile':
             self._switch_tab('catalog')
+        # Forget the user id so the next login starts clean and an
+        # interrupted re-login (token typed, profile fetch fails) cannot
+        # accidentally reuse the previous account's identity.
+        self._settings.set_int('last-user-id', 0)
+        self._sync.set_user_id(0)
 
     def _on_session_validated(self, valid, error):
         if valid:
@@ -1161,6 +1175,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._update_auth_sidebar()
         if self._profile_view:
             self._profile_view.update_profile(user)
+        # Tag the pending queue with the authenticated user id and
+        # persist it so that subsequent app launches (and any 401
+        # re-login flow that loses self._session._user) can still
+        # identify which account owns the cached data.
+        if user and getattr(user, 'id', None):
+            self._sync.set_user_id(user.id)
+            if self._settings.get_int('last-user-id') != user.id:
+                self._settings.set_int('last-user-id', user.id)
 
     def _show_auth_dialog(self):
         if not self._session:
