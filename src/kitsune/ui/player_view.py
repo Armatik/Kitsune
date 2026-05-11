@@ -170,16 +170,23 @@ class PlayerView(Adw.NavigationPage):
             self.picture.set_paintable(self._player.paintable)
 
     def _setup_rotation(self):
-        if self._settings.get_boolean('player-show-rotate-button'):
-            self.rotate_btn.set_visible(True)
-            self._rotator = DisplayRotator()
-        else:
-            check_available(self._on_rotate_available)
+        # Always probe Mutter DisplayConfig availability first. On
+        # non-Mutter compositors (Phosh, sway, KDE, X11+non-mutter)
+        # the proxy is created without a name owner, the rotation call
+        # silently fails, and the button sits visibly but inert.
+        # GSettings 'player-show-rotate-button' is a user preference
+        # layered on top of platform availability, not a replacement
+        # for it.
+        self._rotate_setting_on = self._settings.get_boolean(
+            'player-show-rotate-button')
+        check_available(self._on_rotate_available)
 
     def _on_rotate_available(self, available):
-        if available:
+        if not available:
+            return
+        if self._rotate_setting_on:
             self.rotate_btn.set_visible(True)
-            self._rotator = DisplayRotator()
+        self._rotator = DisplayRotator()
 
     def _setup_speed(self):
         self._ignore_speed_change = True
