@@ -15,6 +15,7 @@ template $KitsuneGenreCard: Gtk.FlowBoxChild {
 
     Adw.Clamp {
       maximum-size: 180;
+      valign: start;
 
       Gtk.Overlay {
         width-request: 180;
@@ -48,24 +49,30 @@ template $KitsuneGenreCard: Gtk.FlowBoxChild {
     }
 
     Adw.Clamp {
-      maximum-size: 252;
+      maximum-size: 180;
+      valign: start;
 
       Gtk.Box {
         orientation: vertical;
+        height-request: 60;
 
         Gtk.Label title_label {
           wrap: true;
-          max-width-chars: 20;
+          max-width-chars: 14;
           lines: 2;
           ellipsize: end;
           xalign: 0;
+          valign: start;
 
           styles ["heading"]
         }
 
         Gtk.Label subtitle_label {
           xalign: 0;
+          ellipsize: end;
+          max-width-chars: 18;
           visible: false;
+          valign: start;
 
           styles ["dim-label", "caption"]
         }
