@@ -183,3 +183,58 @@ def test_last_activity_uses_max_across_episodes(isolated):
 
 def test_last_activity_none_for_unknown_release(isolated):
     assert auto_collections._last_activity(999) is None
+
+
+# --- apply_action routing ---
+
+class _SyncStub:
+    """Minimal SyncManager stand-in tracking which write method was called."""
+
+    def __init__(self):
+        self.calls = []
+
+    def move_collection(self, rid, from_tag, to_tag):
+        self.calls.append(('move', rid, from_tag, to_tag))
+
+    def add_to_tag_synced(self, tag, rid):
+        self.calls.append(('add', tag, rid))
+
+    def remove_from_tag_synced(self, tag, rid):
+        self.calls.append(('remove', tag, rid))
+
+
+def test_apply_action_transition_routes_through_move_collection(isolated):
+    """A from→to auto action must use move_collection so the server
+    gets a single ADD (collections are mutually exclusive). The previous
+    DELETE+ADD pair would split-fail under backoff and leave the
+    release in no collection server-side."""
+    sync = _SyncStub()
+    action = auto_collections.CollectionAction(
+        type='auto', release_id=42, from_tag='watching',
+        to_tag='watched', reason='all_episodes_watched',
+    )
+    auto_collections.apply_action(action, sync)
+    assert sync.calls == [('move', 42, 'watching', 'watched')]
+
+
+def test_apply_action_first_watch_uses_add_to_tag_synced(isolated):
+    """No prior collection → plain add path (no DELETE to skip)."""
+    sync = _SyncStub()
+    action = auto_collections.CollectionAction(
+        type='auto', release_id=42, from_tag=None,
+        to_tag='watching', reason='first_watch',
+    )
+    auto_collections.apply_action(action, sync)
+    assert sync.calls == [('add', 'watching', 42)]
+
+
+def test_apply_action_suggest_is_a_noop(isolated):
+    """Suggest actions are surfaced to the user as a toast, not applied
+    automatically. apply_action must not touch the sync manager."""
+    sync = _SyncStub()
+    action = auto_collections.CollectionAction(
+        type='suggest', release_id=42, from_tag='postponed',
+        to_tag='watching', reason='resumed_watching',
+    )
+    auto_collections.apply_action(action, sync)
+    assert sync.calls == []

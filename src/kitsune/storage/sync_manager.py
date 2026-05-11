@@ -538,6 +538,50 @@ class SyncManager:
         self._emit_queue_changed()
         self._schedule_drain()
 
+    def move_collection(self, release_id, from_tag, to_tag):
+        """Move a release between user collections atomically server-side.
+
+        AniLibria server collections are mutually exclusive per release:
+        POST add_to_collection auto-removes any prior entry. Live probe
+        against /api/v1/accounts/users/me/collections confirms this —
+        sending WATCHING then WATCHED leaves the release in WATCHED
+        only, no DELETE needed. We exploit that to send a single ADD
+        instead of a DELETE+ADD pair, which:
+
+          - cuts the HTTP round-trips per auto-move in half;
+          - removes the split-failure mode where DELETE succeeds but
+            ADD is stuck in backoff (which left the release in NO
+            collection server-side until the ADD retried);
+          - sidesteps the coalescing edge cases between the paired
+            ops in PendingQueue.
+
+        Locally we still write both ends — the local tag store doesn't
+        track server-side auto-eviction, and the next pull would be
+        the only way to learn about it (which we want to avoid relying
+        on for snappy UI).
+
+        For non-collection target (favorites or custom tag) this falls
+        back to the regular add path; from_tag is then ignored.
+        """
+        if to_tag not in _TAG_TO_COLLECTION:
+            # Not a server-side collection move — defer to whichever
+            # write path is appropriate for the target tag.
+            if from_tag:
+                self.remove_from_tag_synced(from_tag, release_id)
+            self.add_to_tag_synced(to_tag, release_id)
+            return
+        if from_tag and from_tag != to_tag:
+            tags_store.remove_release(from_tag, release_id)
+        tags_store.add_release(to_tag, release_id)
+        self._emit_tags_changed(release_id)
+        if not self.is_logged_in():
+            return
+        self._queue.enqueue(
+            OP_ADD_COLLECTION, release_id, user_id=self._user_id,
+            payload={'collection_type': _TAG_TO_COLLECTION[to_tag]})
+        self._emit_queue_changed()
+        self._schedule_drain()
+
     def toggle_favorite_synced(self, release_id):
         """Toggle favorite locally + enqueue server push. Returns new state."""
         is_fav = tags_store.is_favorited(release_id)

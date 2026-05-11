@@ -219,9 +219,18 @@ def should_scan_now() -> bool:
 
 
 def apply_action(action: CollectionAction, sync_manager) -> None:
-    """Apply an 'auto' action via the sync manager (server + local)."""
+    """Apply an 'auto' action via the sync manager (server + local).
+
+    Uses move_collection for from→to transitions so the move reaches
+    the server as a single ADD (AniLibria collections are mutually
+    exclusive: the POST auto-evicts the prior entry). Without this,
+    the previous remove+add pair could split-fail under backoff and
+    leave the release in no collection server-side.
+    """
     if action.type != 'auto':
         return
     if action.from_tag:
-        sync_manager.remove_from_tag_synced(action.from_tag, action.release_id)
-    sync_manager.add_to_tag_synced(action.to_tag, action.release_id)
+        sync_manager.move_collection(
+            action.release_id, action.from_tag, action.to_tag)
+    else:
+        sync_manager.add_to_tag_synced(action.to_tag, action.release_id)
