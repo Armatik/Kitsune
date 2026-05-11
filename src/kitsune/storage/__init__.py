@@ -30,7 +30,10 @@ def _atomic_write_json(path: Path, data, *, ensure_ascii: bool = True):
         os.replace(tmp, path)
     except BaseException:
         if not closed:
-            os.close(fd)
+            try:
+                os.close(fd)
+            except OSError:
+                pass
         try:
             os.unlink(tmp)
         except OSError:
