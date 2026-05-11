@@ -19,6 +19,12 @@ def _atomic_write_json(path: Path, data, *, ensure_ascii: bool = True):
     closed = False
     try:
         os.write(fd, json.dumps(data, ensure_ascii=ensure_ascii).encode())
+        # fsync before close+rename so the data is durable on disk: without
+        # this a SIGKILL or power loss between writeback and the next
+        # commit interval (5-30s on default ext4) leaves a zero-byte file
+        # at the destination, and JSON decode then silently drops the
+        # pending queue / watch positions / tags store on next read.
+        os.fsync(fd)
         os.close(fd)
         closed = True
         os.replace(tmp, path)
