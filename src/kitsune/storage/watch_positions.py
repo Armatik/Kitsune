@@ -18,14 +18,12 @@ _POSITIONS_FILE = Path(
 
 VERSION = 2
 
+_cache: dict | None = None
+_cache_path = None
 
-def _load() -> dict:
-    """Return entries dict in v2 shape: {key: {pos, episode_id, updated_at}}.
 
-    v1 files (bare dict of floats) are lazily wrapped using the file's
-    mtime as updated_at and episode_id = None. The on-disk file is only
-    rewritten when the next _save is triggered — reads remain idempotent.
-    """
+def _read_from_disk() -> dict:
+    """Parse the on-disk file into v2 entries shape. No caching."""
     try:
         raw = json.loads(_POSITIONS_FILE.read_text())
     except (FileNotFoundError, json.JSONDecodeError):
@@ -55,7 +53,25 @@ def _load() -> dict:
     return {}
 
 
+def _load() -> dict:
+    """Return entries dict in v2 shape, cached in-process.
+
+    The cache holds the same dict object that subsequent _save calls
+    persist, so in-place mutations between load and save remain
+    consistent. The cache auto-invalidates when `_POSITIONS_FILE` is
+    rebound (tests reassign it to tmp paths).
+    """
+    global _cache, _cache_path
+    if _cache is None or _cache_path != _POSITIONS_FILE:
+        _cache_path = _POSITIONS_FILE
+        _cache = _read_from_disk()
+    return _cache
+
+
 def _save(entries: dict):
+    global _cache, _cache_path
+    _cache = entries
+    _cache_path = _POSITIONS_FILE
     data = {'version': VERSION, 'entries': entries}
     _atomic_write_json(_POSITIONS_FILE, data)
 
@@ -146,6 +162,9 @@ def get_size() -> int:
 
 
 def clear_all():
+    global _cache, _cache_path
+    _cache = {}
+    _cache_path = _POSITIONS_FILE
     if _POSITIONS_FILE.exists():
         _POSITIONS_FILE.unlink()
 
