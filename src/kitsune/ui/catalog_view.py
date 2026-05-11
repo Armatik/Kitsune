@@ -211,8 +211,17 @@ class CatalogView(Gtk.Box):
         flip) the existing card stack may not reach the new bottom edge.
         We check the same near-end criterion the scroll handler uses and
         fire a load so the user does not see an empty stripe below.
+
+        Reentrancy: appending a card via `_add_pending_batch` mutates the
+        vadjustment's upper, which fires `changed` again. If we don't
+        also block on the batch-append phase, a second page request can
+        start mid-batch — the earlier `_cancellable.cancel()` only stops
+        the prior HTTP call, leaving the in-flight batch to be stomped
+        when `_pending_releases` is reassigned in `_on_catalog_loaded`.
         """
         if self._loading or self._reached_end:
+            return
+        if self._pending_releases or self._batch_idle:
             return
         upper = adj.get_upper()
         page_size = adj.get_page_size()
