@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
+import sys
 
 import gi
 
@@ -69,6 +70,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     filter_split = Gtk.Template.Child()
     sidebar_list = Gtk.Template.Child()
     auth_sidebar_list = Gtk.Template.Child()
+    sidebar_title = Gtk.Template.Child()
     wide_content_title = Gtk.Template.Child()
     back_btn = Gtk.Template.Child()
     narrow_back_btn = Gtk.Template.Child()
@@ -109,6 +111,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if stored_uid:
             self._sync.set_user_id(stored_uid)
         register_css(_NAV_CSS)
+        # macOS renders the app name in its native title bar, so a second
+        # "Kitsune" inside the sidebar header would just duplicate it. On
+        # any other platform (Linux desktop, Phosh wide mode) we draw our
+        # own CSD without an OS-level title, so the label belongs here.
+        if sys.platform != 'darwin':
+            self.sidebar_title.set_title('Kitsune')
         self._active_player = None
         self._setup_window_state()
         self._setup_actions()
