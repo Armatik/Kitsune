@@ -24,6 +24,7 @@ class TagReleasesView(Gtk.Box):
         self._client = client
         self._on_release_activated = None
         self._batch_idle = 0
+        self._loaded_release_ids: set[int] = set()
 
         self._grid = ContentGrid()
         self._grid.set_on_child_activated(self._on_child_activated)
@@ -41,6 +42,7 @@ class TagReleasesView(Gtk.Box):
 
     def _load_releases(self):
         release_ids = tags_store.get_release_ids_for_tag(self._tag['id'])
+        self._loaded_release_ids = set(release_ids)
         if not release_ids:
             self._grid.show_end()
             return
@@ -102,6 +104,14 @@ class TagReleasesView(Gtk.Box):
     def _on_map(self, _widget):
         if self._batch and not self._batch_idle:
             self._batch_idle = GLib.idle_add(self._add_batch)
+            return
+        # On navigation return, the release's tag membership may have
+        # changed in the detail page. Detect mismatch and reload the
+        # grid so cards reflect the up-to-date tags_store state.
+        fresh = set(tags_store.get_release_ids_for_tag(self._tag['id']))
+        if fresh != self._loaded_release_ids:
+            self._grid.clear()
+            self._load_releases()
 
     def do_unmap(self):
         try:
