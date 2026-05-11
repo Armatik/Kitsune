@@ -90,7 +90,13 @@ def populate_related(header, list_widget, franchise: Franchise,
         )
         row.add_suffix(num_label)
 
-        clamp = Adw.Clamp(maximum_size=90, valign=Gtk.Align.CENTER)
+        # Top/bottom margins mirror the natural left-side padding the
+        # row gives prefix widgets, so the poster has breathing room
+        # on all four sides instead of touching the row's edge.
+        clamp = Adw.Clamp(
+            maximum_size=90, valign=Gtk.Align.CENTER,
+            margin_top=8, margin_bottom=8,
+        )
         pic_overlay = Gtk.Overlay(
             width_request=90, height_request=126,
             css_classes=['card'],
