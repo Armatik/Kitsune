@@ -114,6 +114,16 @@ class SyncManager:
         """callback(release_id: int) — fired after add/remove on any tag."""
         self._on_tags_changed_cbs.append(callback)
 
+    def disconnect_tags_changed(self, callback):
+        """Idempotent — silent no-op if callback isn't currently subscribed.
+        Required for short-lived widgets (release_view) so their bound
+        methods don't keep the view alive past the page-pop event.
+        """
+        try:
+            self._on_tags_changed_cbs.remove(callback)
+        except ValueError:
+            pass
+
     def _emit_sync_error(self, op_kind, release_id, error):
         for cb in self._on_sync_error_cbs:
             cb(op_kind, release_id, error)

@@ -250,8 +250,12 @@ class Release:
             year=data.get('year', 0),
             season=season_data.get('value') if isinstance(season_data, dict) else season_data,
             age_rating=age_data.get('value', '') if isinstance(age_data, dict) else str(age_data),
+            # Prefer the explicit `is_adult` flag when present; fall back
+            # to deriving it from the `value` field for cache entries
+            # written before we started capturing `is_adult` directly.
             is_adult=(
-                bool(age_data.get('is_adult', False))
+                bool(age_data.get('is_adult'))
+                or age_data.get('value') == 'R18_PLUS'
                 if isinstance(age_data, dict) else False
             ),
             episodes_total=data.get('episodes_total'),

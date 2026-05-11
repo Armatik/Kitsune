@@ -21,17 +21,12 @@ template $KitsuneReleaseCard: Gtk.FlowBoxChild {
         height-request: 250;
 
         Gtk.Box picture_clipper {
-          width-request: 180;
-          height-request: 250;
-
           styles ["card"]
 
           Gtk.Picture picture {
             width-request: 180;
             height-request: 250;
             content-fit: cover;
-            hexpand: true;
-            vexpand: true;
           }
         }
 

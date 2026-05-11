@@ -15,6 +15,20 @@ from kitsune.api import AniLibriaClient
 from kitsune.ui.widgets.content_grid import ContentGrid
 from kitsune.ui.widgets.release_card import ReleaseCard
 
+# Card dimensions used to estimate viewport capacity. ReleaseCard's
+# .blp pins the picture at 180×250 plus 6×4 margins around the card
+# container + ~62px below the poster for title/subtitle labels.
+_CARD_WIDTH_PX = 192
+_CARD_HEIGHT_PX = 312
+# Visible rows + this many extra rows of lookahead get loaded on each
+# page. Keeps a row of off-screen cards ready so an infinite-scroll
+# trigger near the bottom does not show an empty viewport while the
+# network catches up.
+_BUFFER_ROWS = 1
+_MIN_PAGE_LIMIT = 6
+_MAX_PAGE_LIMIT = 36
+_DEFAULT_PAGE_LIMIT = 12
+
 
 class CatalogView(Gtk.Box):
 
@@ -48,8 +62,24 @@ class CatalogView(Gtk.Box):
         self._narrow = False
         self._last_overshot = 0.0
         self._pull_refresh_active = False
+        self._pull_timer_id = 0
         self._last_scroll_source = None
+        # Page size is computed lazily once the viewport has an
+        # allocation; cached for the session so consecutive page=N
+        # requests stay aligned (server pagination is offset =
+        # (page-1)*limit, so a mid-session limit change would dupe or
+        # skip items).
+        self._page_size = 0
         self._grid.scrolled.connect('edge-overshot', self._on_edge_overshot)
+
+        # Resize-driven prefetch: if the user grows the window the
+        # already-loaded rows may no longer cover the new viewport,
+        # leaving an empty stripe at the bottom until they scroll.
+        # `changed` fires whenever the vadjustment's upper/page-size
+        # is recomputed (resize, content append) — we re-check the
+        # near-end condition and trigger another fetch if needed.
+        self._grid.scrolled.get_vadjustment().connect(
+            'changed', self._on_viewport_changed)
 
         scroll_ctrl = Gtk.EventControllerScroll.new(
             Gtk.EventControllerScrollFlags.VERTICAL
@@ -98,10 +128,15 @@ class CatalogView(Gtk.Box):
         # 1-second deliberate hold before firing the network request so
         # the spinner is visible for a clear beat first — without it the
         # whole interaction can finish in <100ms when the cache is warm
-        # and the user never sees a refresh actually happened.
-        GLib.timeout_add(1000, self._fire_pull_refresh)
+        # and the user never sees a refresh actually happened. The
+        # source-id is tracked so an unmap (tab switch, window close)
+        # can cancel a pending fire.
+        if self._pull_timer_id:
+            GLib.source_remove(self._pull_timer_id)
+        self._pull_timer_id = GLib.timeout_add(1000, self._fire_pull_refresh)
 
     def _fire_pull_refresh(self):
+        self._pull_timer_id = 0
         self.refresh()
         return GLib.SOURCE_REMOVE
 
@@ -169,6 +204,21 @@ class CatalogView(Gtk.Box):
         if not self._loading and not self._reached_end:
             self._load_next_page()
 
+    def _on_viewport_changed(self, adj):
+        """Resize-aware prefetch.
+
+        When the viewport grows (window enlarged, narrow→wide breakpoint
+        flip) the existing card stack may not reach the new bottom edge.
+        We check the same near-end criterion the scroll handler uses and
+        fire a load so the user does not see an empty stripe below.
+        """
+        if self._loading or self._reached_end:
+            return
+        upper = adj.get_upper()
+        page_size = adj.get_page_size()
+        if upper - adj.get_value() <= page_size + 200:
+            self._load_next_page()
+
     def _load_next_page(self):
         if self._page >= self._last_page:
             self._show_end()
@@ -180,11 +230,30 @@ class CatalogView(Gtk.Box):
             self._cancellable.cancel()
         self._cancellable = Gio.Cancellable()
         self._client.get_catalog(
-            page=self._page, limit=20,
+            page=self._page, limit=self._compute_page_size(),
             filters=self._filters or None,
             callback=self._on_catalog_loaded,
             cancellable=self._cancellable,
         )
+
+    def _compute_page_size(self) -> int:
+        """Items per page = (visible rows + buffer) × cards per row.
+
+        Locked in on first computation so the page=N math stays valid
+        across the session. Falls back to a sane default before the
+        viewport has been allocated (first call during widget
+        construction, before any draw cycle).
+        """
+        if self._page_size:
+            return self._page_size
+        alloc = self._grid.scrolled.get_allocation()
+        if alloc.width <= 0 or alloc.height <= 0:
+            return _DEFAULT_PAGE_LIMIT
+        cards_per_row = max(1, alloc.width // _CARD_WIDTH_PX)
+        visible_rows = max(1, alloc.height // _CARD_HEIGHT_PX)
+        limit = (visible_rows + _BUFFER_ROWS) * cards_per_row
+        self._page_size = max(_MIN_PAGE_LIMIT, min(_MAX_PAGE_LIMIT, limit))
+        return self._page_size
 
     def retry(self):
         self._grid.clear_error()
@@ -260,5 +329,8 @@ class CatalogView(Gtk.Box):
             if self._batch_idle:
                 GLib.source_remove(self._batch_idle)
                 self._batch_idle = 0
+            if self._pull_timer_id:
+                GLib.source_remove(self._pull_timer_id)
+                self._pull_timer_id = 0
         finally:
             Gtk.Box.do_unmap(self)

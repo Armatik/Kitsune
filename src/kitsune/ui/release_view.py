@@ -179,9 +179,12 @@ class ReleaseView(Adw.NavigationPage):
         self._update_favorite_icon()
 
         # External tag mutations (auto_collections moves, toast clicks,
-        # write-through from another view) refresh our pills/star.
+        # write-through from another view) refresh our pills/star. The
+        # disconnect is wired to `unrealize` so the bound method does
+        # not keep this short-lived page alive past NavigationView pop.
         if self._sync:
             self._sync.connect_tags_changed(self._on_external_tags_changed)
+            self.connect('unrealize', self._disconnect_tags_changed)
 
         # Always refresh from API
         self._start_refresh()
@@ -834,7 +837,7 @@ class ReleaseView(Adw.NavigationPage):
     def _update_favorite_icon(self):
         is_fav = tags_store.is_favorited(self._release.id)
         self.tag_split_btn.set_icon_name(
-            'net.armatik.Kitsune.starred-symbolic' if is_fav else 'non-net.armatik.Kitsune.starred-symbolic'
+            'net.armatik.Kitsune.starred-symbolic' if is_fav else 'net.armatik.Kitsune.non-starred-symbolic'
         )
         if is_fav:
             self.tag_split_btn.add_css_class('favorite-active')
@@ -856,6 +859,10 @@ class ReleaseView(Adw.NavigationPage):
         if self.get_root() is None:
             return
         self._on_tags_changed()
+
+    def _disconnect_tags_changed(self, _widget):
+        if self._sync:
+            self._sync.disconnect_tags_changed(self._on_external_tags_changed)
 
     def _update_tag_pills(self):
         if not hasattr(self, '_tag_pills_wrap'):

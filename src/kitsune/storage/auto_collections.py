@@ -75,24 +75,14 @@ def _current_user_collection(release_id: int) -> str | None:
     return None
 
 
-def _last_activity(release_id: int) -> float | None:
+def _last_activity(release_id: int, entries: dict | None = None) -> float | None:
     """Max(updated_at) across all watch_positions entries for the release.
 
     Returns None if the release has no recorded watch activity yet.
-    Used as the source-of-truth for "user has not touched this title in
-    N days" — every save_position / mark_completed / server-pull stamps
-    updated_at, and we take the most recent across episodes.
+    Delegates to `watch_positions.get_last_activity` so the storage
+    schema details stay encapsulated in that module.
     """
-    entries = watch_positions._load()
-    prefix = f'{release_id}_'
-    best = 0.0
-    for key, entry in entries.items():
-        if not key.startswith(prefix):
-            continue
-        ts = entry.get('updated_at') or 0.0
-        if ts > best:
-            best = ts
-    return best if best > 0 else None
+    return watch_positions.get_last_activity(release_id, entries=entries)
 
 
 def _is_complete(release_id: int, release_meta: dict | None) -> bool:
@@ -189,12 +179,18 @@ def evaluate_idle(
 
 
 def scan_all() -> list[CollectionAction]:
-    """Daily walk of Watching+Postponed for stale items."""
+    """Daily walk of Watching+Postponed for stale items.
+
+    Preloads watch_positions once and reuses the snapshot across all
+    releases — for a user with N releases this turns N file reads into
+    1, making the scan effectively free even on large collections.
+    """
     suggestions: list[CollectionAction] = []
     now = time.time()
+    snap = watch_positions.snapshot()
     for tag_id in ('watching', 'postponed'):
         for rid in tags_store.get_release_ids_for_tag(tag_id):
-            last = _last_activity(rid)
+            last = _last_activity(rid, entries=snap)
             if last is None:
                 continue
             action = evaluate_idle(rid, tag_id, last, now)

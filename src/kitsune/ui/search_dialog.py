@@ -663,6 +663,19 @@ class SearchDialog(Adw.Dialog):
                 for tag in tags[:4]:
                     if tag['icon_type'] == 'emoji':
                         tags_box.append(Gtk.Label(label=tag['icon_value']))
+                    elif tag['icon_type'] == 'symbolic':
+                        img = Gtk.Image.new_from_icon_name(tag['icon_value'])
+                        img.set_pixel_size(16)
+                        img.set_valign(Gtk.Align.CENTER)
+                        if tag.get('color'):
+                            css = Gtk.CssProvider()
+                            css.load_from_string(
+                                f"image {{ color: {tag['color']}; }}"
+                            )
+                            img.get_style_context().add_provider(
+                                css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                            )
+                        tags_box.append(img)
                     else:
                         from kitsune.ui.widgets.tag_card import create_color_circle
                         tags_box.append(create_color_circle(
@@ -929,6 +942,20 @@ class SearchDialog(Adw.Dialog):
         if item.get('icon_type') == 'emoji':
             box.append(Gtk.Label(label=item.get('icon_value', ''),
                                   width_request=28))
+        elif item.get('icon_type') == 'symbolic':
+            img = Gtk.Image.new_from_icon_name(item.get('icon_value', ''))
+            img.set_pixel_size(20)
+            img.set_size_request(28, -1)
+            img.set_valign(Gtk.Align.CENTER)
+            if item.get('color'):
+                css = Gtk.CssProvider()
+                css.load_from_string(
+                    f"image {{ color: {item['color']}; }}"
+                )
+                img.get_style_context().add_provider(
+                    css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
+                )
+            box.append(img)
         else:
             from kitsune.ui.widgets.tag_card import create_color_circle
             box.append(create_color_circle(item.get('icon_value', 'blue'), 28))

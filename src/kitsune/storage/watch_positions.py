@@ -178,6 +178,35 @@ def get_updated_at(release_id: int, ordinal: float) -> float | None:
     return entry.get('updated_at')
 
 
+def get_last_activity(release_id: int, entries: dict | None = None) -> float | None:
+    """Latest `updated_at` across all episodes of a release, or None.
+
+    Accepts an optional preloaded entries snapshot so callers that walk
+    many releases (e.g. auto_collections.scan_all) can avoid the file
+    read on every call.
+    """
+    if entries is None:
+        entries = _load()
+    prefix = f'{release_id}_'
+    best = 0.0
+    for key, entry in entries.items():
+        if not key.startswith(prefix):
+            continue
+        ts = entry.get('updated_at') or 0.0
+        if ts > best:
+            best = ts
+    return best if best > 0 else None
+
+
+def snapshot() -> dict:
+    """Return a single in-memory copy of all entries.
+
+    Use when batch-processing watch positions across many releases to
+    avoid re-reading and re-parsing the JSON file per release.
+    """
+    return _load()
+
+
 def iter_pushable():
     """Yield (release_id, ordinal, entry) for every entry with an episode_id.
 
