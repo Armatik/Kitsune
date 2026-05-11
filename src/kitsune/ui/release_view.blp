@@ -154,6 +154,15 @@ template $KitsuneReleaseView: Adw.NavigationPage {
                     visible: false;
                   }
 
+                  Gtk.Label episodes_empty {
+                    label: _("Nothing here yet");
+                    visible: false;
+                    margin-top: 24;
+                    margin-bottom: 24;
+
+                    styles ["dim-label", "title-3"]
+                  }
+
                   Gtk.ListBox episodes_list {
                     selection-mode: none;
 

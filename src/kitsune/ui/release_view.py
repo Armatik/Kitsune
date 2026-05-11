@@ -68,6 +68,7 @@ class ReleaseView(Adw.NavigationPage):
     episodes_controls = Gtk.Template.Child()
     episodes_spinner = Gtk.Template.Child()
     episodes_list = Gtk.Template.Child()
+    episodes_empty = Gtk.Template.Child()
     episodes_grid = Gtk.Template.Child()
 
     related_page = Gtk.Template.Child()
@@ -376,21 +377,17 @@ class ReleaseView(Adw.NavigationPage):
         self._episodes_view = name
         self._settings.set_string('episodes-view', name)
         if name == 'grid':
-            self.episodes_list.set_visible(False)
-            self.episodes_grid.set_visible(True)
             self._refresh_episodes_grid()
         else:
-            self.episodes_list.set_visible(True)
-            self.episodes_grid.set_visible(False)
+            # _update_empty_placeholder owns visibility for both list,
+            # grid and the empty-state label based on filter results.
+            self._update_empty_placeholder(self._get_filtered_episodes())
 
     def _apply_episodes_view(self):
         if self._episodes_view == 'grid':
-            self.episodes_list.set_visible(False)
-            self.episodes_grid.set_visible(True)
             self._populate_episodes_grid()
         else:
-            self.episodes_list.set_visible(True)
-            self.episodes_grid.set_visible(False)
+            self._update_empty_placeholder(self._get_filtered_episodes())
 
     def _on_episodes_search_changed(self, entry):
         self._search_text = entry.get_text().strip().lower()
@@ -671,10 +668,27 @@ class ReleaseView(Adw.NavigationPage):
 
     def _populate_episodes(self):
         self._load_watch_data()
+        filtered = self._get_filtered_episodes()
+        self._update_empty_placeholder(filtered)
         episodes_helper.populate_episode_list(
-            self.episodes_list, self._get_filtered_episodes(),
+            self.episodes_list, filtered,
             self._watch_data, self._play_episode,
         )
+
+    def _update_empty_placeholder(self, filtered):
+        """Toggle the 'Nothing here yet' label vs the active list/grid
+        based on whether the current filter produced any results.
+        Shared by both list and grid populate paths so behaviour stays
+        consistent regardless of view mode.
+        """
+        is_empty = not filtered
+        self.episodes_empty.set_visible(is_empty)
+        if self._episodes_view == 'grid':
+            self.episodes_grid.set_visible(not is_empty)
+            self.episodes_list.set_visible(False)
+        else:
+            self.episodes_list.set_visible(not is_empty)
+            self.episodes_grid.set_visible(False)
 
     # --- Episodes (grid) ---
 
@@ -683,8 +697,10 @@ class ReleaseView(Adw.NavigationPage):
             self.episodes_grid.remove(child)
 
         self._load_watch_data()
+        filtered = self._get_filtered_episodes()
+        self._update_empty_placeholder(filtered)
 
-        for episode in self._get_filtered_episodes():
+        for episode in filtered:
             card = episodes_helper.build_episode_card(
                 episode, self._watch_data, self._settings, self._play_episode,
             )
