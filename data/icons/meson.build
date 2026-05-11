@@ -22,6 +22,7 @@ action_icons = [
   'home-symbolic',
   'angled-arrows-symbolic',
   'update-symbolic',
+  'cloud-filled-symbolic',
   'settings-symbolic',
   'system-search-symbolic',
   'view-list-symbolic',

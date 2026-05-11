@@ -127,7 +127,8 @@ class TagsView(Gtk.Box):
     def _populate_cards(self, tags: list[dict]):
         self._card_grid.clear()
         for tag in tags:
-            self._card_grid.append_child(TagCard(tag))
+            self._card_grid.append_child(
+                TagCard(tag, on_delete=self._confirm_delete_tag))
 
         # "Add new" card — same layout as TagCard
         add_child = Gtk.FlowBoxChild()
@@ -214,6 +215,18 @@ class TagsView(Gtk.Box):
             )
             del_btn.connect('clicked', lambda _b, t=tag: self._confirm_delete_tag(t))
             row.add_suffix(del_btn)
+        else:
+            # Synced-with-server marker — appears just left of the
+            # Adw.ExpanderRow's auto-rendered expand arrow. Only builtin
+            # tags (favorites + 5 collection types) sync; custom tags
+            # stay local-only and get no badge.
+            sync_icon = Gtk.Image.new_from_icon_name(
+                'net.armatik.Kitsune.cloud-filled-symbolic')
+            sync_icon.set_pixel_size(14)
+            sync_icon.set_valign(Gtk.Align.CENTER)
+            sync_icon.add_css_class('dim-label')
+            sync_icon.set_tooltip_text(_('Synced with your AniLibria account'))
+            row.add_suffix(sync_icon)
 
         row._tag = tag
         row._loaded = False

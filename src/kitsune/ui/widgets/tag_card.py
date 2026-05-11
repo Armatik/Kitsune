@@ -53,6 +53,22 @@ _TAG_CARD_CSS = (
     '   border-radius: 50%;'
     '   border: 1.5px solid alpha(currentColor, 0.2); }'
     ' .tag-card-rounded { border-radius: 12px; }'
+    # Top-right cloud marker on synced (builtin) tags. Flat — no pill
+    # background — so the centered tag icon and the blurred-emoji bg
+    # underneath stay fully visible. Slight dim keeps it as a marker
+    # rather than a competing focal point.
+    ' .tag-card-sync-badge { color: alpha(currentColor, 0.65); }'
+    # Top-right delete button on custom (non-builtin) tags. Flat,
+    # circular — no resting background, just an icon. Same corner as
+    # the sync badge (builtin XOR custom, so they never collide).
+    # On hover the round red fill makes the destructive action's
+    # gravity obvious only when the user is actually targeting it.
+    ' .tag-card-delete-badge {'
+    '   min-width: 0; min-height: 0; padding: 5px;'
+    '   color: alpha(currentColor, 0.7); }'
+    ' .tag-card-delete-badge image { -gtk-icon-size: 18px; }'
+    ' .tag-card-delete-badge:hover {'
+    '   background: alpha(@error_color, 0.9); color: white; }'
 )
 
 
@@ -65,11 +81,14 @@ class TagCard(Gtk.FlowBoxChild):
     icon_label = Gtk.Template.Child()
     count_label = Gtk.Template.Child()
     title_label = Gtk.Template.Child()
+    sync_badge = Gtk.Template.Child()
+    delete_badge = Gtk.Template.Child()
 
-    def __init__(self, tag: dict, **kwargs):
+    def __init__(self, tag: dict, on_delete=None, **kwargs):
         super().__init__(**kwargs)
         register_css(_TAG_CARD_CSS)
         self.tag = tag
+        self._on_delete = on_delete
         self.card_overlay.add_css_class('tag-card-rounded')
 
         from kitsune import tags_store
@@ -79,6 +98,16 @@ class TagCard(Gtk.FlowBoxChild):
             self.count_label.set_label(f'{release_count}')
         else:
             self.count_label.set_visible(False)
+        # Builtin tags (favorites + 5 collections) sync with the AniLibria
+        # account; custom user tags are local-only. Show the cloud badge
+        # only on synced ones; show the delete button only on custom ones
+        # so the two badges never overlap and the user always knows what
+        # category they're looking at.
+        is_builtin = bool(tag.get('builtin'))
+        self.sync_badge.set_visible(is_builtin)
+        self.delete_badge.set_visible(not is_builtin)
+        if not is_builtin:
+            self.delete_badge.connect('clicked', self._on_delete_clicked)
 
         if tag['icon_type'] == 'emoji':
             self._setup_emoji(tag['icon_value'])
@@ -86,6 +115,10 @@ class TagCard(Gtk.FlowBoxChild):
             self._setup_symbolic(tag['icon_value'], tag.get('color'))
         else:
             self._setup_color(tag['icon_value'])
+
+    def _on_delete_clicked(self, _button):
+        if self._on_delete:
+            self._on_delete(self.tag)
 
     def _setup_emoji(self, emoji: str):
         self.icon_label.set_label(emoji)
