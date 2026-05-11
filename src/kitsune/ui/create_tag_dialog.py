@@ -62,8 +62,7 @@ def show_create_tag_dialog(parent, callback=None, prefill_name=''):
 
     content = Gtk.Box(
         orientation=Gtk.Orientation.VERTICAL,
-        spacing=12, margin_start=24, margin_end=24,
-        width_request=300,
+        spacing=12, margin_start=12, margin_end=12,
     )
 
     state = {'icon_type': 'emoji', 'icon_value': '⭐'}
@@ -161,11 +160,15 @@ def show_create_tag_dialog(parent, callback=None, prefill_name=''):
     name_group.add(name_row)
     content.append(name_group)
 
-    # Duplicate warning
+    # Duplicate warning. wrap+max_width_chars keep the error short
+    # enough to fit a narrow-window dialog.
     dup_label = Gtk.Label(
         label=_('A tag with this name already exists'),
         css_classes=['error', 'caption'],
         visible=False,
+        wrap=True,
+        max_width_chars=24,
+        xalign=0,
     )
     content.append(dup_label)
 

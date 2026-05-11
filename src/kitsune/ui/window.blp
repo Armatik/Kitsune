@@ -57,11 +57,12 @@ template $KitsuneWindow: Adw.ApplicationWindow {
 
           [add-tag]
           Gtk.Button add_tag_btn {
-            label: _("New Tag");
+            icon-name: "net.armatik.Kitsune.plus-circle-symbolic";
+            tooltip-text: _("New Tag");
             visible: false;
             clicked => $on_add_tag_clicked();
 
-            styles ["suggested-action"]
+            styles ["suggested-action", "circular"]
           }
 
           [delete-tag]
