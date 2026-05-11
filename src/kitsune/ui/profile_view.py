@@ -272,6 +272,7 @@ class ProfileView(Gtk.Box):
         log.debug('Profile hero: loading %s', url)
 
         session = Soup.Session()
+        session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
         def on_image(_session, result):

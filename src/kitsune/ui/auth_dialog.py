@@ -148,6 +148,11 @@ class AuthDialog(Adw.Dialog):
 
         log.debug('Hero: downloading %s', url)
         session = Soup.Session()
+        # Without an explicit timeout the underlying GIO socket has no
+        # per-request cap, so a flaky CDN can leave the auth dialog with
+        # a blank hero indefinitely. 10s is a generous-but-bounded ceiling
+        # — failure just falls back to the default background.
+        session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
         def on_image(_session, result):
