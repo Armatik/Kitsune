@@ -32,6 +32,7 @@ class PreferencesWindow(Adw.PreferencesDialog):
 
     auto_watch_events_row = Gtk.Template.Child()
     auto_idle_scan_row = Gtk.Template.Child()
+    adult_warning_row = Gtk.Template.Child()
     cache_size_row = Gtk.Template.Child()
     preview_size_row = Gtk.Template.Child()
     release_size_row = Gtk.Template.Child()
@@ -101,6 +102,13 @@ class PreferencesWindow(Adw.PreferencesDialog):
         self._settings.bind(
             'auto-collections-idle-scan', self.auto_idle_scan_row,
             'active', Gio.SettingsBindFlags.DEFAULT,
+        )
+        # The schema stores "disabled" semantics; INVERT_BOOLEAN flips
+        # it so the toggle reads naturally — switch ON means warning ON.
+        self._settings.bind(
+            'adult-warning-disabled', self.adult_warning_row,
+            'active',
+            Gio.SettingsBindFlags.DEFAULT | Gio.SettingsBindFlags.INVERT_BOOLEAN,
         )
 
         self._update_cache_size()

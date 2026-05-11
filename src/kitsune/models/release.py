@@ -216,6 +216,7 @@ class Release:
     year: int = 0
     season: str | None = None
     age_rating: str = ''
+    is_adult: bool = False
     episodes_total: int | None = None
     is_ongoing: bool = False
     publish_day: str = ''
@@ -249,6 +250,10 @@ class Release:
             year=data.get('year', 0),
             season=season_data.get('value') if isinstance(season_data, dict) else season_data,
             age_rating=age_data.get('value', '') if isinstance(age_data, dict) else str(age_data),
+            is_adult=(
+                bool(age_data.get('is_adult', False))
+                if isinstance(age_data, dict) else False
+            ),
             episodes_total=data.get('episodes_total'),
             is_ongoing=data.get('is_ongoing', False),
             publish_day=(

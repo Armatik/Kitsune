@@ -250,19 +250,30 @@ class TagsView(Gtk.Box):
         row.add_row(scroll)
 
     def _create_mini_card(self, release: Release) -> Gtk.Box:
+        from kitsune.ui import apply_adult_blur
         box = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             spacing=4, width_request=120,
         )
-        pic = Gtk.Picture(
+        # Picture lives inside a clipping wrapper that carries the
+        # `card` style (radius + shadow). Picture itself is unstyled so
+        # its CSS blur filter, when applied for 18+ content, gets cut by
+        # the wrapper's overflow:hidden instead of bleeding past edges.
+        clipper = Gtk.Box(
             width_request=120, height_request=170,
-            content_fit=Gtk.ContentFit.COVER,
             css_classes=['card'],
         )
+        clipper.set_overflow(Gtk.Overflow.HIDDEN)
+        pic = Gtk.Picture(
+            content_fit=Gtk.ContentFit.COVER,
+            hexpand=True, vexpand=True,
+        )
+        apply_adult_blur(pic, release.is_adult)
+        clipper.append(pic)
         if release.poster:
             load_image(release.poster, lambda tex, err, p=pic:
                        p.set_paintable(tex) if tex else None)
-        box.append(pic)
+        box.append(clipper)
         box.append(Gtk.Label(
             label=release.name.main, xalign=0,
             max_width_chars=14, ellipsize=3,

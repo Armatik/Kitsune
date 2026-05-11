@@ -410,6 +410,7 @@ class SearchDialog(Adw.Dialog):
                 'type': release.type,
                 'year': release.year,
                 'is_ongoing': release.is_ongoing,
+                'is_adult': release.is_adult,
                 'episodes_total': release.episodes_total,
                 'genres': genres,
             }
@@ -610,7 +611,8 @@ class SearchDialog(Adw.Dialog):
         top = Gtk.Box(spacing=12)
 
         top.append(self._make_fixed_thumbnail(
-            entry.get('poster_preview'), 56, 80))
+            entry.get('poster_preview'), 56, 80,
+            is_adult=entry.get('is_adult', False)))
 
         info = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2,
                         hexpand=True, valign=Gtk.Align.CENTER)
@@ -817,10 +819,13 @@ class SearchDialog(Adw.Dialog):
 
     # --- Helpers ---
 
-    def _make_fixed_thumbnail(self, url, w, h=None):
+    def _make_fixed_thumbnail(self, url, w, h=None, is_adult=False):
         """Create a fixed-size thumbnail with crop-to-fill.
 
         Uses Adw.Clamp for width and explicit height on inner box.
+        Adult releases get a CSS blur on the picture; the surrounding
+        `inner` box (overflow: hidden + rounded corners) clips the
+        bloom so the blur stays within the visible thumbnail.
         """
         if h is None:
             h = w
@@ -835,11 +840,13 @@ class SearchDialog(Adw.Dialog):
 
         if url:
             from kitsune.ui.image_cache import load_image
+            from kitsune.ui import apply_adult_blur
             picture = Gtk.Picture(
                 content_fit=Gtk.ContentFit.COVER,
                 can_shrink=True,
                 hexpand=True, vexpand=True,
             )
+            apply_adult_blur(picture, is_adult)
             inner.append(picture)
             load_image(url, lambda tex, err, p=picture:
                        p.set_paintable(tex) if tex else None,

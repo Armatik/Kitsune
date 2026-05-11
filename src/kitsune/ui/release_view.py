@@ -652,14 +652,12 @@ class ReleaseView(Adw.NavigationPage):
         )
 
     def _on_related_activated(self, release: Release):
-        nav = self.get_ancestor(Adw.NavigationView)
-        if nav:
-            view = ReleaseView(release=release, client=self._client)
-            view.set_on_episode_play(self._on_episode_play)
-            view.set_on_genre_clicked(self._on_genre_navigate)
-            view.set_on_tag_clicked(self._on_tag_navigate)
-            view.set_on_tags_changed(self._on_tags_changed_ext)
-            nav.push(view)
+        # Route through the window so adult-content guards, sync-manager
+        # wiring and other cross-cutting concerns apply uniformly to
+        # related-release navigations.
+        root = self.get_root()
+        if root is not None and hasattr(root, '_show_release_detail'):
+            root._show_release_detail(release)
 
     # --- Team ---
 

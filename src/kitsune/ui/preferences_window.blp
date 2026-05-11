@@ -179,6 +179,16 @@ template $KitsunePreferencesWindow: Adw.PreferencesDialog {
         subtitle: _("Once per day, move to Paused after 30 days without progress and to Abandoned after 180 days");
       }
     }
+
+    Adw.PreferencesGroup {
+      title: _("Adult content");
+      description: _("How 18+ titles are presented in lists and previews");
+
+      Adw.SwitchRow adult_warning_row {
+        title: _("Show 18+ confirmation");
+        subtitle: _("Blur posters and ask before opening a title marked 18+");
+      }
+    }
   }
 
   Adw.PreferencesPage {

@@ -7,11 +7,11 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, Gio, Gtk
 
 from kitsune.models import Release
 from kitsune import tags_store
-from kitsune.ui import register_css
+from kitsune.ui import apply_adult_blur, register_css
 from kitsune.ui.image_cache import load_image
 
 _BADGE_CSS = (
@@ -28,6 +28,7 @@ class ReleaseCard(Gtk.FlowBoxChild):
     __gtype_name__ = 'KitsuneReleaseCard'
 
     picture = Gtk.Template.Child()
+    picture_clipper = Gtk.Template.Child()
     placeholder = Gtk.Template.Child()
     spinner = Gtk.Template.Child()
     title_label = Gtk.Template.Child()
@@ -36,7 +37,17 @@ class ReleaseCard(Gtk.FlowBoxChild):
 
     def __init__(self, release: Release, **kwargs):
         super().__init__(**kwargs)
+        register_css(_BADGE_CSS)
         self.release = release
+
+        # Clip Picture rendering to the wrapper's rounded card shape so
+        # the CSS blur filter cannot bloom past the card edges. The
+        # wrapper carries the `card` style (radius + shadow); Picture
+        # itself is unstyled, so its blur output gets cut by the
+        # wrapper's GSK clip node.
+        self.picture_clipper.set_overflow(Gtk.Overflow.HIDDEN)
+
+        apply_adult_blur(self.picture, release.is_adult)
 
         self.title_label.set_label(release.name.main)
 
@@ -114,6 +125,13 @@ class ReleaseCard(Gtk.FlowBoxChild):
             self.tag_badges.remove(child)
         self.tag_badges.set_visible(False)
         self._populate_tag_badges()
+
+    def refresh_adult_blur(self):
+        # Re-evaluate the blur for this card. Strips the class first so
+        # apply_adult_blur can re-add it only if the setting and the
+        # release's is_adult flag both still warrant blurring.
+        self.picture.remove_css_class('adult-blur')
+        apply_adult_blur(self.picture, self.release.is_adult)
 
     def _on_preview_loaded(self, texture, error):
         if texture and not self.picture.get_paintable():

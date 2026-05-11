@@ -122,5 +122,10 @@
       <summary>Auto-move idle releases</summary>
       <description>Once per day, move releases with no progress for 30+ days to "Paused" and 180+ days to "Abandoned"</description>
     </key>
+    <key name="adult-warning-disabled" type="b">
+      <default>false</default>
+      <summary>Disable 18+ content warning</summary>
+      <description>When true, posters for 18+ titles are shown without blur and the confirmation dialog is skipped when opening 18+ title pages</description>
+    </key>
   </schema>
 </schemalist>

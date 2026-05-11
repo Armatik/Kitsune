@@ -130,6 +130,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
         GLib.timeout_add_seconds(30, self._auto_collections_tick, True)
         GLib.timeout_add_seconds(3600, self._auto_collections_tick, False)
 
+        # Live-refresh all visible release posters when the adult
+        # warning setting flips (via the dialog checkbox or the
+        # preferences toggle) — otherwise blurred posters would persist
+        # until tab switch or scroll.
+        self._settings.connect(
+            'changed::adult-warning-disabled',
+            lambda *_: self._refresh_all_adult_blur(),
+        )
+
     def _setup_window_state(self):
         self.set_default_size(
             self._settings.get_int('window-width'),
@@ -777,6 +786,43 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self.nav_view.pop_to_tag('main')
 
     def _show_release_detail(self, release):
+        # 18+ gate. The warning is suppressible — once the user has
+        # toggled "don't show again" we open the page directly. Reading
+        # the setting on every navigation avoids stale state from a
+        # toggle made earlier in this session.
+        if release.is_adult and not self._settings.get_boolean(
+                'adult-warning-disabled'):
+            self._show_adult_warning_then(release)
+            return
+        self._do_show_release_detail(release)
+
+    def _show_adult_warning_then(self, release):
+        dialog = Adw.AlertDialog.new(
+            _('Adult content'),
+            _('This title is marked 18+ and may contain explicit material. Continue?'),
+        )
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('continue', _('Continue'))
+        dialog.set_response_appearance(
+            'continue', Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response('continue')
+        dialog.set_close_response('cancel')
+
+        check = Gtk.CheckButton(label=_("Don't show again"))
+        check.set_margin_top(8)
+        dialog.set_extra_child(check)
+
+        def on_response(_dialog, response):
+            if response != 'continue':
+                return
+            if check.get_active():
+                self._settings.set_boolean('adult-warning-disabled', True)
+            self._do_show_release_detail(release)
+
+        dialog.connect('response', on_response)
+        dialog.present(self)
+
+    def _do_show_release_detail(self, release):
         from kitsune.ui.release_view import ReleaseView
         view = ReleaseView(release=release, client=self._client,
                            sync_manager=self._sync)
@@ -821,6 +867,32 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 if isinstance(child, ReleaseCard) and child.release.id == release_id:
                     child.refresh_tag_badges()
                 child = child.get_next_sibling()
+
+    def _refresh_all_adult_blur(self):
+        """Walk every ReleaseCard in every visible flowbox and re-apply
+        (or strip) the adult-blur class based on the current setting.
+        Also re-renders the tags view since it builds its own mini-cards
+        outside the ReleaseCard widget tree.
+        """
+        from kitsune.ui.widgets.release_card import ReleaseCard
+        flowboxes = []
+        if self._catalog_view:
+            flowboxes.append(self._catalog_view.flowbox)
+        for view in (self._genres_view, self._franchises_view):
+            if view and view._releases_view and hasattr(view._releases_view, '_grid'):
+                flowboxes.append(view._releases_view._grid.flowbox)
+        if self._tags_view and self._tags_view.in_releases:
+            releases = self._tags_view._nav_stack.get_child_by_name('releases')
+            if releases and hasattr(releases, '_grid'):
+                flowboxes.append(releases._grid.flowbox)
+        for flowbox in flowboxes:
+            child = flowbox.get_first_child()
+            while child:
+                if isinstance(child, ReleaseCard):
+                    child.refresh_adult_blur()
+                child = child.get_next_sibling()
+        if self._tags_view:
+            self._tags_view.refresh()
 
     def _make_nav_header(self):
         header = Adw.HeaderBar()
