@@ -18,6 +18,7 @@ class SessionManager:
         self._expired = False
         self._on_logged_in = []
         self._on_logged_out = []
+        self._on_pre_logout = []
         self._on_session_expired = []
         self._on_session_restored = []
 
@@ -42,6 +43,16 @@ class SessionManager:
 
     def connect_logged_out(self, callback):
         self._on_logged_out.append(callback)
+
+    def connect_pre_logout(self, callback):
+        """callback() — fired BEFORE force_logout_cleanup runs.
+
+        Subscribers should pause anything that could race-commit on the
+        still-valid token (sync drain, periodic pulls, …) so the local
+        wipe doesn't fight with an in-flight HTTP that the server has
+        not yet seen.
+        """
+        self._on_pre_logout.append(callback)
 
     def is_expired(self):
         return self._expired
@@ -153,8 +164,18 @@ class SessionManager:
         """Wipe synced local data first so the user sees an empty profile
         immediately even if the server POST fails or 401s with an
         already-invalid token.
+
+        Pre-logout callbacks fire before the local wipe so the sync
+        drain stops cleanly — without that, an in-flight HTTP could
+        commit a server-side change against data we just deleted.
         """
-        log.debug('logout requested — wiping synced local data')
+        log.debug('logout requested — running pre-logout callbacks')
+        for cb in self._on_pre_logout:
+            try:
+                cb()
+            except Exception:
+                log.exception('pre-logout callback raised')
+        log.debug('logout: wiping synced local data')
         self.force_logout_cleanup()
 
         def on_result(data, error):

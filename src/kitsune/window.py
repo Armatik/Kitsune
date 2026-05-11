@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gdk, GLib, Gtk, Gio
+from gi.repository import Adw, GLib, Gtk, Gio
 
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
@@ -122,7 +122,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 self._sync.pause_for_expired_session)
             self._session.connect_session_restored(
                 self._sync.resume_after_expired_session)
-            self._session.connect_logged_out(
+            # Clear queue + stop drain BEFORE force_logout_cleanup wipes
+            # local data, so no in-flight op can race-commit to the
+            # soon-to-be-invalidated session.
+            self._session.connect_pre_logout(
                 self._sync.clear_queue_on_logout)
             if self._session.is_logged_in():
                 self._session.validate_session(self._on_session_validated)
