@@ -60,7 +60,7 @@ class ReleaseView(Adw.NavigationPage):
     loading_spinner = Gtk.Template.Child()
     tabs_scroll = Gtk.Template.Child()
     tabs_header = Gtk.Template.Child()
-    tabs_carousel = Gtk.Template.Child()
+    tabs_stack = Gtk.Template.Child()
 
     episodes_page = Gtk.Template.Child()
     episodes_toolbar = Gtk.Template.Child()
@@ -155,7 +155,7 @@ class ReleaseView(Adw.NavigationPage):
         """Populate heavy content after the navigation animation."""
         self.loading_spinner.set_visible(False)
         self.tabs_scroll.set_visible(True)
-        self.tabs_carousel.set_visible(True)
+        self.tabs_stack.set_visible(True)
 
         if self._release.episodes:
             self._populate_episodes()
@@ -235,10 +235,18 @@ class ReleaseView(Adw.NavigationPage):
         self._tabs_toggle = Adw.ToggleGroup()
         self._visible_tabs = []
 
-        # Store page widget references before removing
-        self._tab_pages = {}
-        for i, name in enumerate(self._TAB_PAGES):
-            self._tab_pages[name] = self.tabs_carousel.get_nth_page(i)
+        # Tag each Stack page with the matching tab name so we can flip
+        # between them via set_visible_child_name(). Pages are defined
+        # in the .blp template; their template-child handles are the
+        # source of truth — we just attach names here.
+        self._tab_pages = {
+            'episodes': self.episodes_page,
+            'related': self.related_page,
+            'team': self.team_page,
+            'torrents': self.torrents_page,
+        }
+        for name, widget in self._tab_pages.items():
+            self.tabs_stack.get_page(widget).set_name(name)
 
         has_data = {
             'episodes': True,
@@ -246,12 +254,6 @@ class ReleaseView(Adw.NavigationPage):
             'team': bool(self._release.members),
             'torrents': bool(self._release.torrents),
         }
-
-        # Remove pages without data from carousel (in reverse to keep indices stable)
-        for name in reversed(self._TAB_PAGES):
-            if not has_data.get(name):
-                log.debug('tab %s hidden: no data', name)
-                self.tabs_carousel.remove(self._tab_pages[name])
 
         for name in self._TAB_PAGES:
             if has_data.get(name):
@@ -267,30 +269,13 @@ class ReleaseView(Adw.NavigationPage):
         self.tabs_header.append(self._tabs_toggle)
 
     def _add_tab(self, name):
+        # All Stack pages exist from blueprint parse-time — there is no
+        # "insert into widget tree" work to do for async-arriving tabs
+        # like Related. We only manage which toggles the user sees.
         if name in self._visible_tabs:
             return
         log.debug('adding tab %s (async data arrived)', name)
 
-        # Find correct insertion position in carousel
-        insert_before = None
-        found = False
-        for tab_name in self._TAB_PAGES:
-            if tab_name == name:
-                found = True
-                continue
-            if found and tab_name in self._visible_tabs:
-                insert_before = tab_name
-                break
-
-        if insert_before:
-            self.tabs_carousel.insert(
-                self._tab_pages[name],
-                self._visible_tabs.index(insert_before),
-            )
-        else:
-            self.tabs_carousel.append(self._tab_pages[name])
-
-        # Insert into visible_tabs at correct position
         idx = list(self._TAB_PAGES).index(name)
         insert_at = 0
         for i, t in enumerate(self._visible_tabs):
@@ -304,11 +289,8 @@ class ReleaseView(Adw.NavigationPage):
 
     def _on_tab_changed(self, toggle_group, _pspec):
         name = toggle_group.get_active_name()
-        if name not in self._visible_tabs:
-            return
-        idx = self._visible_tabs.index(name)
-        page = self.tabs_carousel.get_nth_page(idx)
-        self.tabs_carousel.scroll_to(page, True)
+        if name in self._visible_tabs:
+            self.tabs_stack.set_visible_child_name(name)
 
     # --- Episodes controls ---
 
@@ -559,7 +541,7 @@ class ReleaseView(Adw.NavigationPage):
             self._add_tab('team')
         if self._release.torrents:
             self._add_tab('torrents')
-        self.tabs_carousel.queue_resize()
+        self.tabs_stack.queue_resize()
 
         self._show_refresh_done()
 
@@ -645,7 +627,7 @@ class ReleaseView(Adw.NavigationPage):
         self._franchise = franchise
         self._add_tab('related')
         self._populate_related()
-        self.tabs_carousel.queue_resize()
+        self.tabs_stack.queue_resize()
 
     def _populate_related(self):
         self.related_spinner.set_visible(False)

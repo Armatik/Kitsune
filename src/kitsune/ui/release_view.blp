@@ -124,10 +124,10 @@ template $KitsuneReleaseView: Adw.NavigationPage {
                 }
               }
 
-              Adw.Carousel tabs_carousel {
-                interactive: false;
-                allow-mouse-drag: false;
-                allow-scroll-wheel: false;
+              Gtk.Stack tabs_stack {
+                hhomogeneous: false;
+                vhomogeneous: false;
+                transition-type: crossfade;
                 hexpand: true;
                 visible: false;
 
