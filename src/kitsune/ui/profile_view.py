@@ -394,12 +394,12 @@ class ProfileView(Gtk.Box):
         """Refresh all counters with count-up animation."""
         targets = {}
         total = 0
-        for tag_id, _label, _emoji, color in _COLLECTION_TAGS:
+        for tag_id, _label, _icon_name in _COLLECTION_TAGS:
             count = len(tags_store.get_release_ids_for_tag(tag_id))
             total += count
             lbl = self._cards.get(tag_id)
             if lbl:
-                targets[lbl] = (count, color)
+                targets[lbl] = (count, resolved_tag_color({'id': tag_id}))
 
         targets[self._total_label] = (total, None)
         completed = watch_positions.get_completed_count()

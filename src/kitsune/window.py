@@ -759,6 +759,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 self._create_profile_view()
             else:
                 self._profile_view.refresh_hero()
+                self._profile_view.refresh_counts()
         self.content_stack.set_visible_child_name(name)
         self._sync_sidebar_selection(name)
         self._update_content_header()
