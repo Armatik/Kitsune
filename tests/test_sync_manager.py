@@ -146,6 +146,42 @@ def test_fetch_server_counts(mock_tags):
     assert results[0]['collections']['watched'] == 1
 
 
+def test_fetch_server_counts_parses_list_of_lists(mock_tags):
+    """Live AniLibria /collections/ids returns [[rid, type], ...], not
+    [{release_id, type_of_collection}, ...]. Old fixtures kept the dict
+    shape; the parser must handle both so production sync isn't a no-op."""
+    client = FakeSyncClient()
+    client.server_collections = [
+        [10, 'WATCHING'],
+        [40, 'WATCHED'],
+        [50, 'WATCHED'],
+    ]
+    sm = SyncManager(client)
+
+    results = []
+    sm.fetch_server_counts(lambda counts, err: results.append(counts))
+
+    assert results[0]['collections']['watching'] == 1
+    assert results[0]['collections']['watched'] == 2
+
+
+def test_initial_sync_parses_list_of_lists(mock_tags):
+    """Regression: _sync_collections was assuming list-of-dicts shape,
+    so against the real server it would silently drop every entry and
+    leave local collections empty. List-of-lists must be accepted."""
+    client = FakeSyncClient()
+    client.server_favorites = []
+    client.server_collections = [
+        [9275, 'WATCHING'],
+        [10089, 'WATCHED'],
+    ]
+    sm = SyncManager(client)
+    sm.initial_sync(lambda ok, err: None)
+
+    assert 9275 in tags_store.get_release_ids_for_tag('watching')
+    assert 10089 in tags_store.get_release_ids_for_tag('watched')
+
+
 # --- Syncing state ---
 
 def test_syncing_flag(mock_tags):

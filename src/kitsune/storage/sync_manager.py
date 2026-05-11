@@ -37,6 +37,28 @@ def _noop(data, error):
     pass
 
 
+def _parse_collection_entry(entry):
+    """Normalize a server `/collections/ids` entry to (release_id, type).
+
+    The live AniLibria API returns list-of-lists `[release_id, type]`
+    (verified against the production endpoint). Older code paths and
+    test fixtures used to assume list-of-dicts
+    `{release_id, type_of_collection}`, so we still accept that shape
+    too — both are common JSON envelopes for the same data, and being
+    defensive here costs nothing.
+
+    Returns (0, '') for malformed entries, which the caller filters out.
+    """
+    if isinstance(entry, (list, tuple)) and len(entry) >= 2:
+        try:
+            return int(entry[0]), str(entry[1])
+        except (TypeError, ValueError):
+            return 0, ''
+    if isinstance(entry, dict):
+        return entry.get('release_id', 0), entry.get('type_of_collection', '')
+    return 0, ''
+
+
 def _parse_timecode_item(item):
     """Parse a server timecode entry. Returns (episode_id, time, is_watched, updated_at) or None.
 
@@ -658,12 +680,11 @@ class SyncManager:
         def on_collections(data, error):
             if not error and data:
                 for entry in data:
-                    if isinstance(entry, dict):
-                        ctype = entry.get('type_of_collection', '')
-                        tag_id = COLLECTION_MAP.get(ctype)
-                        if tag_id:
-                            counts['collections'][tag_id] = \
-                                counts['collections'].get(tag_id, 0) + 1
+                    _rid, ctype = _parse_collection_entry(entry)
+                    tag_id = COLLECTION_MAP.get(ctype)
+                    if tag_id:
+                        counts['collections'][tag_id] = \
+                            counts['collections'].get(tag_id, 0) + 1
             callback(counts, None)
 
         self._client.get_favorite_ids(on_favs)
@@ -729,8 +750,7 @@ class SyncManager:
 
             server_by_tag = {}
             for entry in (server_entries or []):
-                rid = entry.get('release_id', 0) if isinstance(entry, dict) else 0
-                ctype = entry.get('type_of_collection', '') if isinstance(entry, dict) else ''
+                rid, ctype = _parse_collection_entry(entry)
                 tag_id = COLLECTION_MAP.get(ctype)
                 if tag_id and rid:
                     server_by_tag.setdefault(tag_id, set()).add(rid)
