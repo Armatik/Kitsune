@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 06:33+0300\n"
+"POT-Creation-Date: 2026-05-11 13:01+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -51,22 +51,22 @@ msgstr ""
 msgid "Uses"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:257
+#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:281
 msgid "Favorites"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1228
+#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1387
 msgid "Watching"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1229
+#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1388
 #: src/kitsune/ui/release_view.py:306 src/kitsune/ui/release_view.py:321
 #: src/kitsune/ui/release_view_episodes.py:66
 #: src/kitsune/ui/release_view_episodes.py:68
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1230
+#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1389
 msgid "Planned"
 msgstr ""
 
@@ -74,117 +74,149 @@ msgstr ""
 msgid "Postponed"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1232
+#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1391
 msgid "Abandoned"
 msgstr ""
 
-#: src/kitsune/window.py:215 src/kitsune/window.py:254
-#: src/kitsune/window.py:741 src/kitsune/ui/preferences_window.py:268
-#: src/kitsune/ui/window.blp:116
+#: src/kitsune/window.py:239 src/kitsune/window.py:278
+#: src/kitsune/window.py:813 src/kitsune/ui/preferences_window.py:268
+#: src/kitsune/ui/window.blp:124
 msgid "Catalog"
 msgstr ""
 
-#: src/kitsune/window.py:216 src/kitsune/window.py:255
-#: src/kitsune/window.py:742 src/kitsune/ui/filter_dialog.py:148
+#: src/kitsune/window.py:240 src/kitsune/window.py:279
+#: src/kitsune/window.py:814 src/kitsune/ui/filter_dialog.py:148
 #: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:254
 #: src/kitsune/ui/preferences_window.py:269 src/kitsune/ui/search_dialog.py:71
 msgid "Genres"
 msgstr ""
 
-#: src/kitsune/window.py:217 src/kitsune/window.py:256
-#: src/kitsune/window.py:743 src/kitsune/ui/preferences_window.py:255
+#: src/kitsune/window.py:241 src/kitsune/window.py:280
+#: src/kitsune/window.py:815 src/kitsune/ui/preferences_window.py:255
 #: src/kitsune/ui/preferences_window.py:270 src/kitsune/ui/search_dialog.py:71
 msgid "Franchises"
 msgstr ""
 
-#: src/kitsune/window.py:218 src/kitsune/window.py:744
+#: src/kitsune/window.py:242 src/kitsune/window.py:816
 #: src/kitsune/ui/preferences_window.py:271
 msgid "Favorites and Tags"
 msgstr ""
 
-#: src/kitsune/window.py:357 src/kitsune/window.py:463
-#: src/kitsune/ui/window.blp:284
+#: src/kitsune/window.py:380 src/kitsune/window.py:489
+#: src/kitsune/ui/window.blp:292
 msgid "Preferences"
 msgstr ""
 
-#: src/kitsune/window.py:364 src/kitsune/window.py:464
-#: src/kitsune/ui/window.blp:285
+#: src/kitsune/window.py:387 src/kitsune/window.py:490
+#: src/kitsune/ui/window.blp:293
 msgid "About Kitsune"
 msgstr ""
 
-#: src/kitsune/window.py:436 src/kitsune/window.py:988
-#: src/kitsune/window.py:1003 src/kitsune/window.py:1017
+#: src/kitsune/window.py:462 src/kitsune/window.py:1097
+#: src/kitsune/window.py:1138 src/kitsune/window.py:1151
+#: src/kitsune/ui/auth_dialog.blp:77
 msgid "Login"
 msgstr ""
 
-#: src/kitsune/window.py:565 src/kitsune/window.py:626
+#: src/kitsune/window.py:591 src/kitsune/window.py:657
 msgid "Card view"
 msgstr ""
 
-#: src/kitsune/window.py:629 src/kitsune/ui/release_view.py:349
+#: src/kitsune/window.py:660 src/kitsune/ui/release_view.py:349
 msgid "List view"
 msgstr ""
 
-#: src/kitsune/window.py:745
+#: src/kitsune/window.py:817
 msgid "Profile"
 msgstr ""
 
-#: src/kitsune/window.py:801 src/kitsune/ui/preferences_window.blp:184
+#: src/kitsune/window.py:873 src/kitsune/ui/preferences_window.blp:184
 msgid "Adult content"
 msgstr ""
 
-#: src/kitsune/window.py:802
+#: src/kitsune/window.py:874
 msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr ""
 
-#: src/kitsune/window.py:804 src/kitsune/ui/create_tag_dialog.py:55
-#: src/kitsune/ui/tags_view.py:332 src/kitsune/ui/search_dialog.blp:32
+#: src/kitsune/window.py:876 src/kitsune/ui/create_tag_dialog.py:55
+#: src/kitsune/ui/tags_view.py:345 src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr ""
 
-#: src/kitsune/window.py:805
+#: src/kitsune/window.py:877
 msgid "Continue"
 msgstr ""
 
-#: src/kitsune/window.py:811
+#: src/kitsune/window.py:883
 msgid "Don't show again"
 msgstr ""
 
-#: src/kitsune/window.py:901 src/kitsune/ui/release_view.blp:25
+#: src/kitsune/window.py:973 src/kitsune/ui/release_view.blp:25
 msgid "Home"
 msgstr ""
 
-#: src/kitsune/window.py:1086
+#: src/kitsune/window.py:1113
+msgid "Not synced yet"
+msgstr ""
+
+#: src/kitsune/window.py:1118 src/kitsune/ui/profile_view.py:434
+#, python-format
+msgid "Synced at %s"
+msgstr ""
+
+#: src/kitsune/window.py:1119
+#, python-format
+msgid "Synced %s"
+msgstr ""
+
+#: src/kitsune/window.py:1219
 msgid "Sync data"
 msgstr ""
 
-#: src/kitsune/window.py:1089
+#: src/kitsune/window.py:1222
 msgid "Merge"
 msgstr ""
 
-#: src/kitsune/window.py:1090
+#: src/kitsune/window.py:1223
 msgid "Keep local"
 msgstr ""
 
-#: src/kitsune/window.py:1091
+#: src/kitsune/window.py:1224
 msgid "Keep server"
 msgstr ""
 
-#: src/kitsune/window.py:1190
+#: src/kitsune/window.py:1349
 msgid "Failed to sync your change with the server"
 msgstr ""
 
-#: src/kitsune/window.py:1220
+#: src/kitsune/window.py:1379
 msgid "Move"
 msgstr ""
 
-#: src/kitsune/window.py:1231
+#: src/kitsune/window.py:1390
 msgid "Paused"
 msgstr ""
 
-#: src/kitsune/window.py:1237
+#: src/kitsune/window.py:1396
 #, python-brace-format
 msgid "{prefix}move to {target}?"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.py:214 src/kitsune/ui/auth_dialog.py:312
+msgid "Fill in all fields"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.py:308
+msgid "Wrong login or password"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.py:314 src/kitsune/ui/auth_dialog.py:343
+#: src/kitsune/ui/auth_dialog.py:351 src/kitsune/ui/auth_dialog.py:403
+msgid "No connection to server"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.py:370
+msgid "Authorization timed out"
 msgstr ""
 
 #: src/kitsune/ui/create_tag_dialog.py:29
@@ -231,17 +263,17 @@ msgstr ""
 msgid "Create"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:73
+#: src/kitsune/ui/create_tag_dialog.py:72
 msgid "Emoji"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:74
+#: src/kitsune/ui/create_tag_dialog.py:73
 msgid "Color"
 msgstr ""
 
 #. EntryRow with chooser as prefix
-#: src/kitsune/ui/create_tag_dialog.py:151
-#: src/kitsune/ui/create_tag_dialog.py:241
+#: src/kitsune/ui/create_tag_dialog.py:150
+#: src/kitsune/ui/create_tag_dialog.py:244
 msgid "Tag name"
 msgstr ""
 
@@ -249,7 +281,7 @@ msgstr ""
 msgid "A tag with this name already exists"
 msgstr ""
 
-#: src/kitsune/ui/create_tag_dialog.py:247
+#: src/kitsune/ui/create_tag_dialog.py:250
 msgid "Tag name (optional)"
 msgstr ""
 
@@ -341,15 +373,15 @@ msgstr ""
 msgid "Dubbing status"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:533 src/kitsune/ui/player_view.blp:254
+#: src/kitsune/ui/player_view.py:540 src/kitsune/ui/player_view.blp:254
 msgid "Skip Intro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:537
+#: src/kitsune/ui/player_view.py:544
 msgid "Skip Outro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:648
+#: src/kitsune/ui/player_view.py:655
 msgid "Playback error: {}"
 msgstr ""
 
@@ -532,24 +564,28 @@ msgstr ""
 msgid "Press + to create it"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:151
+#: src/kitsune/ui/tags_view.py:152
 msgid "New tag"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:231
+#: src/kitsune/ui/tags_view.py:228
+msgid "Synced with your AniLibria account"
+msgstr ""
+
+#: src/kitsune/ui/tags_view.py:244
 msgid "No releases"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:329
+#: src/kitsune/ui/tags_view.py:342
 msgid "Delete Tag?"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:330
+#: src/kitsune/ui/tags_view.py:343
 #, python-format
 msgid "Tag \"%s\" will be removed. This cannot be undone."
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:333
+#: src/kitsune/ui/tags_view.py:346
 msgid "Delete"
 msgstr ""
 
@@ -561,27 +597,51 @@ msgstr ""
 msgid "Episodes watched"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:375
+#: src/kitsune/ui/profile_view.py:388
 #, python-format
 msgid "Member since %s"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:421
-#, python-format
-msgid "Synced at %s"
-msgstr ""
-
-#: src/kitsune/ui/profile_view.py:448
+#: src/kitsune/ui/profile_view.py:461
 msgid "1 operation waiting to sync"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:451
+#: src/kitsune/ui/profile_view.py:464
 #, python-brace-format
 msgid "{n} operations waiting to sync"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:460
+#: src/kitsune/ui/profile_view.py:473
 msgid "Unknown error"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:11
+msgid "Authorization"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:81
+msgid "Password"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:86
+msgid "Sign in"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:107 src/kitsune/ui/auth_dialog.blp:116
+#: src/kitsune/ui/auth_dialog.blp:125 src/kitsune/ui/auth_dialog.blp:134
+msgid "Authorization via this method is unavailable"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:156
+msgid "Show login code"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:197
+msgid "Register ↗"
+msgstr ""
+
+#: src/kitsune/ui/auth_dialog.blp:202
+msgid "Forgot password? ↗"
 msgstr ""
 
 #: src/kitsune/ui/filter_dialog.blp:17 src/kitsune/ui/player_view.blp:65
@@ -628,8 +688,8 @@ msgstr ""
 msgid "Log out"
 msgstr ""
 
-#: src/kitsune/ui/player_view.blp:42 src/kitsune/ui/window.blp:122
-#: src/kitsune/ui/window.blp:176
+#: src/kitsune/ui/player_view.blp:42 src/kitsune/ui/window.blp:130
+#: src/kitsune/ui/window.blp:184
 msgid "Back"
 msgstr ""
 
@@ -921,7 +981,7 @@ msgid "No torrents available"
 msgstr ""
 
 #: src/kitsune/ui/search_dialog.blp:9 src/kitsune/ui/window.blp:91
-#: src/kitsune/ui/window.blp:184
+#: src/kitsune/ui/window.blp:192
 msgid "Search"
 msgstr ""
 
@@ -945,6 +1005,10 @@ msgstr ""
 msgid "Scroll to top"
 msgstr ""
 
+#: src/kitsune/ui/widgets/tag_card.blp:66
+msgid "Delete tag"
+msgstr ""
+
 #: src/kitsune/ui/window.blp:36
 msgid "Filters"
 msgstr ""
@@ -965,19 +1029,19 @@ msgstr ""
 msgid "Main Menu"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:256
+#: src/kitsune/ui/window.blp:264
 msgid "Your session has expired. Log in again to resume sync."
 msgstr ""
 
-#: src/kitsune/ui/window.blp:257
+#: src/kitsune/ui/window.blp:265
 msgid "Log in again"
 msgstr ""
 
-#: src/kitsune/ui/window.blp:263
+#: src/kitsune/ui/window.blp:271
 msgid "No internet connection. App is working in limited mode."
 msgstr ""
 
-#: src/kitsune/ui/window.blp:264
+#: src/kitsune/ui/window.blp:272
 msgid "Retry"
 msgstr ""
 
@@ -1063,33 +1127,33 @@ msgstr ""
 msgid "Semen (Armatik) Fomchenkov"
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:126
+#: data/net.armatik.Kitsune.metainfo.xml.in:130
 msgid ""
 "Removed light theme screenshot variants — AppStream does not support "
 "grouping by color scheme, so only dark theme screenshots are kept for a "
 "cleaner app listing."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:131
+#: data/net.armatik.Kitsune.metainfo.xml.in:135
 msgid ""
 "Home button on nested navigation pages — quickly return to the main screen "
 "from deep release, genre, franchise or tag drill-downs. Hidden on the first "
 "level where back already leads home."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:132
+#: data/net.armatik.Kitsune.metainfo.xml.in:136
 msgid ""
 "Fixed bottom bar overlapping the last card in mobile layout. Genres and "
 "franchises now show an end-of-list indicator after all items load."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:133
+#: data/net.armatik.Kitsune.metainfo.xml.in:137
 msgid ""
 "Card labels clamped to 252px and the grid wrapped in Adw.Clamp(1600) so "
 "titles stay close to posters on wide screens."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:134
+#: data/net.armatik.Kitsune.metainfo.xml.in:138
 msgid ""
 "Smoother release page transitions — heavy widget construction deferred to "
 "the shown signal instead of blocking during the animation. Accent color "
@@ -1097,19 +1161,19 @@ msgid ""
 "episodes appear, preventing poster resize jumps."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:135
+#: data/net.armatik.Kitsune.metainfo.xml.in:139
 msgid ""
 "Added 23 screenshots to metainfo covering all views in light and dark "
 "themes, desktop and mobile layouts."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:140
+#: data/net.armatik.Kitsune.metainfo.xml.in:144
 msgid ""
 "Added Russian content notice to description and keywords to metainfo. "
 "Clarified in README that API content is in Russian."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:145
+#: data/net.armatik.Kitsune.metainfo.xml.in:149
 msgid ""
 "Preparing for Flathub publication. Added English README and separate Russian "
 "translation for multilingual repository support. Fixed minimum dependency "
@@ -1117,7 +1181,7 @@ msgid ""
 "Fixed translate URL in metainfo pointing to wrong branch."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:150
+#: data/net.armatik.Kitsune.metainfo.xml.in:154
 msgid ""
 "Fixed release page not loading content — deferred initialization via GLib."
 "idle_add was cancelled by NavigationView internal map/unmap cycle during "
@@ -1125,7 +1189,7 @@ msgid ""
 "completes."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:155
+#: data/net.armatik.Kitsune.metainfo.xml.in:159
 msgid ""
 "Search dialog — full-featured search with category tabs (anime, genres, "
 "franchises, tags), animated scroll tracking, smart tag filtering, ongoing "
@@ -1133,7 +1197,7 @@ msgid ""
 "Keyboard navigation with Escape to close and category tab click-to-scroll."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:156
+#: data/net.armatik.Kitsune.metainfo.xml.in:160
 msgid ""
 "Redesigned preferences — blur unwatched episodes toggle, search category "
 "ordering with drag-and-drop, storage page reorganized into Cache and User "
@@ -1141,21 +1205,21 @@ msgid ""
 "drag handles."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:157
+#: data/net.armatik.Kitsune.metainfo.xml.in:161
 msgid ""
 "Watch progress improvements — 90%% watched threshold marks episodes as "
 "completed across the app (release page, search dialog, progress bars, "
 "checkmarks). Near-end detection replaces fixed-seconds threshold."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:158
+#: data/net.armatik.Kitsune.metainfo.xml.in:162
 msgid ""
 "Smooth animations — release page content loads after push animation via "
 "deferred initialization, eliminating the stutter in the last pixels of "
 "navigation transitions."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:159
+#: data/net.armatik.Kitsune.metainfo.xml.in:163
 msgid ""
 "Accessibility and polish — player buttons have tooltips for screen readers, "
 "tag color circles use theme-safe borders for light and dark themes, episode "
@@ -1163,7 +1227,7 @@ msgid ""
 "choices."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:160
+#: data/net.armatik.Kitsune.metainfo.xml.in:164
 msgid ""
 "Reliability — async API callbacks guarded against destroyed widgets, HTTP "
 "4xx errors no longer degrade the client to offline mode, scroll animation "
@@ -1171,21 +1235,21 @@ msgid ""
 "build time."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:165
+#: data/net.armatik.Kitsune.metainfo.xml.in:169
 msgid ""
 "Fixed video player not starting — NavigationView internally maps and unmaps "
 "pages during push transitions, which caused the playback idle source to be "
 "cancelled before it could fire."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:166
+#: data/net.armatik.Kitsune.metainfo.xml.in:170
 msgid ""
 "Fixed catalog and other views showing infinite spinners on first launch — "
 "the same map/unmap cycle was aborting in-flight API requests and clearing "
 "pending data."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:171
+#: data/net.armatik.Kitsune.metainfo.xml.in:175
 msgid ""
 "Configurable navigation — rearrange, show or hide tabs in the sidebar and "
 "bottom bar. First 3 tabs are shown as buttons, overflow tabs open in a "
@@ -1193,7 +1257,7 @@ msgid ""
 "list display styles for the sheet."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:172
+#: data/net.armatik.Kitsune.metainfo.xml.in:176
 msgid ""
 "Stability fixes — idle source tracking and cleanup on view unmap prevents "
 "use-after-free crashes, GStreamer bus signal handlers are properly "
@@ -1202,7 +1266,7 @@ msgid ""
 "eliminated."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:173
+#: data/net.armatik.Kitsune.metainfo.xml.in:177
 msgid ""
 "Code quality — release detail page decomposed into focused helper modules "
 "(episodes, related releases, tags), genre and franchise views unified under "
@@ -1210,7 +1274,7 @@ msgid ""
 "and widget-level tests added for views and widgets."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:174
+#: data/net.armatik.Kitsune.metainfo.xml.in:178
 msgid ""
 "Visual polish — adaptive tag pills switch between full and compact mode "
 "based on available space, SVG icon replaces text plus on tag badges, double "
@@ -1218,14 +1282,14 @@ msgid ""
 "with custom drag handle pills."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:179
+#: data/net.armatik.Kitsune.metainfo.xml.in:183
 msgid ""
 "Bugfix: renamed action icons with app_id prefix (net.armatik.Kitsune.*) to "
 "prevent file conflicts with other applications when installed to the shared "
 "icon directory."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:184
+#: data/net.armatik.Kitsune.metainfo.xml.in:188
 msgid ""
 "Tags and favorites — a new system for organizing your library. Create custom "
 "tags with emoji or colored icons, assign them to any release via the star "
@@ -1240,7 +1304,7 @@ msgid ""
 "instantly to all visible cards."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:185
+#: data/net.armatik.Kitsune.metainfo.xml.in:189
 msgid ""
 "Episode watch progress tracking — progress bars appear on episode cards and "
 "list rows showing how much of each episode has been watched. Completed "
@@ -1252,7 +1316,7 @@ msgid ""
 "player."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:186
+#: data/net.armatik.Kitsune.metainfo.xml.in:190
 msgid ""
 "Redesigned filter panel — the filter dialog has been replaced with a sliding "
 "side panel (OverlaySplitView) that overlays the entire window. Filters auto-"
@@ -1261,21 +1325,21 @@ msgid ""
 "suppressed."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:187
+#: data/net.armatik.Kitsune.metainfo.xml.in:191
 msgid ""
 "Genre navigation from release pages — clicking a genre chip on a release "
 "page now opens that genre's releases as a NavigationPage with a back button, "
 "instead of switching to the Genres tab. Genre chips have hover effects."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:188
+#: data/net.armatik.Kitsune.metainfo.xml.in:192
 msgid ""
 "Dynamic release page tabs — empty tabs (related releases, team, torrents) "
 "are hidden automatically instead of showing blank placeholders. Tabs appear "
 "dynamically when async data arrives."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:189
+#: data/net.armatik.Kitsune.metainfo.xml.in:193
 msgid ""
 "Visual improvements — smooth CSS hover transitions (200ms ease-out-quad) "
 "across flowbox items, sidebar rows, navigation tabs, player buttons, and "
@@ -1284,7 +1348,7 @@ msgid ""
 "effects."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:190
+#: data/net.armatik.Kitsune.metainfo.xml.in:194
 msgid ""
 "Player stability — fixed player cleanup on navigation back by removing "
 "unreliable hiding/unmap signals. Cleanup now fires only via explicit back "
@@ -1292,7 +1356,7 @@ msgid ""
 "double-stop issues."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:191
+#: data/net.armatik.Kitsune.metainfo.xml.in:195
 msgid ""
 "Infrastructure — centralized AniLibria API URLs into a single constants "
 "file. Image download limit increased from 10 MB to 30 MB. Tags statistics "
@@ -1300,12 +1364,12 @@ msgid ""
 "organization, project Telegram channel and chat added."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:196
+#: data/net.armatik.Kitsune.metainfo.xml.in:200
 msgid ""
 "Major update with genres, franchises, tabbed release page, Blueprint UI, "
 "accent colors, offline mode, and full Russian translation."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:201
+#: data/net.armatik.Kitsune.metainfo.xml.in:205
 msgid "Initial release with catalog, search, and video player."
 msgstr ""
