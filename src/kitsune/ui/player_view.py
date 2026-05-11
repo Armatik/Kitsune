@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from time import monotonic
 
 import gi
@@ -17,6 +18,7 @@ from kitsune.models import Episode, Release
 from kitsune.player.gst_player import GstPlayer
 from kitsune.ui import register_css
 from kitsune.player.display_rotate import check_available, DisplayRotator
+from kitsune.player import macos_media_keys
 
 log = logging.getLogger('kitsune.ui.player')
 
@@ -149,6 +151,7 @@ class PlayerView(Adw.NavigationPage):
         self._setup_nav_buttons()
         self._setup_input()
         self._connect_signals()
+        self._setup_macos_media_keys()
         self.close_btn.set_visible(
             self._settings.get_boolean('player-show-close-button'))
         # Show spinner until stream is ready
@@ -326,6 +329,44 @@ class PlayerView(Adw.NavigationPage):
         self._player.connect('error', self._on_error)
         self._player.connect('buffering', self._on_buffering_signal)
 
+    def _setup_macos_media_keys(self):
+        if sys.platform != 'darwin':
+            return
+        macos_media_keys.init(
+            on_play=self._player.play,
+            on_pause=self._player.pause,
+            on_toggle=self._player.toggle_play_pause,
+            on_next=self._on_next_episode_media_key,
+            on_prev=self._on_prev_episode_media_key,
+            on_seek=self._player.seek,
+        )
+
+    def _on_next_episode_media_key(self):
+        if self._current_idx >= 0 and self._current_idx < len(self._episodes) - 1:
+            self._switch_episode(self._episodes[self._current_idx + 1])
+
+    def _on_prev_episode_media_key(self):
+        if self._current_idx > 0:
+            self._switch_episode(self._episodes[self._current_idx - 1])
+
+    def _update_macos_now_playing(self, position, duration, is_playing):
+        if sys.platform != 'darwin':
+            return
+        title = self._release.name.main or ''
+        episode_str = str(int(self._episode.ordinal) if self._episode.ordinal == int(self._episode.ordinal) else self._episode.ordinal)
+        artist = f'{_("Episode")} {episode_str}'
+        album = self._release.name.english or ''
+        artwork = self._release.poster
+        macos_media_keys.update(
+            title=title,
+            artist=artist,
+            album=album,
+            duration_sec=duration,
+            elapsed_sec=position,
+            is_playing=is_playing,
+            artwork_url=artwork,
+        )
+
     def _on_first_map(self, _widget):
         # Guard: NavigationView may map/unmap during push() animation,
         # so this handler can fire more than once.
@@ -353,6 +394,9 @@ class PlayerView(Adw.NavigationPage):
                 self._seeking = True
             self._player.play_uri(url)
             self._schedule_hide()
+            # Push Now Playing immediately so the macOS widget shows up
+            # right away, not 500 ms later on the first position tick.
+            self._update_macos_now_playing(0, 0, True)
 
     # --- Controls visibility ---
 
@@ -532,6 +576,8 @@ class PlayerView(Adw.NavigationPage):
         if self._save_counter >= 60:
             self._save_counter = 0
             self._save_watch_position()
+        # macOS Now Playing
+        self._update_macos_now_playing(position, duration, self._player.is_playing)
 
     def _update_skip_button(self, position):
         op = self._episode.opening
@@ -628,8 +674,17 @@ class PlayerView(Adw.NavigationPage):
             self._reveal_controls()
             if state == 'paused':
                 self._save_watch_position()
+        # macOS Now Playing state update
+        if state in ('playing', 'paused'):
+            macos_media_keys.update_state(
+                self._player.get_position(),
+                state == 'playing',
+            )
+        elif state == 'stopped':
+            macos_media_keys.clear()
 
     def _on_eos(self, _player):
+        macos_media_keys.clear()
         ep_id = self._episode.id
         watch_positions.mark_completed(
             self._release.id, self._episode.ordinal,
@@ -680,6 +735,8 @@ class PlayerView(Adw.NavigationPage):
              if ep.ordinal == episode.ordinal), -1
         )
         self._player.stop()
+        self._player.reset_pipeline()
+        self._setup_paintable()
         self._last_duration = 0
         self._skip_target = None
         self.skip_btn.set_visible(False)
@@ -866,5 +923,6 @@ class PlayerView(Adw.NavigationPage):
             # full app shutdown.
             if self._sync:
                 self._sync.flush_timecodes(self._release.id)
+            macos_media_keys.clear()
         finally:
             Adw.NavigationPage.do_unmap(self)

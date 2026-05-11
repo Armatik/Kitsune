@@ -14,8 +14,14 @@ localedir = '@LOCALEDIR@'
 sys.path.insert(1, pkgdatadir)
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
-locale.bindtextdomain('kitsune', localedir)
-locale.textdomain('kitsune')
+# locale.bindtextdomain may not exist on macOS / non-GNU builds
+try:
+    locale.bindtextdomain('kitsune', localedir)
+    locale.textdomain('kitsune')
+except AttributeError:
+    gettext.bindtextdomain('kitsune', localedir)
+    gettext.textdomain('kitsune')
+
 gettext.install('kitsune', localedir)
 
 if __name__ == '__main__':

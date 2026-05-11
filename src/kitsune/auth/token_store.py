@@ -1,33 +1,23 @@
 # src/kitsune/auth/token_store.py
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import gi
-gi.require_version('Secret', '1')
-from gi.repository import Secret
+import keyring
+from keyring.errors import PasswordDeleteError
 
-TOKEN_SCHEMA = Secret.Schema.new(
-    'net.armatik.Kitsune.auth',
-    Secret.SchemaFlags.NONE,
-    {'token-type': Secret.SchemaAttributeType.STRING},
-)
-
-_ATTRIBUTES = {'token-type': 'session'}
+SERVICE_NAME = 'net.armatik.Kitsune'
+ACCOUNT_NAME = 'session'
 
 
 def save_token(token):
-    Secret.password_store_sync(
-        TOKEN_SCHEMA,
-        _ATTRIBUTES,
-        Secret.COLLECTION_DEFAULT,
-        'Kitsune AniLibria session',
-        token,
-        None,
-    )
+    keyring.set_password(SERVICE_NAME, ACCOUNT_NAME, token)
 
 
 def load_token():
-    return Secret.password_lookup_sync(TOKEN_SCHEMA, _ATTRIBUTES, None)
+    return keyring.get_password(SERVICE_NAME, ACCOUNT_NAME)
 
 
 def delete_token():
-    Secret.password_clear_sync(TOKEN_SCHEMA, _ATTRIBUTES, None)
+    try:
+        keyring.delete_password(SERVICE_NAME, ACCOUNT_NAME)
+    except PasswordDeleteError:
+        pass

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 
 import gi
 
@@ -27,6 +28,9 @@ class GstPlayer(GObject.Object):
 
     def __init__(self):
         super().__init__()
+        if not Gst.is_initialized():
+            log.warning('Gst not initialized, calling Gst.init()')
+            Gst.init(None)
         self._playbin = Gst.ElementFactory.make('playbin3', 'playbin')
         if self._playbin:
             log.debug('created playbin3')
@@ -64,14 +68,20 @@ class GstPlayer(GObject.Object):
         sink = Gst.ElementFactory.make('gtk4paintablesink', 'gtksink')
         if sink:
             self._paintable = sink.get_property('paintable')
-            gl_sink = Gst.ElementFactory.make('glsinkbin', 'glsink')
-            if gl_sink:
-                gl_sink.set_property('sink', sink)
-                self._playbin.set_property('video-sink', gl_sink)
-                log.debug('video sink: glsinkbin → gtk4paintablesink')
-            else:
+            # macOS: avoid glsinkbin because GstGL can't wrap the native
+            # GL/Metal context that GTK4 creates, causing rendering failures.
+            if sys.platform == 'darwin':
                 self._playbin.set_property('video-sink', sink)
-                log.debug('video sink: gtk4paintablesink (no GL)')
+                log.debug('video sink: gtk4paintablesink (macOS, no GL)')
+            else:
+                gl_sink = Gst.ElementFactory.make('glsinkbin', 'glsink')
+                if gl_sink:
+                    gl_sink.set_property('sink', sink)
+                    self._playbin.set_property('video-sink', gl_sink)
+                    log.debug('video sink: glsinkbin → gtk4paintablesink')
+                else:
+                    self._playbin.set_property('video-sink', sink)
+                    log.debug('video sink: gtk4paintablesink (no GL)')
         else:
             log.warning('gtk4paintablesink not available')
 
@@ -101,6 +111,43 @@ class GstPlayer(GObject.Object):
     @property
     def paintable(self):
         return self._paintable
+
+    def reset_pipeline(self):
+        """Fully recreate the pipeline (needed after EOS / episode switch)."""
+        if self._playbin:
+            bus = self._playbin.get_bus()
+            if bus:
+                for hid in self._bus_handler_ids:
+                    bus.disconnect(hid)
+                bus.remove_signal_watch()
+            self._playbin.set_state(Gst.State.NULL)
+        self._bus_handler_ids = []
+        self._playbin = Gst.ElementFactory.make('playbin3', 'playbin')
+        if self._playbin:
+            log.debug('created playbin3')
+        else:
+            self._playbin = Gst.ElementFactory.make('playbin', 'playbin')
+            if self._playbin:
+                log.debug('created playbin (fallback)')
+            else:
+                raise RuntimeError(
+                    'GStreamer playbin not available. '
+                    'Install gstreamer1.0-plugins-base.'
+                )
+        self._setup_video_sink()
+        self._setup_audio_filter()
+        self._target_state = Gst.State.NULL
+        self._is_buffering = False
+        self._rate = 1.0
+        self._target_rate = 1.0
+        bus = self._playbin.get_bus()
+        bus.add_signal_watch()
+        self._bus_handler_ids = [
+            bus.connect('message::error', self._on_error),
+            bus.connect('message::eos', self._on_eos),
+            bus.connect('message::state-changed', self._on_state_changed),
+            bus.connect('message::buffering', self._on_buffering),
+        ]
 
     def play_uri(self, uri: str):
         if not uri or not uri.startswith(('https://', 'http://')):

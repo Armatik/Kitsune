@@ -8,3 +8,6 @@ data/gschemas.compiled
 docs/
 .claude/
 .superpowers/
+dist/
+.vscode/
+.DS_Store
