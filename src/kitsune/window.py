@@ -89,6 +89,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._sync = SyncManager(self._client)
         self._sync_timer_id = 0
         self._profile_view = None
+        # Suppresses on_sidebar_row_selected when _switch_tab calls
+        # select_row programmatically — otherwise the signal handler
+        # would call _switch_tab again, recursing.
+        self._suppress_sidebar_callback = False
         self._settings = Gio.Settings(schema_id='net.armatik.Kitsune')
         # Restore last-known user_id BEFORE any sync work can start so
         # the pending queue is correctly tagged from the very first
@@ -609,6 +613,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_sidebar_row_selected(self, listbox, row):
+        if self._suppress_sidebar_callback:
+            return
         if not row:
             return
         if hasattr(self, '_auth_row') and row is self._auth_row:
@@ -732,9 +738,40 @@ class KitsuneWindow(Adw.ApplicationWindow):
             else:
                 self._profile_view.refresh_hero()
         self.content_stack.set_visible_child_name(name)
+        self._sync_sidebar_selection(name)
         self._update_content_header()
         self._update_nav_tabs(name)
         self._update_narrow_header_for_profile()
+
+    def _sync_sidebar_selection(self, name: str):
+        """Mirror the active content tab into the sidebar listbox.
+
+        Without this, programmatic tab changes (post-login _switch_tab,
+        narrow bottom-bar clicks, content-stack updates from anywhere)
+        leave the sidebar showing whatever was selected before. After
+        login the user sees Profile content but Catalog highlighted in
+        the sidebar — confusing.
+
+        The row-selected handler is suppressed via the
+        `_suppress_sidebar_callback` flag so this programmatic update
+        does not recurse back into _switch_tab.
+        """
+        if name == 'profile':
+            target = getattr(self, '_auth_row', None)
+        else:
+            try:
+                idx = self._sidebar_tab_ids.index(name)
+            except ValueError:
+                target = None
+            else:
+                target = self.sidebar_list.get_row_at_index(idx)
+        if target is None:
+            return
+        self._suppress_sidebar_callback = True
+        try:
+            self.sidebar_list.select_row(target)
+        finally:
+            self._suppress_sidebar_callback = False
 
     def _update_nav_tabs(self, active: str):
         for tab_id, btn in self._narrow_tab_buttons.items():
