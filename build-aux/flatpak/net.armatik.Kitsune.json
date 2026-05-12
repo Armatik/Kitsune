@@ -3,6 +3,9 @@
     "runtime": "org.gnome.Platform",
     "runtime-version": "49",
     "sdk": "org.gnome.Sdk",
+    "sdk-extensions": [
+        "org.freedesktop.Sdk.Extension.rust-stable"
+    ],
     "command": "kitsune",
     "finish-args": [
         "--share=ipc",
@@ -10,9 +13,16 @@
         "--socket=wayland",
         "--device=dri",
         "--share=network",
-        "--socket=pulseaudio"
+        "--socket=pulseaudio",
+        "--talk-name=org.freedesktop.secrets"
     ],
+    "build-options": {
+        "append-path": "/usr/lib/sdk/rust-stable/bin"
+    },
     "modules": [
+        "python3-setuptools_rust.json",
+        "python3-cffi.json",
+        "python3-keyring.json",
         {
             "name": "kitsune",
             "buildsystem": "meson",

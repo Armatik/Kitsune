@@ -61,6 +61,7 @@ apt-get install kitsune
 - Libsoup 3
 - Meson 1.0+
 - Blueprint Compiler
+- python3-keyring (для хранения сессионного токена)
 
 **Сборка и установка:**
 

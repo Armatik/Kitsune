@@ -61,6 +61,7 @@ apt-get install kitsune
 - Libsoup 3
 - Meson 1.0+
 - Blueprint Compiler
+- python3-keyring (for session token storage)
 
 **Build and install:**
 
