@@ -251,6 +251,7 @@ def clear():
         return
 
     global _g_last_artwork_obj, _g_last_artwork_url
+    global _g_on_play, _g_on_pause, _g_on_toggle, _g_on_next, _g_on_prev, _g_on_seek
     _g_last_artwork_obj = None
     _g_last_artwork_url = None
     MPNowPlayingInfoCenter.defaultCenter().setNowPlayingInfo_(None)
