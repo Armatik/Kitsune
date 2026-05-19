@@ -1,0 +1,94 @@
+name: Build macOS
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar/gtk4
+            /opt/homebrew/Cellar/libadwaita
+            /opt/homebrew/Cellar/glib
+            /opt/homebrew/Cellar/pygobject3
+            /opt/homebrew/Cellar/py3cairo
+            /opt/homebrew/Cellar/gobject-introspection
+            /opt/homebrew/Cellar/pango
+            /opt/homebrew/Cellar/cairo
+            /opt/homebrew/Cellar/harfbuzz
+            /opt/homebrew/Cellar/gdk-pixbuf
+            /opt/homebrew/Cellar/adwaita-icon-theme
+            /opt/homebrew/Cellar/dylibbundler
+            /opt/homebrew/Cellar/librsvg
+            /opt/homebrew/Cellar/gstreamer
+            /opt/homebrew/Cellar/gst-plugins-base
+            /opt/homebrew/Cellar/gst-plugins-good
+            /opt/homebrew/Cellar/gst-plugins-bad
+            /opt/homebrew/Cellar/gst-plugins-rs
+            /opt/homebrew/Cellar/gst-libav
+            /opt/homebrew/Cellar/libsoup
+            /opt/homebrew/Cellar/blueprint-compiler
+            /opt/homebrew/Cellar/appstream
+          key: brew-kitsune-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.github/workflows/build-macos.yml') }}
+
+      - name: Install dependencies
+        run: |
+          brew install \
+            gtk4 libadwaita \
+            pygobject3 gobject-introspection \
+            gstreamer gst-plugins-base gst-plugins-good gst-plugins-bad gst-libav \
+            gst-plugins-rs \
+            libsoup \
+            blueprint-compiler \
+            meson ninja \
+            adwaita-icon-theme \
+            dylibbundler librsvg \
+            appstream \
+            gettext
+
+      - name: Install Python packages
+        run: |
+          "$(brew --prefix)/bin/python3" -m pip install \
+            keyring \
+            pyobjc-core \
+            pyobjc-framework-Cocoa \
+            pyobjc-framework-MediaPlayer \
+            pyobjc-framework-AVFoundation \
+            pyobjc-framework-CoreMedia \
+            pyobjc-framework-CoreAudio \
+            pyobjc-framework-Quartz \
+            --break-system-packages --quiet
+
+      - name: Build macOS bundle
+        run: bash scripts/bundle-macos.sh
+
+      - name: Get version
+        id: version
+        run: |
+          echo "version=$(grep 'version:' meson.build | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kitsune-${{ steps.version.outputs.version }}-macos
+          path: dist/*.dmg
+          retention-days: 14
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.dmg
+          name: "Kitsune ${{ steps.version.outputs.version }}"
+          generate_release_notes: true
