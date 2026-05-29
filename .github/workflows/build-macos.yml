@@ -50,7 +50,8 @@ jobs:
             dylibbundler \
             gettext appstream \
             json-glib \
-            webp-pixbuf-loader
+            webp-pixbuf-loader || true
+          brew postinstall webp-pixbuf-loader || true
 
       - name: Install Python packages
         run: |
