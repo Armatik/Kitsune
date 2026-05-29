@@ -49,7 +49,8 @@ jobs:
             gstreamer libsoup \
             dylibbundler \
             gettext appstream \
-            json-glib
+            json-glib \
+            webp-pixbuf-loader
 
       - name: Install Python packages
         run: |
