@@ -499,6 +499,12 @@ gettext.bindtextdomain("kitsune", localedir)
 gettext.textdomain("kitsune")
 gettext.install("kitsune", localedir)
 
+try:
+    from Foundation import NSProcessInfo
+    NSProcessInfo.processInfo().setProcessName_("Kitsune")
+except Exception:
+    pass
+
 if "--debug" in sys.argv:
     import logging
     handler = logging.StreamHandler(sys.stderr)
@@ -643,6 +649,31 @@ done < <(find "$FRAMEWORKS" "$RESOURCES/gstreamer-1.0" "$RESOURCES/gdk-pixbuf" "
 
 echo "   Created $ALIAS_COUNT aliases"
 
+# ── 13d. Patch Python.app bundle identity ────────────────────────────────────
+# Python.framework re-execs into its own Python.app on macOS. Without this
+# patch macOS registers the process as "org.python.python" (Python), so the
+# Dock, app switcher and Activity Monitor all show "Python" instead of Kitsune.
+echo "==> Patching Python.app bundle identity..."
+PYTHON_APP_PLIST="$BUNDLED_PY/Resources/Python.app/Contents/Info.plist"
+if [ -f "$PYTHON_APP_PLIST" ]; then
+    /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $APP_ID"      "$PYTHON_APP_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleName $APP_NAME"          "$PYTHON_APP_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $APP_NAME"   "$PYTHON_APP_PLIST" 2>/dev/null || \
+        /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $APP_NAME" "$PYTHON_APP_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" "$PYTHON_APP_PLIST"
+    /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $APP_VERSION"    "$PYTHON_APP_PLIST"
+    # Replace Python icons with Kitsune icon. We overwrite PythonInterpreter.icns
+    # in-place (keeping CFBundleIconFile unchanged) because Launch Services caches
+    # icons by filename; adding a new file and updating the key is not reliably
+    # picked up without a full LS cache flush.
+    PYTHON_APP_RES="$BUNDLED_PY/Resources/Python.app/Contents/Resources"
+    cp "$RESOURCES/kitsune.icns" "$PYTHON_APP_RES/PythonInterpreter.icns"
+    cp "$RESOURCES/kitsune.icns" "$PYTHON_APP_RES/PythonApplet.icns" 2>/dev/null || true
+    echo "   Python.app identity → $APP_ID"
+else
+    echo "   WARNING: Python.app Info.plist not found, skipping identity patch"
+fi
+
 # ── 14. Ad-hoc code sign ─────────────────────────────────────────────────────
 echo "==> Ad-hoc signing..."
 find "$FRAMEWORKS" "$CONTENTS" \
@@ -651,6 +682,33 @@ find "$FRAMEWORKS" "$CONTENTS" \
 codesign --force --sign - "$BUNDLED_PY/bin/python$PY_VER" 2>/dev/null || true
 codesign --force --deep --sign - "$APP" 2>/dev/null \
     && echo "   Signed (ad-hoc)" || echo "   WARNING: codesign failed"
+# Re-sign Python binaries explicitly after --deep: patching Python.app's
+# Info.plist invalidates the framework signature, and --deep may not fully
+# restore it. Explicit re-sign ensures Keychain accepts the binary.
+codesign --force --sign - "$BUNDLED_PY/bin/python$PY_VER" 2>/dev/null || true
+codesign --force --sign - "$BUNDLED_PY/Resources/Python.app/Contents/MacOS/Python" 2>/dev/null || true
+
+# ── 14.5. Override iconservices cache via NSWorkspace custom-icon xattr ────────
+# iconservices aggressively caches the bundle icon by URL digest and ignores
+# in-place file replacements. NSWorkspace.setIcon_forFile_options_ writes a
+# custom icon via extended attribute (com.apple.FinderInfo / resource fork)
+# which takes priority over the cached icon everywhere: Dock, Activity Monitor,
+# Finder. Must run AFTER codesign so the xattr survives signing.
+echo "==> Setting custom Finder icon on Python.app (overrides iconservices cache)..."
+python3 - "$RESOURCES/kitsune.icns" "$BUNDLED_PY/Resources/Python.app" <<'PYEOF'
+import sys
+try:
+    from AppKit import NSWorkspace, NSImage
+    icon_path, py_app = sys.argv[1], sys.argv[2]
+    img = NSImage.alloc().initWithContentsOfFile_(icon_path)
+    if img:
+        ok = NSWorkspace.sharedWorkspace().setIcon_forFile_options_(img, py_app, 0)
+        print(f"   Custom icon on Python.app: {'OK' if ok else 'FAILED'}")
+    else:
+        print("   WARNING: Failed to load kitsune.icns")
+except Exception as e:
+    print(f"   WARNING: setIcon failed: {e}")
+PYEOF
 
 # ── 15. Summary & DMG ─────────────────────────────────────────────────────────
 echo ""

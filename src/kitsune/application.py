@@ -38,6 +38,23 @@ class KitsuneApplication(Adw.Application):
 
     def do_startup(self):
         Adw.Application.do_startup(self)
+        try:
+            import sys
+            if sys.platform == 'darwin':
+                from Foundation import NSProcessInfo
+                NSProcessInfo.processInfo().setProcessName_('Kitsune')
+                import os
+                from AppKit import NSApplication, NSImage
+                icon_path = os.path.normpath(os.path.join(
+                    os.path.dirname(os.path.abspath(sys.argv[0])),
+                    '..', 'Resources', 'kitsune.icns',
+                ))
+                if os.path.exists(icon_path):
+                    img = NSImage.alloc().initWithContentsOfFile_(icon_path)
+                    if img:
+                        NSApplication.sharedApplication().setApplicationIconImage_(img)
+        except Exception:
+            pass
         self._setup_global_css()
 
         about_action = Gio.SimpleAction.new('about', None)
