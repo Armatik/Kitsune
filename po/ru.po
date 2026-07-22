@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune 0.7.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-11 17:25+0300\n"
+"POT-Creation-Date: 2026-07-23 00:47+0300\n"
 "PO-Revision-Date: 2026-03-17 15:00+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
@@ -51,23 +51,23 @@ msgstr "AniLiberty VK"
 msgid "Uses"
 msgstr "Использует"
 
-#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:284
+#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:302
 msgid "Favorites"
 msgstr "Избранное"
 
-#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1448
+#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1479
 #: src/kitsune/ui/tag_popover.py:133
 msgid "Watching"
 msgstr "Смотрю"
 
-#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1449
-#: src/kitsune/ui/release_view.py:305 src/kitsune/ui/release_view.py:320
+#: src/kitsune/storage/tags_store.py:22 src/kitsune/window.py:1480
+#: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:326
 #: src/kitsune/ui/release_view_episodes.py:66
 #: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:134
 msgid "Watched"
 msgstr "Просмотрено"
 
-#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1450
+#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1481
 #: src/kitsune/ui/tag_popover.py:135
 msgid "Planned"
 msgstr "Запланировано"
@@ -76,132 +76,132 @@ msgstr "Запланировано"
 msgid "Postponed"
 msgstr "На паузе"
 
-#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1452
+#: src/kitsune/storage/tags_store.py:23 src/kitsune/window.py:1483
 #: src/kitsune/ui/tag_popover.py:137
 msgid "Abandoned"
 msgstr "Брошено"
 
-#: src/kitsune/window.py:242 src/kitsune/window.py:281
-#: src/kitsune/window.py:823 src/kitsune/ui/preferences_window.py:268
+#: src/kitsune/window.py:260 src/kitsune/window.py:299
+#: src/kitsune/window.py:841 src/kitsune/ui/preferences_window.py:268
 #: src/kitsune/ui/window.blp:124
 msgid "Catalog"
 msgstr "Каталог"
 
-#: src/kitsune/window.py:243 src/kitsune/window.py:282
-#: src/kitsune/window.py:824 src/kitsune/ui/filter_dialog.py:148
+#: src/kitsune/window.py:261 src/kitsune/window.py:300
+#: src/kitsune/window.py:842 src/kitsune/ui/filter_dialog.py:148
 #: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:254
 #: src/kitsune/ui/preferences_window.py:269 src/kitsune/ui/search_dialog.py:71
 msgid "Genres"
 msgstr "Жанры"
 
-#: src/kitsune/window.py:244 src/kitsune/window.py:283
-#: src/kitsune/window.py:825 src/kitsune/ui/preferences_window.py:255
+#: src/kitsune/window.py:262 src/kitsune/window.py:301
+#: src/kitsune/window.py:843 src/kitsune/ui/preferences_window.py:255
 #: src/kitsune/ui/preferences_window.py:270 src/kitsune/ui/search_dialog.py:71
 msgid "Franchises"
 msgstr "Франшизы"
 
-#: src/kitsune/window.py:245 src/kitsune/window.py:826
+#: src/kitsune/window.py:263 src/kitsune/window.py:844
 #: src/kitsune/ui/preferences_window.py:271
 msgid "Favorites and Tags"
 msgstr "Избранное и теги"
 
-#: src/kitsune/window.py:383 src/kitsune/window.py:492
-#: src/kitsune/ui/window.blp:292
+#: src/kitsune/window.py:401 src/kitsune/window.py:510
+#: src/kitsune/ui/window.blp:322
 msgid "Preferences"
 msgstr "Настройки"
 
-#: src/kitsune/window.py:390 src/kitsune/window.py:493
-#: src/kitsune/ui/window.blp:293
+#: src/kitsune/window.py:408 src/kitsune/window.py:511
+#: src/kitsune/ui/window.blp:323
 msgid "About Kitsune"
 msgstr "О Кицунэ"
 
-#: src/kitsune/window.py:465 src/kitsune/window.py:1107
-#: src/kitsune/window.py:1148 src/kitsune/window.py:1161
+#: src/kitsune/window.py:483 src/kitsune/window.py:1125
+#: src/kitsune/window.py:1166 src/kitsune/window.py:1179
 #: src/kitsune/ui/auth_dialog.blp:77
 msgid "Login"
 msgstr "Войти"
 
-#: src/kitsune/window.py:600 src/kitsune/window.py:666
+#: src/kitsune/window.py:618 src/kitsune/window.py:684
 msgid "Card view"
 msgstr "Карточки"
 
-#: src/kitsune/window.py:669 src/kitsune/ui/release_view.py:348
+#: src/kitsune/window.py:687 src/kitsune/ui/release_view.py:354
 msgid "List view"
 msgstr "Список"
 
-#: src/kitsune/window.py:827
+#: src/kitsune/window.py:845
 msgid "Profile"
 msgstr "Профиль"
 
-#: src/kitsune/window.py:883 src/kitsune/ui/preferences_window.blp:184
+#: src/kitsune/window.py:901 src/kitsune/ui/preferences_window.blp:184
 msgid "Adult content"
 msgstr "Контент для взрослых"
 
-#: src/kitsune/window.py:884
+#: src/kitsune/window.py:902
 msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr "Этот тайтл помечен 18+ и может содержать откровенные материалы. Продолжить?"
-"Этот тайтл помечен 18+ и может содержать откровенный материал. Продолжить?"
 
-#: src/kitsune/window.py:886 src/kitsune/ui/create_tag_dialog.py:55
-#: src/kitsune/ui/tags_view.py:364 src/kitsune/ui/search_dialog.blp:32
+#: src/kitsune/window.py:904 src/kitsune/ui/create_tag_dialog.py:55
+#: src/kitsune/ui/release_view.py:457 src/kitsune/ui/tags_view.py:364
+#: src/kitsune/ui/profile_view.py:519 src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr "Отмена"
 
-#: src/kitsune/window.py:887
+#: src/kitsune/window.py:905
 msgid "Continue"
 msgstr "Продолжить"
 
-#: src/kitsune/window.py:893
+#: src/kitsune/window.py:911
 msgid "Don't show again"
 msgstr "Не показывать снова"
 
-#: src/kitsune/window.py:983 src/kitsune/ui/release_view.blp:25
+#: src/kitsune/window.py:1001 src/kitsune/ui/release_view.blp:25
 msgid "Home"
 msgstr "На главную"
 
-#: src/kitsune/window.py:1123
+#: src/kitsune/window.py:1141
 msgid "Not synced yet"
 msgstr "Ещё не синхронизировано"
 
-#: src/kitsune/window.py:1128 src/kitsune/ui/profile_view.py:444
+#: src/kitsune/window.py:1146 src/kitsune/ui/profile_view.py:444
 #, python-format
 msgid "Synced at %s"
 msgstr "Синхронизировано в %s"
 
-#: src/kitsune/window.py:1129
+#: src/kitsune/window.py:1147
 #, python-format
 msgid "Synced %s"
 msgstr "Синхронизировано %s"
 
-#: src/kitsune/window.py:1229
+#: src/kitsune/window.py:1247
 msgid "Sync data"
 msgstr "Синхронизация данных"
 
-#: src/kitsune/window.py:1232
+#: src/kitsune/window.py:1250
 msgid "Merge"
 msgstr "Объединить"
 
-#: src/kitsune/window.py:1233
+#: src/kitsune/window.py:1251
 msgid "Keep local"
 msgstr "Оставить локальные"
 
-#: src/kitsune/window.py:1234
+#: src/kitsune/window.py:1252
 msgid "Keep server"
 msgstr "Оставить серверные"
 
-#: src/kitsune/window.py:1410
+#: src/kitsune/window.py:1437
 msgid "Failed to sync your change with the server"
 msgstr "Не удалось синхронизировать изменение с сервером"
 
-#: src/kitsune/window.py:1440
+#: src/kitsune/window.py:1471
 msgid "Move"
 msgstr "Переместить"
 
-#: src/kitsune/window.py:1451 src/kitsune/ui/tag_popover.py:136
+#: src/kitsune/window.py:1482 src/kitsune/ui/tag_popover.py:136
 msgid "Paused"
 msgstr "На паузе"
 
-#: src/kitsune/window.py:1457
+#: src/kitsune/window.py:1488
 #, python-brace-format
 msgid "{prefix}move to {target}?"
 msgstr "{prefix}переместить в {target}?"
@@ -341,7 +341,7 @@ msgstr "Год (сначала старые)"
 msgid "By rating"
 msgstr "По рейтингу"
 
-#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:581
+#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:609
 msgid "Ongoing"
 msgstr "Онгоинг"
 
@@ -357,11 +357,11 @@ msgstr "Озвучивается"
 msgid "Dubbing completed"
 msgstr "Озвучка завершена"
 
-#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:568
+#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:596
 msgid "Type"
 msgstr "Тип"
 
-#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:572
+#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:600
 msgid "Season"
 msgstr "Сезон"
 
@@ -377,15 +377,15 @@ msgstr "Статус релиза"
 msgid "Dubbing status"
 msgstr "Статус озвучки"
 
-#: src/kitsune/ui/player_view.py:540 src/kitsune/ui/player_view.blp:254
+#: src/kitsune/ui/player_view.py:586 src/kitsune/ui/player_view.blp:254
 msgid "Skip Intro"
 msgstr "Пропустить опенинг"
 
-#: src/kitsune/ui/player_view.py:544
+#: src/kitsune/ui/player_view.py:590
 msgid "Skip Outro"
 msgstr "Пропустить эндинг"
 
-#: src/kitsune/ui/player_view.py:655
+#: src/kitsune/ui/player_view.py:710
 msgid "Playback error: {}"
 msgstr "Ошибка воспроизведения: {}"
 
@@ -406,93 +406,110 @@ msgstr "Аниме"
 msgid "Tags"
 msgstr "Теги"
 
-#: src/kitsune/ui/release_view.py:228 src/kitsune/ui/release_view.py:579
+#: src/kitsune/ui/release_view.py:234 src/kitsune/ui/release_view.py:607
 #: src/kitsune/ui/preferences_window.blp:84
 msgid "Episodes"
 msgstr "Серии"
 
-#: src/kitsune/ui/release_view.py:229
+#: src/kitsune/ui/release_view.py:235
 msgid "Related"
 msgstr "Связанные"
 
-#: src/kitsune/ui/release_view.py:230
+#: src/kitsune/ui/release_view.py:236
 msgid "Team"
 msgstr "Команда"
 
-#: src/kitsune/ui/release_view.py:231
+#: src/kitsune/ui/release_view.py:237
 msgid "Torrents"
 msgstr "Торренты"
 
-#: src/kitsune/ui/release_view.py:304 src/kitsune/ui/release_view.py:320
+#: src/kitsune/ui/release_view.py:310 src/kitsune/ui/release_view.py:326
 msgid "All"
 msgstr "Все"
 
-#: src/kitsune/ui/release_view.py:306 src/kitsune/ui/release_view.py:320
+#: src/kitsune/ui/release_view.py:312 src/kitsune/ui/release_view.py:326
 msgid "Unwatched"
 msgstr "Непросмотренные"
 
-#: src/kitsune/ui/release_view.py:335 src/kitsune/ui/release_view.py:421
+#: src/kitsune/ui/release_view.py:341 src/kitsune/ui/release_view.py:427
 msgid "Newest first"
 msgstr "Сначала новые"
 
-#: src/kitsune/ui/release_view.py:352
+#: src/kitsune/ui/release_view.py:358
 msgid "Grid view"
 msgstr "Сетка"
 
-#: src/kitsune/ui/release_view.py:362
+#: src/kitsune/ui/release_view.py:368
 msgid "Mark all as watched"
 msgstr "Отметить все как просмотренные"
 
-#: src/kitsune/ui/release_view.py:366
+#: src/kitsune/ui/release_view.py:372
 msgid "Unmark all"
 msgstr "Снять отметки"
 
-#: src/kitsune/ui/release_view.py:418
+#: src/kitsune/ui/release_view.py:424
 msgid "Oldest first"
 msgstr "Сначала старые"
 
-#: src/kitsune/ui/release_view.py:469
+#: src/kitsune/ui/release_view.py:453
+msgid "Clear Watch Progress?"
+msgstr "Очистить прогресс просмотра?"
+
+#: src/kitsune/ui/release_view.py:454
+#, python-format
+msgid ""
+"Progress for all %d episodes will be removed, including partially watched "
+"positions. This cannot be undone."
+msgstr ""
+"Прогресс всех %d серий будет удалён, включая недосмотренные позиции. "
+"Это действие нельзя отменить."
+
+#: src/kitsune/ui/release_view.py:458
+msgid "Clear Progress"
+msgstr "Очистить прогресс"
+
+#: src/kitsune/ui/release_view.py:497
 msgid "Remove this title from “Watched”?"
 msgstr "Убрать тайтл из «Просмотрено»?"
 
-#: src/kitsune/ui/release_view.py:470
+#: src/kitsune/ui/release_view.py:498
 msgid "Remove"
 msgstr "Убрать"
 
-#: src/kitsune/ui/release_view.py:570
+#: src/kitsune/ui/release_view.py:598
 msgid "Year"
 msgstr "Год"
 
-#: src/kitsune/ui/release_view.py:575
+#: src/kitsune/ui/release_view.py:603
 msgid "Age rating"
 msgstr "Возрастной рейтинг"
 
-#: src/kitsune/ui/release_view.py:581
+#: src/kitsune/ui/release_view.py:609
 msgid "Completed"
 msgstr "Завершён"
 
-#: src/kitsune/ui/release_view.py:582
+#: src/kitsune/ui/release_view.py:610
 msgid "Status"
 msgstr "Статус"
 
-#: src/kitsune/ui/release_view.py:585
+#: src/kitsune/ui/release_view.py:613
 msgid "Release day"
 msgstr "День выхода"
 
-#: src/kitsune/ui/release_view.py:787
+#: src/kitsune/ui/release_view.py:815
 #, python-format
 msgid "Episodes: %s"
 msgstr "Серии: %s"
 
-#: src/kitsune/ui/release_view.py:802
+#: src/kitsune/ui/release_view.py:830
 msgid "Hardsub"
 msgstr "Хардсаб"
 
-#: src/kitsune/ui/release_view.py:814
+#: src/kitsune/ui/release_view.py:842
 msgid "Download torrent"
 msgstr "Скачать торрент"
 
-#: src/kitsune/ui/release_view.py:823
+#: src/kitsune/ui/release_view.py:851
 msgid "Open magnet link"
 msgstr "Открыть магнет-ссылку"
 
@@ -623,6 +640,22 @@ msgstr "{n} операций ждут синхронизации"
 #: src/kitsune/ui/profile_view.py:483
 msgid "Unknown error"
 msgstr "Неизвестная ошибка"
+
+#: src/kitsune/ui/profile_view.py:514
+msgid "Log Out?"
+msgstr "Выйти из аккаунта?"
+
+#: src/kitsune/ui/profile_view.py:515
+msgid ""
+"Your watch progress, favorites and collections will be removed from this "
+"device. Anything not yet synced to the server will be lost."
+msgstr ""
+"Прогресс просмотра, избранное и коллекции будут удалены с этого "
+"устройства. Всё, что ещё не синхронизировано с сервером, будет потеряно."
+
+#: src/kitsune/ui/profile_view.py:520
+msgid "Log Out"
+msgstr "Выйти"
 
 #: src/kitsune/ui/auth_dialog.blp:11
 msgid "Authorization"
@@ -1045,20 +1078,23 @@ msgstr "Удалить тег"
 msgid "Main Menu"
 msgstr "Главное меню"
 
-#: src/kitsune/ui/window.blp:264
+#: src/kitsune/ui/window.blp:277
 msgid "Your session has expired. Log in again to resume sync."
 msgstr "Сессия истекла. Войдите снова, чтобы возобновить синхронизацию."
 
-#: src/kitsune/ui/window.blp:265
+#: src/kitsune/ui/window.blp:285
 msgid "Log in again"
 msgstr "Войти снова"
 
-#: src/kitsune/ui/window.blp:271
+#: src/kitsune/ui/window.blp:294
+msgid "Dismiss"
+msgstr "Закрыть"
+
+#: src/kitsune/ui/window.blp:301
 msgid "No internet connection. App is working in limited mode."
 msgstr "Нет подключения к интернету. Приложение работает в ограниченном режиме."
-"Нет подключения к интернету. Приложение работает в ограниченном режиме."
 
-#: src/kitsune/ui/window.blp:272
+#: src/kitsune/ui/window.blp:302
 msgid "Retry"
 msgstr "Повторить"
 
@@ -1114,48 +1150,60 @@ msgid "Release page with accent colors from the poster"
 msgstr "Страница релиза с акцентными цветами постера"
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:55
+msgid "Profile page with collection stats and account sync"
+msgstr "Страница профиля со статистикой коллекций и синхронизацией аккаунта"
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:61
+msgid "Sign in to your AniLiberty account"
+msgstr "Вход в аккаунт AniLiberty"
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:67
 msgid "Built-in video player with quality selection"
 msgstr "Встроенный видеоплеер с выбором качества"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:61
+#: data/net.armatik.Kitsune.metainfo.xml.in:73
 msgid "Search across anime, genres, franchises and tags"
 msgstr "Поиск по аниме, жанрам, франшизам и тегам"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:67
+#: data/net.armatik.Kitsune.metainfo.xml.in:79
 msgid "Browse releases by genre"
 msgstr "Просмотр релизов по жанрам"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:73
+#: data/net.armatik.Kitsune.metainfo.xml.in:85
 msgid "Organize your library with custom tags and favorites"
 msgstr "Организация библиотеки с помощью тегов и избранного"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:79
+#: data/net.armatik.Kitsune.metainfo.xml.in:91
 msgid "Filter catalog by genre, year, type and rating"
 msgstr "Фильтрация каталога по жанру, году, типу и рейтингу"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:85
+#: data/net.armatik.Kitsune.metainfo.xml.in:97
 msgid "Adaptive mobile layout"
 msgstr "Адаптивный мобильный интерфейс"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:91
+#: data/net.armatik.Kitsune.metainfo.xml.in:103
 msgid "Release page on mobile"
 msgstr "Страница релиза на мобильном"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:97
+#: data/net.armatik.Kitsune.metainfo.xml.in:109
+msgid "Profile page on mobile"
+msgstr "Страница профиля на мобильном"
+
+#: data/net.armatik.Kitsune.metainfo.xml.in:115
 msgid "Navigation sheet on mobile"
 msgstr "Панель навигации на мобильном"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:102
+#: data/net.armatik.Kitsune.metainfo.xml.in:120
 msgid "Semen (Armatik) Fomchenkov"
 msgstr "Семён (Armatik) Фомченков"
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:130
+#: data/net.armatik.Kitsune.metainfo.xml.in:148
 msgid ""
 "First major release — Kitsune now signs you in to your AniLiberty account "
 "and keeps your library in sync across devices."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:131
+#: data/net.armatik.Kitsune.metainfo.xml.in:149
 msgid ""
 "Account sync. Log in with credentials or OTP through a new dialog backed by "
 "libsecret token storage. Favorites, the five built-in collections (Watching, "
@@ -1167,7 +1215,7 @@ msgid ""
 "gracefully."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:132
+#: data/net.armatik.Kitsune.metainfo.xml.in:150
 msgid ""
 "Profile view. New profile page with parallax hero image, server avatar with "
 "initials fallback, collection stat cards with count-up animation, total "
@@ -1176,7 +1224,7 @@ msgid ""
 "row showing nickname and last sync time."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:133
+#: data/net.armatik.Kitsune.metainfo.xml.in:151
 msgid ""
 "Smart collections. Built-in collection tags carry a cloud badge when synced. "
 "Mutex enforcement on collection swaps surfaces a toast when a release moves "
@@ -1187,7 +1235,7 @@ msgid ""
 "the release page."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:134
+#: data/net.armatik.Kitsune.metainfo.xml.in:152
 msgid ""
 "Player. Playback speed control with pitch-corrected scaletempo audio filter, "
 "ranging from 0.5x to 2.5x (contributed by @utlark). Screen rotation button "
@@ -1196,7 +1244,7 @@ msgid ""
 "timecode sync."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:135
+#: data/net.armatik.Kitsune.metainfo.xml.in:153
 msgid ""
 "Brand refresh. New scalable and symbolic app icons plus a refreshed brand "
 "color palette (contributed by @gingercat). Built-in tags switched to Adwaita "
@@ -1204,7 +1252,7 @@ msgid ""
 "Bundled symbolic icons namespaced under the app ID to avoid collisions."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:136
+#: data/net.armatik.Kitsune.metainfo.xml.in:154
 msgid ""
 "Adult content gating. 18+ titles ship with blurred posters and a "
 "confirmation dialog before opening the release page, with a global \"don't "
@@ -1212,7 +1260,7 @@ msgid ""
 "oars-1.1 intense."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:137
+#: data/net.armatik.Kitsune.metainfo.xml.in:155
 msgid ""
 "Catalog improvements. Pull-to-refresh on mobile with tinted spinner and "
 "elevated headerbar, dedicated refresh button on desktop, viewport-sized "
@@ -1220,14 +1268,14 @@ msgid ""
 "scroll filter to avoid accidental refreshes."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:138
+#: data/net.armatik.Kitsune.metainfo.xml.in:156
 msgid ""
 "Adaptive layout. Edge-to-edge profile on mobile with transparent headerbar, "
 "Phosh form-factor declaration in the desktop file, mobile bottom-sheet "
 "navigation accommodating the auth row."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:139
+#: data/net.armatik.Kitsune.metainfo.xml.in:157
 msgid ""
 "Reliability. Atomic JSON writes now fsync before rename so the pending queue "
 "and watch positions survive crashes and power loss. Sync errors propagate "
@@ -1238,13 +1286,13 @@ msgid ""
 "tags storage are now cached in-process to avoid per-call disk reads."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:140
+#: data/net.armatik.Kitsune.metainfo.xml.in:158
 msgid ""
 "Translations. Russian translation refreshed and completed for all new sync "
 "and profile strings."
 msgstr ""
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:145
+#: data/net.armatik.Kitsune.metainfo.xml.in:163
 msgid ""
 "Removed light theme screenshot variants — AppStream does not support "
 "grouping by color scheme, so only dark theme screenshots are kept for a "
@@ -1254,7 +1302,7 @@ msgstr ""
 "цветовой схеме, поэтому оставлены только скриншоты тёмной темы для более "
 "аккуратного представления приложения."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:150
+#: data/net.armatik.Kitsune.metainfo.xml.in:168
 msgid ""
 "Home button on nested navigation pages — quickly return to the main screen "
 "from deep release, genre, franchise or tag drill-downs. Hidden on the first "
@@ -1264,7 +1312,7 @@ msgstr ""
 "экран из глубокой навигации по релизам, жанрам, франшизам и тегам. Скрыта на "
 "первом уровне, где кнопка «Назад» уже ведёт домой."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:151
+#: data/net.armatik.Kitsune.metainfo.xml.in:169
 msgid ""
 "Fixed bottom bar overlapping the last card in mobile layout. Genres and "
 "franchises now show an end-of-list indicator after all items load."
@@ -1273,7 +1321,7 @@ msgstr ""
 "компоновке. Жанры и франшизы теперь показывают индикатор конца списка после "
 "загрузки всех элементов."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:152
+#: data/net.armatik.Kitsune.metainfo.xml.in:170
 msgid ""
 "Card labels clamped to 252px and the grid wrapped in Adw.Clamp(1600) so "
 "titles stay close to posters on wide screens."
@@ -1281,7 +1329,7 @@ msgstr ""
 "Подписи карточек ограничены до 252px, сетка обёрнута в Adw.Clamp(1600), "
 "чтобы названия оставались рядом с постерами на широких экранах."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:153
+#: data/net.armatik.Kitsune.metainfo.xml.in:171
 msgid ""
 "Smoother release page transitions — heavy widget construction deferred to "
 "the shown signal instead of blocking during the animation. Accent color "
@@ -1293,7 +1341,7 @@ msgstr ""
 "цвета перенесено в idle-колбэк. Спиннер загрузки заполняет область просмотра "
 "до появления серий, предотвращая скачки при изменении размера постера."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:154
+#: data/net.armatik.Kitsune.metainfo.xml.in:172
 msgid ""
 "Added 23 screenshots to metainfo covering all views in light and dark "
 "themes, desktop and mobile layouts."
@@ -1301,7 +1349,7 @@ msgstr ""
 "Добавлены 23 скриншота в metainfo, охватывающие все экраны в светлой и "
 "тёмной темах, десктопной и мобильной компоновках."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:159
+#: data/net.armatik.Kitsune.metainfo.xml.in:177
 msgid ""
 "Added Russian content notice to description and keywords to metainfo. "
 "Clarified in README that API content is in Russian."
@@ -1309,7 +1357,7 @@ msgstr ""
 "Добавлено уведомление о русскоязычном контенте в описание и ключевые слова "
 "metainfo. Уточнено в README, что контент API на русском языке."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:164
+#: data/net.armatik.Kitsune.metainfo.xml.in:182
 msgid ""
 "Preparing for Flathub publication. Added English README and separate Russian "
 "translation for multilingual repository support. Fixed minimum dependency "
@@ -1321,7 +1369,7 @@ msgstr ""
 "минимальные версии зависимостей в документации (Libadwaita >= 1.6, GStreamer "
 ">= 1.24). Исправлен URL переводов в metainfo, указывавший на неверную ветку."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:169
+#: data/net.armatik.Kitsune.metainfo.xml.in:187
 msgid ""
 "Fixed release page not loading content — deferred initialization via GLib."
 "idle_add was cancelled by NavigationView internal map/unmap cycle during "
@@ -1333,7 +1381,7 @@ msgstr ""
 "время push-анимации. Теперь используется сигнал showing, который срабатывает "
 "после завершения перехода."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:174
+#: data/net.armatik.Kitsune.metainfo.xml.in:192
 msgid ""
 "Search dialog — full-featured search with category tabs (anime, genres, "
 "franchises, tags), animated scroll tracking, smart tag filtering, ongoing "
@@ -1346,7 +1394,7 @@ msgstr ""
 "настраиваемым порядком категорий. Клавиатурная навигация: Escape для "
 "закрытия и клик по вкладке для прокрутки."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:175
+#: data/net.armatik.Kitsune.metainfo.xml.in:193
 msgid ""
 "Redesigned preferences — blur unwatched episodes toggle, search category "
 "ordering with drag-and-drop, storage page reorganized into Cache and User "
@@ -1359,7 +1407,7 @@ msgstr ""
 "очистки. Все переупорядочиваемые списки используют ручки перетаскивания в "
 "стиле GNOME."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:176
+#: data/net.armatik.Kitsune.metainfo.xml.in:194
 msgid ""
 "Watch progress improvements — 90%% watched threshold marks episodes as "
 "completed across the app (release page, search dialog, progress bars, "
@@ -1369,7 +1417,7 @@ msgstr ""
 "завершённые по всему приложению (страница релиза, поиск, полосы прогресса, "
 "галочки). Определение конца серии заменяет фиксированный порог в секундах."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:177
+#: data/net.armatik.Kitsune.metainfo.xml.in:195
 msgid ""
 "Smooth animations — release page content loads after push animation via "
 "deferred initialization, eliminating the stutter in the last pixels of "
@@ -1379,7 +1427,7 @@ msgstr ""
 "перехода через отложенную инициализацию, устраняя подёргивание в последних "
 "пикселях навигационных переходов."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:178
+#: data/net.armatik.Kitsune.metainfo.xml.in:196
 msgid ""
 "Accessibility and polish — player buttons have tooltips for screen readers, "
 "tag color circles use theme-safe borders for light and dark themes, episode "
@@ -1391,7 +1439,7 @@ msgstr ""
 "разделители серий подстраиваются под текущую тему, строковые ключи GSettings "
 "валидируются через choices."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:179
+#: data/net.armatik.Kitsune.metainfo.xml.in:197
 msgid ""
 "Reliability — async API callbacks guarded against destroyed widgets, HTTP "
 "4xx errors no longer degrade the client to offline mode, scroll animation "
@@ -1403,7 +1451,7 @@ msgstr ""
 "анимации скролла корректно очищаются при закрытии диалога, зависимость "
 "pycairo проверяется при сборке."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:184
+#: data/net.armatik.Kitsune.metainfo.xml.in:202
 msgid ""
 "Fixed video player not starting — NavigationView internally maps and unmaps "
 "pages during push transitions, which caused the playback idle source to be "
@@ -1413,7 +1461,7 @@ msgstr ""
 "размонтирует страницы во время push-переходов, что приводило к отмене idle-"
 "источника воспроизведения до его срабатывания."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:185
+#: data/net.armatik.Kitsune.metainfo.xml.in:203
 msgid ""
 "Fixed catalog and other views showing infinite spinners on first launch — "
 "the same map/unmap cycle was aborting in-flight API requests and clearing "
@@ -1423,7 +1471,7 @@ msgstr ""
 "— тот же цикл монтирования/размонтирования прерывал текущие API-запросы и "
 "очищал ожидающие данные."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:190
+#: data/net.armatik.Kitsune.metainfo.xml.in:208
 msgid ""
 "Configurable navigation — rearrange, show or hide tabs in the sidebar and "
 "bottom bar. First 3 tabs are shown as buttons, overflow tabs open in a "
@@ -1435,7 +1483,7 @@ msgstr ""
 "открываются в выдвижной панели. Изменения применяются мгновенно без "
 "перезапуска. Режимы отображения: сетка и список."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:191
+#: data/net.armatik.Kitsune.metainfo.xml.in:209
 msgid ""
 "Stability fixes — idle source tracking and cleanup on view unmap prevents "
 "use-after-free crashes, GStreamer bus signal handlers are properly "
@@ -1448,7 +1496,7 @@ msgstr ""
 "корректно отключаются при очистке плеера, API-колбэки вызываются даже при "
 "ошибках в офлайн-режиме, устранены дублирующиеся вызовы GLib.source_remove."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:192
+#: data/net.armatik.Kitsune.metainfo.xml.in:210
 msgid ""
 "Code quality — release detail page decomposed into focused helper modules "
 "(episodes, related releases, tags), genre and franchise views unified under "
@@ -1459,7 +1507,7 @@ msgstr ""
 "релизы, теги), жанры и франшизы объединены через общий базовый класс, "
 "хранилище консолидировано с общей атомарной записью, добавлены виджет-тесты."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:193
+#: data/net.armatik.Kitsune.metainfo.xml.in:211
 msgid ""
 "Visual polish — adaptive tag pills switch between full and compact mode "
 "based on available space, SVG icon replaces text plus on tag badges, double "
@@ -1471,7 +1519,7 @@ msgstr ""
 "двойной фон наведения на элементах панели, нативная анимация выдвижной "
 "панели."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:198
+#: data/net.armatik.Kitsune.metainfo.xml.in:216
 msgid ""
 "Bugfix: renamed action icons with app_id prefix (net.armatik.Kitsune.*) to "
 "prevent file conflicts with other applications when installed to the shared "
@@ -1481,7 +1529,7 @@ msgstr ""
 "Kitsune.*) для предотвращения файловых конфликтов с другими приложениями при "
 "установке в общий каталог иконок."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:203
+#: data/net.armatik.Kitsune.metainfo.xml.in:221
 msgid ""
 "Tags and favorites — a new system for organizing your library. Create custom "
 "tags with emoji or colored icons, assign them to any release via the star "
@@ -1506,7 +1554,7 @@ msgstr ""
 "сохраняется между сессиями. Теги можно удалять из заголовка или списка с "
 "диалогом подтверждения, изменения мгновенно обновляются на всех карточках."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:204
+#: data/net.armatik.Kitsune.metainfo.xml.in:222
 msgid ""
 "Episode watch progress tracking — progress bars appear on episode cards and "
 "list rows showing how much of each episode has been watched. Completed "
@@ -1524,7 +1572,7 @@ msgstr ""
 "просмотра. Превью показывают спиннер при загрузке и иконку-заглушку при "
 "недоступности. Прогресс обновляется автоматически при возврате из плеера."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:205
+#: data/net.armatik.Kitsune.metainfo.xml.in:223
 msgid ""
 "Redesigned filter panel — the filter dialog has been replaced with a sliding "
 "side panel (OverlaySplitView) that overlays the entire window. Filters auto-"
@@ -1537,7 +1585,7 @@ msgstr ""
 "задержкой в 1 секунду, жанры и диапазон годов обновляются асинхронно, лишние "
 "перезагрузки каталога при неизменённых фильтрах подавляются."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:206
+#: data/net.armatik.Kitsune.metainfo.xml.in:224
 msgid ""
 "Genre navigation from release pages — clicking a genre chip on a release "
 "page now opens that genre's releases as a NavigationPage with a back button, "
@@ -1547,7 +1595,7 @@ msgstr ""
 "жанра как отдельную страницу с кнопкой «назад», вместо переключения на "
 "вкладку жанров. Чипы жанров с эффектом наведения."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:207
+#: data/net.armatik.Kitsune.metainfo.xml.in:225
 msgid ""
 "Dynamic release page tabs — empty tabs (related releases, team, torrents) "
 "are hidden automatically instead of showing blank placeholders. Tabs appear "
@@ -1557,7 +1605,7 @@ msgstr ""
 "команда, торренты) скрываются автоматически. Вкладки появляются динамически "
 "при получении данных."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:208
+#: data/net.armatik.Kitsune.metainfo.xml.in:226
 msgid ""
 "Visual improvements — smooth CSS hover transitions (200ms ease-out-quad) "
 "across flowbox items, sidebar rows, navigation tabs, player buttons, and "
@@ -1570,7 +1618,7 @@ msgstr ""
 "прогресса увеличена до 4px с акцентным цветом. Карточки тегов с "
 "центрированными заголовками и размытым эмодзи-фоном."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:209
+#: data/net.armatik.Kitsune.metainfo.xml.in:227
 msgid ""
 "Player stability — fixed player cleanup on navigation back by removing "
 "unreliable hiding/unmap signals. Cleanup now fires only via explicit back "
@@ -1581,7 +1629,7 @@ msgstr ""
 "происходит только через кнопку «назад», сигнал NavigationView и закрытие "
 "окна. Идемпотентная очистка предотвращает двойную остановку."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:210
+#: data/net.armatik.Kitsune.metainfo.xml.in:228
 msgid ""
 "Infrastructure — centralized AniLibria API URLs into a single constants "
 "file. Image download limit increased from 10 MB to 30 MB. Tags statistics "
@@ -1593,7 +1641,7 @@ msgstr ""
 "очистки добавлены в настройки. Репозиторий перенесён в организацию alt-"
 "gnome, добавлены Telegram-канал и чат проекта."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:215
+#: data/net.armatik.Kitsune.metainfo.xml.in:233
 msgid ""
 "Major update with genres, franchises, tabbed release page, Blueprint UI, "
 "accent colors, offline mode, and full Russian translation."
@@ -1601,12 +1649,9 @@ msgstr ""
 "Крупное обновление: жанры, франшизы, страница релиза с вкладками, Blueprint "
 "UI, акцентные цвета, офлайн-режим и полный перевод на русский язык."
 
-#: data/net.armatik.Kitsune.metainfo.xml.in:220
+#: data/net.armatik.Kitsune.metainfo.xml.in:238
 msgid "Initial release with catalog, search, and video player."
 msgstr "Первый выпуск с каталогом, поиском и видеоплеером."
-
-#~ msgid "Dismiss"
-#~ msgstr "Закрыть"
 
 #~ msgid "Release details with episodes, genres and tags"
 #~ msgstr "Страница релиза с эпизодами, жанрами и тегами"
@@ -1661,9 +1706,6 @@ msgstr "Первый выпуск с каталогом, поиском и ви�
 
 #~ msgid "Saved Positions"
 #~ msgstr "Сохранённые позиции"
-
-#~ msgid "Clear Progress"
-#~ msgstr "Очистить прогресс"
 
 #~ msgid "Remove all saved playback positions"
 #~ msgstr "Удалить все сохранённые позиции воспроизведения"
