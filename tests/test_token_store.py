@@ -48,6 +48,30 @@ def test_delete_token_already_deleted():
         token_store.delete_token()  # must not raise
 
 
+def test_no_keyring_backend_load():
+    """load_token returns None when no keyring backend is available."""
+    from keyring.errors import NoKeyringError
+
+    with patch('keyring.get_password', side_effect=NoKeyringError()):
+        assert token_store.load_token() is None
+
+
+def test_no_keyring_backend_save():
+    """save_token is a no-op when no keyring backend is available."""
+    from keyring.errors import NoKeyringError
+
+    with patch('keyring.set_password', side_effect=NoKeyringError()):
+        token_store.save_token('token')  # must not raise
+
+
+def test_no_keyring_backend_delete():
+    """delete_token is a no-op when no keyring backend is available."""
+    from keyring.errors import NoKeyringError
+
+    with patch('keyring.delete_password', side_effect=NoKeyringError()):
+        token_store.delete_token()  # must not raise
+
+
 def test_service_name():
     assert token_store.SERVICE_NAME == 'net.armatik.Kitsune'
     assert token_store.ACCOUNT_NAME == 'session'
