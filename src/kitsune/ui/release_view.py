@@ -119,10 +119,16 @@ class ReleaseView(Adw.NavigationPage):
         self._vadjustment = self.scrolled.get_vadjustment()
         self._vadjustment.connect('value-changed', self._on_scroll)
 
-        # Try loading cached release data
+        # Try loading cached release data; a poisoned entry (schema drift,
+        # null fields from an older API shape) must not kill the view —
+        # fall back to the network fetch below.
         cached = release_cache.get(release.id)
         if cached:
-            self._release = Release.from_dict(cached)
+            try:
+                self._release = Release.from_dict(cached)
+            except Exception:
+                log.warning('cached release %s failed to parse, refetching',
+                            release.id)
 
         self._setup_tabs_toggle()
         self._setup_episodes_controls()
@@ -440,6 +446,28 @@ class ReleaseView(Adw.NavigationPage):
         self._maybe_trigger_completion_check()
 
     def _on_unmark_all(self, _button):
+        # Destructive: drops every local watch position (including
+        # partially-watched progress) and resets the server side.
+        n = len(self._release.episodes)
+        dialog = Adw.AlertDialog(
+            heading=_('Clear Watch Progress?'),
+            body=_('Progress for all %d episodes will be removed, including '
+                   'partially watched positions. This cannot be undone.') % n,
+        )
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('clear', _('Clear Progress'))
+        dialog.set_response_appearance('clear', Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response('cancel')
+        dialog.set_close_response('cancel')
+
+        def on_response(_dialog, response):
+            if response == 'clear':
+                self._do_unmark_all()
+
+        dialog.connect('response', on_response)
+        dialog.present(self.get_root())
+
+    def _do_unmark_all(self):
         # Inverse of mark-all: drop every local watch_positions entry
         # and tell the server to reset (pos=0, is_watched=False).
         for ep in self._release.episodes:

@@ -49,6 +49,10 @@ _NAV_CSS = (
     ' transition: box-shadow 250ms ease; }'
     ' headerbar.kitsune-narrow-header.pull-refresh-elevated {'
     ' box-shadow: 0 2px 8px alpha(black, 0.18); }'
+    # Substitute strip for Adw.Banner (the widget has no dismiss
+    # affordance, so the session-expired notice is a custom box).
+    ' .session-banner { background: alpha(currentColor, 0.06);'
+    ' border-radius: 0; }'
 )
 
 
@@ -138,9 +142,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
             if self._session.is_logged_in():
                 self._session.validate_session(self._on_session_validated)
 
-        # Session-expired banner wiring — button-clicked handler is in
-        # window.blp ($on_session_banner_login); reveal is toggled by
-        # session callbacks below.
+        # Session-expired banner wiring — button-clicked handlers are in
+        # window.blp ($on_session_banner_login / $on_session_banner_dismiss);
+        # reveal is toggled by session callbacks below. A user-dismissed
+        # banner stays hidden for the rest of the expired window.
+        self._session_banner_dismissed = False
         if self._session:
             self._session.connect_session_expired(
                 self._on_session_expired_show_banner)
@@ -152,6 +158,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # Sync-error toast wiring with 5-second throttle
         self._last_sync_error_toast_at = 0.0
         self._sync.connect_sync_error(self._on_sync_error)
+        # Collection-suggestion toasts are deduplicated per session —
+        # the suggest trigger re-fires on every position save (~30s)
+        # until the user acts, and identical toasts must not stack.
+        self._shown_collection_suggestions = set()
         # Refresh the sidebar's "Synced at HH:MM" subtitle when a sync
         # completes — the time was set by _sync_done minutes/seconds
         # before this callback fires, so the subtitle would otherwise
@@ -1340,6 +1350,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _on_logged_out(self):
         self._stop_periodic_sync()
         self._update_auth_sidebar()
+        self._shown_collection_suggestions.clear()
         if self._profile_view:
             self._profile_view.update_profile(None)
         if self.content_stack.get_visible_child_name() == 'profile':
@@ -1401,6 +1412,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_network_ok(self):
         self.offline_banner.set_revealed(False)
+        # If session validation previously failed on a transport error
+        # (offline start), retry it now that the network is back —
+        # otherwise pull and periodic sync never start until a manual
+        # re-login. Skipped while expired: that state needs the user.
+        if (self._session and self._session.is_logged_in()
+                and not self._session.is_expired()
+                and self._session.get_user() is None):
+            self._session.validate_session(self._on_session_validated)
 
     def _on_sync_error(self, op_kind, release_id, error):
         """Show a throttled toast when a write-through op fails.
@@ -1443,6 +1462,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def show_collection_suggestion(self, action):
         """Surface a suggest-type CollectionAction as a Move toast."""
+        key = (action.release_id, action.to_tag)
+        if key in self._shown_collection_suggestions:
+            return
+        self._shown_collection_suggestions.add(key)
         title = self._format_collection_suggestion(action)
         toast = Adw.Toast.new(title)
         toast.set_button_label(_('Move'))
@@ -1509,12 +1532,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
             player.cleanup()
 
     def _on_session_expired_show_banner(self):
-        self.session_expired_banner.set_revealed(True)
+        if not self._session_banner_dismissed:
+            self.session_expired_banner.set_revealed(True)
 
     def _on_session_restored_hide_banner(self):
+        self._session_banner_dismissed = False
         self.session_expired_banner.set_revealed(False)
 
     def _on_session_logged_out_hide_banner(self):
+        self._session_banner_dismissed = False
         self.session_expired_banner.set_revealed(False)
 
     @Gtk.Template.Callback()
@@ -1523,6 +1549,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
         from kitsune.ui.auth_dialog import AuthDialog
         dialog = AuthDialog(self._session, sync_manager=self._sync)
         dialog.present(self)
+
+    @Gtk.Template.Callback()
+    def on_session_banner_dismiss(self, _button):
+        """Hide the banner for the rest of the expired window — the expired
+        state itself (paused sync queue) is untouched."""
+        self._session_banner_dismissed = True
+        self.session_expired_banner.set_revealed(False)
 
     def _play_episode(self, release, episode):
         from kitsune.ui.player_view import PlayerView

@@ -506,5 +506,25 @@ class ProfileView(Gtk.Box):
 
     @Gtk.Template.Callback()
     def on_logout_clicked(self, _button):
-        if self._session:
-            self._session.logout()
+        if not self._session:
+            return
+        # Logout wipes all local synced data (favorites, collections,
+        # watch positions, pending queue) — confirm before proceeding.
+        dialog = Adw.AlertDialog(
+            heading=_('Log Out?'),
+            body=_('Your watch progress, favorites and collections will be '
+                   'removed from this device. Anything not yet synced to '
+                   'the server will be lost.'),
+        )
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('logout', _('Log Out'))
+        dialog.set_response_appearance('logout', Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response('cancel')
+        dialog.set_close_response('cancel')
+
+        def on_response(_dialog, response):
+            if response == 'logout':
+                self._session.logout()
+
+        dialog.connect('response', on_response)
+        dialog.present(self.get_root())
