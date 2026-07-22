@@ -21,12 +21,24 @@ _OFFLINE_TIMEOUT_MS = 2000
 
 
 def _make_callback(callback, parser):
-    """Wrap a user callback with a parser for successful responses."""
+    """Wrap a user callback with a parser for successful responses.
+
+    Parser exceptions are surfaced as a terminal (None, error) call —
+    otherwise they bubble into _on_response's safe_call guard, which has
+    already marked the callback as fired, and the caller is left waiting
+    forever (infinite spinner / stuck sync chain).
+    """
     def on_data(data, error):
         if error:
             callback(None, error)
             return
-        callback(parser(data), None)
+        try:
+            parsed = parser(data)
+        except Exception as e:
+            log.warning('response parser failed: %s', e)
+            callback(None, f'parse error: {e}')
+            return
+        callback(parsed, None)
     return on_data
 
 
@@ -118,6 +130,28 @@ class AniLibriaClient:
             self._on_response, (callback, msg, state, timeout_id),
         )
 
+    def _maybe_fire_token_expired(self, msg):
+        """Fire the 401 handler only if the request carried a Bearer token.
+
+        A 401 to a request without an Authorization header (login attempt
+        with wrong credentials) is not a session expiry — firing the
+        handler there would flip an anonymous session into the expired
+        state and suppress the merge dialog on subsequent login.
+        """
+        if not self._token_expired_handler:
+            return
+        method = msg.get_method()
+        path = msg.get_uri().get_path()
+        if not msg.get_request_headers().get_one('Authorization'):
+            log.debug('%s %s → 401 without auth header, not a session expiry',
+                      method, path)
+            return
+        log.debug('%s %s → 401, firing token_expired_handler', method, path)
+        try:
+            self._token_expired_handler()
+        except Exception:
+            log.exception('token_expired_handler raised')
+
     def _handle_error(self, state, timeout_id, callback, error_msg):
         """Mark request handled, cancel timeout, always notify caller."""
         if state[0]:
@@ -164,13 +198,8 @@ class AniLibriaClient:
                 GLib.source_remove(timeout_id)
                 log.debug('%s %s → HTTP %d %s',
                           method, path, status.real, status.value_nick)
-                if status == Soup.Status.UNAUTHORIZED and self._token_expired_handler:
-                    log.debug('%s %s → 401, firing token_expired_handler',
-                              method, path)
-                    try:
-                        self._token_expired_handler()
-                    except Exception:
-                        log.exception('token_expired_handler raised')
+                if status == Soup.Status.UNAUTHORIZED:
+                    self._maybe_fire_token_expired(msg)
                 safe_call(None, f'HTTP {status.value_nick}')
                 return
             if gbytes is None:

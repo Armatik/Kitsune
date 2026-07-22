@@ -50,3 +50,63 @@ def test_parse_success_body_too_large_is_error():
     data, err = _parse_success_body(huge)
     assert data is None
     assert err == 'Response too large'
+
+
+def test_expired_handler_fires_on_401_with_auth_header():
+    """Requests that carried a Bearer token and got 401 → token rejected,
+    the expired handler must fire."""
+    from gi.repository import Soup
+    from kitsune.api.client import AniLibriaClient
+
+    client = AniLibriaClient()
+    fired = []
+    client.set_token_expired_handler(lambda: fired.append(True))
+    msg = Soup.Message.new('GET', 'https://example.com/x')
+    msg.get_request_headers().append('Authorization', 'Bearer abc')
+    client._maybe_fire_token_expired(msg)
+    assert fired == [True]
+
+
+def test_expired_handler_skipped_on_401_without_auth_header():
+    """Requests without a token (login attempts) getting 401 mean wrong
+    credentials, not an expired session — handler must NOT fire."""
+    from gi.repository import Soup
+    from kitsune.api.client import AniLibriaClient
+
+    client = AniLibriaClient()
+    fired = []
+    client.set_token_expired_handler(lambda: fired.append(True))
+    msg = Soup.Message.new('POST', 'https://example.com/login')
+    client._maybe_fire_token_expired(msg)
+    assert fired == []
+
+
+def test_make_callback_parser_exception_becomes_terminal_error():
+    """BUG-010: a raising parser must surface as (None, error) — the caller
+    must never be left without a terminal callback (infinite spinner)."""
+    from kitsune.api.client import _make_callback
+
+    calls = []
+
+    def bad_parser(data):
+        raise TypeError('genres: null')
+
+    cb = _make_callback(lambda d, e: calls.append((d, e)), bad_parser)
+    cb({'some': 'data'}, None)
+    assert len(calls) == 1
+    data, err = calls[0]
+    assert data is None
+    assert 'parse error' in err
+
+
+def test_make_callback_parser_exception_after_success_path_not_swallowed():
+    """Parser receives only successful data; errors bypass the parser."""
+    from kitsune.api.client import _make_callback
+
+    calls = []
+    cb = _make_callback(lambda d, e: calls.append((d, e)),
+                        lambda d: ('parsed', d))
+    cb(None, 'timeout')
+    assert calls == [(None, 'timeout')]
+    cb({'x': 1}, None)
+    assert calls[1] == (('parsed', {'x': 1}), None)
