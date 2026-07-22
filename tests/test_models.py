@@ -115,3 +115,54 @@ def test_catalog_response_from_dict():
     assert resp.meta.current_page == 1
     assert resp.meta.last_page == 5
     assert resp.meta.total == 100
+
+
+def _minimal_release_dict(**overrides):
+    data = {
+        'id': 1,
+        'name': {'main': 'Test'},
+        'type': {'value': 'TV'},
+        'year': 2024,
+    }
+    data.update(overrides)
+    return data
+
+
+def test_release_from_dict_null_list_fields():
+    """BUG-010: AniLibria returns null (not []) for empty nested lists —
+    parsing must not raise."""
+    r = Release.from_dict(_minimal_release_dict(
+        genres=None, episodes=None, members=None, torrents=None))
+    assert r.genres == []
+    assert r.episodes == []
+    assert r.members == []
+    assert r.torrents == []
+
+
+def test_release_from_dict_null_type_and_age_rating():
+    """null type/age_rating must become empty strings, not the text 'None'."""
+    r = Release.from_dict(_minimal_release_dict(type=None, age_rating=None))
+    assert r.type == ''
+    assert r.age_rating == ''
+    assert r.is_adult is False
+
+
+def test_member_from_dict_null_role():
+    """BUG-010: members with role: null must not raise AttributeError."""
+    from kitsune.models.release import Member
+    m = Member.from_dict({'id': '1', 'nickname': 'N', 'role': None})
+    assert m.role == ''
+    assert m.role_value == ''
+
+
+def test_catalog_from_dict_null_data_and_meta():
+    """BUG-010: catalog with data: null / meta: null must not raise."""
+    resp = CatalogResponse.from_dict({'data': None, 'meta': None})
+    assert resp.releases == []
+    assert resp.meta.current_page == 0 or resp.meta.current_page is not None
+
+
+def test_franchise_from_dict_null_releases():
+    from kitsune.models.franchise import Franchise
+    f = Franchise.from_dict({'id': 'f1', 'name': 'F', 'franchise_releases': None})
+    assert f.releases == []

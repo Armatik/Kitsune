@@ -30,6 +30,6 @@ class CatalogResponse:
 
     @classmethod
     def from_dict(cls, data: dict) -> CatalogResponse:
-        releases = [Release.from_dict(r) for r in data.get('data', [])]
-        meta = PaginationMeta.from_dict(data.get('meta', {}))
+        releases = [Release.from_dict(r) for r in (data.get('data') or [])]
+        meta = PaginationMeta.from_dict(data.get('meta') or {})
         return cls(releases=releases, meta=meta)

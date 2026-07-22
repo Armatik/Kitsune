@@ -36,7 +36,7 @@ class Franchise:
     @classmethod
     def from_dict(cls, data: dict) -> Franchise:
         releases = []
-        for fr in data.get('franchise_releases', []):
+        for fr in (data.get('franchise_releases') or []):
             rel_data = fr.get('release')
             if rel_data:
                 releases.append(Release.from_dict(rel_data))

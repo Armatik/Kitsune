@@ -110,8 +110,8 @@ class Member:
 
     @classmethod
     def from_dict(cls, data: dict) -> Member:
-        role_data = data.get('role', {})
-        user_data = data.get('user', {})
+        role_data = data.get('role') or {}
+        user_data = data.get('user') or {}
         avatar = _genre_image_url(user_data.get('avatar')) if user_data else None
         return cls(
             id=data.get('id', ''),
@@ -233,11 +233,11 @@ class Release:
         age_data = data.get('age_rating', {})
         publish_day_data = data.get('publish_day')
 
-        genres = [Genre.from_dict(g) for g in data.get('genres', [])]
-        episodes = [Episode.from_dict(e) for e in data.get('episodes', [])]
+        genres = [Genre.from_dict(g) for g in (data.get('genres') or [])]
+        episodes = [Episode.from_dict(e) for e in (data.get('episodes') or [])]
         episodes.sort(key=lambda e: e.sort_order)
-        members = [Member.from_dict(m) for m in data.get('members', [])]
-        torrents = [Torrent.from_dict(t) for t in data.get('torrents', [])]
+        members = [Member.from_dict(m) for m in (data.get('members') or [])]
+        torrents = [Torrent.from_dict(t) for t in (data.get('torrents') or [])]
 
         return cls(
             id=data.get('id', 0),
@@ -246,10 +246,10 @@ class Release:
             description=data.get('description'),
             poster=_poster_url(data.get('poster')),
             poster_preview=_poster_preview_url(data.get('poster')),
-            type=type_data.get('value', '') if isinstance(type_data, dict) else str(type_data),
+            type=type_data.get('value', '') if isinstance(type_data, dict) else (str(type_data) if type_data is not None else ''),
             year=data.get('year', 0),
             season=season_data.get('value') if isinstance(season_data, dict) else season_data,
-            age_rating=age_data.get('value', '') if isinstance(age_data, dict) else str(age_data),
+            age_rating=age_data.get('value', '') if isinstance(age_data, dict) else (str(age_data) if age_data is not None else ''),
             # Prefer the explicit `is_adult` flag when present; fall back
             # to deriving it from the `value` field for cache entries
             # written before we started capturing `is_adult` directly.
