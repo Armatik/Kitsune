@@ -66,6 +66,34 @@ def test_first_watch_in_postponed_suggests_move(isolated):
     assert actions[0].from_tag == 'postponed'
 
 
+def test_completion_from_postponed_suggests_watched_not_watching(isolated):
+    """BUG-007: finishing a title from postponed should suggest 'watched',
+    not 'watching' — the title is complete, not merely resumed."""
+    tags_store.add_release('postponed', 55)
+    _set_pos(55, 1, -1, 'e1')
+    _set_pos(55, 2, -1, 'e2')
+    actions = auto_collections.evaluate_position_change(
+        55, -1, release_meta={'episodes_total': 2, 'is_ongoing': False},
+    )
+    assert len(actions) == 1
+    a = actions[0]
+    assert a.type == 'suggest'
+    assert a.to_tag == 'watched'
+    assert a.reason == 'all_episodes_watched'
+
+
+def test_partial_from_postponed_still_suggests_watching(isolated):
+    """Resumed watching without completing the title keeps suggesting
+    'watching'."""
+    tags_store.add_release('postponed', 56)
+    _set_pos(56, 1, -1, 'e1')
+    actions = auto_collections.evaluate_position_change(
+        56, -1, release_meta={'episodes_total': 2, 'is_ongoing': False},
+    )
+    assert len(actions) == 1
+    assert actions[0].to_tag == 'watching'
+
+
 def test_completion_with_total_auto_to_watched(isolated):
     tags_store.add_release('watching', 100)
     _set_pos(100, 1, -1, 'e1')

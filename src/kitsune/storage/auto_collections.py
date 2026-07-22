@@ -133,10 +133,20 @@ def evaluate_position_change(
             # complete (untagged → watched) chains into Trigger 2.
             current = 'watching'
         elif current in ('planned', 'postponed', 'abandoned'):
-            actions.append(CollectionAction(
-                type='suggest', release_id=release_id, from_tag=current,
-                to_tag='watching', reason='resumed_watching',
-            ))
+            # A finished title (pos == -1 completing all episodes) should
+            # move to 'watched', not back to 'watching'.
+            if pos == -1 and _is_complete(release_id, release_meta):
+                actions.append(CollectionAction(
+                    type='suggest', release_id=release_id,
+                    from_tag=current, to_tag='watched',
+                    reason='all_episodes_watched',
+                ))
+            else:
+                actions.append(CollectionAction(
+                    type='suggest', release_id=release_id,
+                    from_tag=current, to_tag='watching',
+                    reason='resumed_watching',
+                ))
         # 'watching' / 'watched' → no action
 
     # Trigger 2 — finished an episode that completes the whole title.
