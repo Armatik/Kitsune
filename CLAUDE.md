@@ -12,7 +12,7 @@ meson setup _build -Dprefix=$HOME/.local
 meson compile -C _build
 meson install -C _build
 
-# Tests (19 Meson tests: 7 non-GUI + 9 widget via xvfb-run + 3 validation)
+# Tests (30 Meson tests: 17 non-GUI + 10 widget via xvfb-run + 3 validation)
 meson test -C _build
 
 # i18n (ONLY through Meson, never xgettext directly)
@@ -27,21 +27,39 @@ rm -rf _build && meson setup _build && meson compile -C _build
 ```
 src/kitsune/
 ├── api/client.py          # Soup3 async HTTP (callback pattern, not asyncio)
+├── auth/                  # Account session and token storage
+│   ├── session.py         # SessionManager: login/OTP/logout, 401 expiry
+│   └── token_store.py     # Bearer token via python-keyring (no backend → logged out)
 ├── models/                # Dataclasses with from_dict() parsing
 │   ├── release.py         # Release, Episode, Genre, Member, Torrent
 │   ├── catalog.py         # CatalogResponse, PaginationMeta
-│   └── franchise.py       # Franchise
-├── player/gst_player.py   # GStreamer playbin3 + gtk4paintablesink
-├── storage/               # JSON files in XDG dirs, atomic writes
+│   ├── franchise.py       # Franchise
+│   ├── user.py            # User
+│   └── collection.py      # CollectionEntry, Timecode
+├── player/
+│   ├── gst_player.py      # GStreamer playbin3 + gtk4paintablesink
+│   ├── display_rotate.py  # Mutter D-Bus screen rotation
+│   └── macos_media_keys.py# MPRemoteCommandCenter integration (macOS only)
+├── storage/               # JSON files in XDG dirs, atomic writes (fsync → rename)
 │   ├── release_cache.py   # ~/.cache/kitsune/releases/
 │   ├── tags_store.py      # ~/.local/share/kitsune/tags.json
-│   └── watch_positions.py # ~/.local/share/kitsune/watch_positions.json
+│   ├── watch_positions.py # ~/.local/share/kitsune/watch_positions.json
+│   ├── pending_queue.py   # ~/.local/share/kitsune/pending_ops.json
+│   ├── sync_manager.py    # Bidirectional sync (see Sync subsystem)
+│   ├── episode_index.py   # episode_id → (release_id, ordinal) reverse index
+│   ├── auto_collections.py# Watching→Watched/Postponed/Abandoned automation
+│   └── search_index.py    # Local search index
 └── ui/
-    ├── *_view.py           # Views (catalog, search, release, player, genres, franchises, tags)
-    ├── *.blp               # Blueprint UI definitions (6 files)
+    ├── *_view.py           # Views (catalog, search, release, player, genres, franchises, tags, profile)
+    ├── *.blp               # Blueprint UI definitions (8 files)
     └── widgets/            # Reusable widgets (content_grid, release_card, genre_card, franchise_card, tag_card)
         └── *.blp           # Blueprint widget definitions (5 files)
 ```
+
+macOS: `scripts/bundle-macos.sh` builds a self-contained `.app` + DMG,
+`scripts/test-isolated.sh` smoke-tests it; GitHub Actions workflow
+`.github/workflows/build-macos.yml` runs on main pushes and version tags
+(tags without `v` prefix, e.g. `1.0.0`).
 
 ## Key Patterns
 
@@ -85,8 +103,14 @@ For the full architecture + stage-by-stage history see
 
 ## Testing
 
-- **Non-GUI** (5): test_models, test_navbar, test_storage, test_tags_store, test_watch_positions — fast, no display
-- **Widget** (8): test_content_grid, test_catalog_view, test_genres_view, test_release_card, test_tag_card, test_release_view, test_tags_view, test_player_view — need xvfb-run
+- **Non-GUI** (17): models, watch_positions, tags_store, navbar, storage,
+  search_index, release_cache, user_model, collection_model, token_store,
+  session, sync_manager, pending_queue, episode_index, sync_flow, api_client,
+  auto_collections — fast, no display
+- **Widget** (10): episode_logic, content_grid, tags_view, catalog_view,
+  genres_view, release_card, tag_card, release_view, player_view,
+  profile_view — need xvfb-run, `is_parallel: false`
+- Source of truth for test lists: `tests/meson.build`
 - Fixtures in `conftest.py`: `mock_client` (StubClient), `mock_tags`, `mock_cache`, `sample_release`, `sample_genre`, `sample_tag`
 
 ## Code Style
@@ -94,4 +118,4 @@ For the full architecture + stage-by-stage history see
 - Python, no type annotations enforced
 - Strings: `_()` for i18n (gettext via builtins)
 - GSettings for all user preferences
-- No ORM, no pip dependencies — everything through system PyGObject
+- No ORM — everything through system PyGObject; single pip dependency: `keyring` (token storage)
