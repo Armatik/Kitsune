@@ -315,8 +315,11 @@ def test_validate_session_failure_enters_expired_not_logged_out(client_stub):
     sm.connect_logged_out(lambda: logged_out_events.append(True))
     sm.connect_session_expired(lambda: expired_events.append(True))
 
-    # Fake client's get_profile returns an error
+    # Fake client's get_profile returns an error; the real client fires
+    # the token-expired handler on 401/403 before invoking the callback
+    # (the request carried the Bearer token), so simulate that layering.
     def fake_get_profile(callback=None):
+        client_stub._token_expired_handler()
         if callback:
             callback(None, 'HTTP forbidden')
     client_stub.get_profile = fake_get_profile
@@ -330,6 +333,26 @@ def test_validate_session_failure_enters_expired_not_logged_out(client_stub):
     assert sm.is_expired() is True
     assert sm.is_logged_in() is True  # token still there for re-login path
     assert sm.get_token() == 'stale-token'
+
+
+def test_validate_session_transport_error_does_not_enter_expired(client_stub):
+    """Offline/timeout startup must NOT enter the expired state — the
+    token is still valid, only the network is down. The offline banner
+    (driven by the client's network handler) is the right UX here."""
+    from kitsune.auth.session import SessionManager
+    sm = SessionManager(client_stub)
+    sm._token = 'valid-token'
+    expired_events = []
+    sm.connect_session_expired(lambda: expired_events.append(True))
+    client_stub.get_profile = lambda callback=None: callback(None, 'timeout')
+
+    results = []
+    sm.validate_session(lambda ok, err: results.append((ok, err)))
+
+    assert results == [(False, 'timeout')]
+    assert expired_events == []
+    assert sm.is_expired() is False
+    assert sm.get_token() == 'valid-token'
 
 
 def test_logged_out_during_401_flow_leaves_clean_state(client_stub):

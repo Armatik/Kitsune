@@ -220,15 +220,14 @@ class SessionManager:
         log.debug('validate_session: fetching profile')
         def on_profile(user, error):
             if error:
-                # The saved token was rejected (401 / 403 / etc.). Don't
-                # wipe it — that would take the pending sync queue with it
-                # via connect_logged_out. Instead enter the expired flow:
-                # banner shown, queue paused, re-login as the same user
-                # flushes the queue, re-login as a different user triggers
-                # force_logout_cleanup + clear_for_user in the UI.
-                log.debug('validate_session failed: %s → entering expired state',
-                          error)
-                self._on_token_expired()
+                # A genuine token rejection (401/403) already fired the
+                # ApiClient's token-expired handler — the request carried
+                # our Bearer token — so the expired flow (banner, queue
+                # pause) is driven from there. Transport errors ('timeout',
+                # network GLib errors) must NOT enter expired: the token
+                # is still valid, only the network is down. Validation is
+                # retried on the next _on_network_ok from the client.
+                log.debug('validate_session failed: %s', error)
                 if callback:
                     callback(False, error)
                 return
