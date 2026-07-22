@@ -304,7 +304,7 @@ def apply_server_entry(episode_id: str, pos: float, is_watched: bool,
         key = f'{release_id}_{ordinal}'
     existing = entries.get(key, {})
     local_ts = existing.get('updated_at', 0.0)
-    if local_ts >= updated_at:
+    if existing and local_ts >= updated_at:
         return 'skipped'
     new_pos = -1 if is_watched else float(pos)
     entries[key] = {

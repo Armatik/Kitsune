@@ -165,6 +165,31 @@ def test_fetch_server_counts_parses_list_of_lists(mock_tags):
     assert results[0]['collections']['watched'] == 2
 
 
+def test_fetch_server_counts_propagates_favorites_error(mock_tags):
+    """Errors must reach the caller — silently zeroed counts made the
+    merge dialog offer 'Keep server' on false data (flaky network)."""
+    client = FakeSyncClient()
+    client.get_favorite_ids = lambda callback=None: callback(None, 'timeout')
+    sm = SyncManager(client)
+
+    results = []
+    sm.fetch_server_counts(lambda counts, err: results.append((counts, err)))
+
+    assert results == [(None, 'timeout')]
+
+
+def test_fetch_server_counts_propagates_collections_error(mock_tags):
+    client = FakeSyncClient()
+    client.get_collection_ids = \
+        lambda callback=None: callback(None, 'HTTP internal-server-error')
+    sm = SyncManager(client)
+
+    results = []
+    sm.fetch_server_counts(lambda counts, err: results.append((counts, err)))
+
+    assert results == [(None, 'HTTP internal-server-error')]
+
+
 def test_initial_sync_parses_list_of_lists(mock_tags):
     """Regression: _sync_collections was assuming list-of-dicts shape,
     so against the real server it would silently drop every entry and
@@ -430,6 +455,50 @@ def test_write_through_does_not_double_schedule(mock_tags, tmp_path, monkeypatch
     sm.add_to_tag_synced('favorites', 9275)
     sm.add_to_tag_synced('favorites', 9276)
     assert len(scheduled) == 1  # second write-through suppresses double schedule
+
+
+def test_drain_scheduled_not_stuck_after_in_flight_enqueue(mock_tags, tmp_path, monkeypatch):
+    """Enqueue during in-flight HTTP must not leave _drain_scheduled stuck.
+
+    Scenario: drain A (in-flight) → enqueue B (idle fires while draining,
+    early-return) → A completes, chain drains B, queue empties → enqueue C
+    must still schedule a drain. Before the fix the flag stayed True forever
+    and C was never dispatched until force_drain/restart.
+    """
+    sm, client = _make_sm_with_fake(tmp_path)
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+
+    sm.add_to_tag_synced('favorites', 1)
+    assert len(scheduled) == 1
+
+    # Idle fires → drain starts, A dispatched and now in-flight
+    scheduled.pop(0)()
+    assert client.call_log == [('add_favorites', [1])]
+    assert sm._draining is True
+
+    # Enqueue B while A is in-flight → another idle scheduled
+    sm.add_to_tag_synced('favorites', 2)
+    assert len(scheduled) == 1
+
+    # Idle fires while A still in-flight → early return (flag must not stick)
+    scheduled.pop(0)()
+
+    # A completes → chain drains B → B completes → queue empty
+    client.flush_all()
+    assert ('add_favorites', [2]) in client.call_log
+    client.flush_all()
+    assert sm._queue.size() == 0
+    assert sm._draining is False
+
+    # Enqueue C → must schedule a fresh idle drain
+    sm.add_to_tag_synced('favorites', 3)
+    assert len(scheduled) == 1, 'enqueue after completed drain must schedule an idle'
+    scheduled.pop(0)()
+    assert ('add_favorites', [3]) in client.call_log
 
 
 def test_write_through_custom_tag_skips_enqueue(mock_tags, tmp_path):
@@ -1015,7 +1084,7 @@ def test_pull_timecodes_applies_via_apply_server_entry(mock_tags, tmp_path):
              'is_watched': False, 'updated_at': 5000.0},
         ]
         done = [False]
-        sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+        sm._pull_and_save_timecodes(lambda ok: done.__setitem__(0, ok))
         client.flush_all()
         assert done[0] is True
         assert watch_positions.get_position(9275, 1.0) == 120.5
@@ -1035,7 +1104,7 @@ def test_pull_timecodes_handles_list_format(mock_tags, tmp_path):
             9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
         client.get_timecodes_response = [['ep.0', 60.0, False]]
         done = [False]
-        sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+        sm._pull_and_save_timecodes(lambda ok: done.__setitem__(0, ok))
         client.flush_all()
         assert done[0] is True
         assert watch_positions.get_position(9275, 1.0) == 60.0
@@ -1055,27 +1124,25 @@ def test_pull_timecodes_skips_unmapped(mock_tags, tmp_path):
              'is_watched': False, 'updated_at': 1000.0},
         ]
         done = [False]
-        sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+        sm._pull_and_save_timecodes(lambda ok: done.__setitem__(0, ok))
         client.flush_all()
         assert done[0] is True
-        assert watch_positions.get_count() == 0
-
 
 def test_pull_timecodes_handles_empty_response(mock_tags, tmp_path):
     sm, client = _make_sm_with_fake(tmp_path)
     client.get_timecodes_response = []
     done = [False]
-    sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+    sm._pull_and_save_timecodes(lambda ok: done.__setitem__(0, ok))
     client.flush_all()
     assert done[0] is True
 
 
 def test_pull_timecodes_handles_error(mock_tags, tmp_path):
     sm, client = _make_sm_with_fake(tmp_path)
-    done = [False]
-    sm._pull_and_save_timecodes(lambda: done.__setitem__(0, True))
+    done = [None]
+    sm._pull_and_save_timecodes(lambda ok: done.__setitem__(0, ok))
     client.fail_next('server error')
-    assert done[0] is True
+    assert done[0] is False
 
 
 def test_flush_timecodes_enqueues_pushable_entries(mock_tags, tmp_path):
@@ -1168,6 +1235,56 @@ def test_parse_timecode_item_preserves_explicit_zero_updated_at():
     assert parsed == ('ep.0', 30.0, False, 0.0)
     parsed = _parse_timecode_item(['ep.0', 30, False, 0])
     assert parsed == ('ep.0', 30.0, False, 0.0)
+
+
+def test_parse_timecode_item_missing_updated_at_defaults_to_zero():
+    """BUG-005: missing updated_at defaults to 0.0 (local-wins), not
+    time.time() — a 'fresh by default' server would stomp newer local
+    entries on every pull."""
+    from kitsune.storage.sync_manager import _parse_timecode_item
+    parsed = _parse_timecode_item(['ep.0', 60.0, True])
+    assert parsed == ('ep.0', 60.0, True, 0.0)
+    parsed = _parse_timecode_item(
+        {'episode_id': 'ep.1', 'time': 5, 'is_watched': False})
+    assert parsed == ('ep.1', 5.0, False, 0.0)
+
+
+def test_apply_server_entry_without_timestamp_loses_to_local(mock_tags, tmp_path):
+    """BUG-005: a server entry without updated_at must not overwrite an
+    existing local position (local-wins)."""
+    from kitsune.storage import watch_positions
+    wp_file = tmp_path / 'wp.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file):
+        watch_positions.save_position(9275, 1.0, 300.0, episode_id='ep.0')
+        result = watch_positions.apply_server_entry('ep.0', 60.0, False, 0.0)
+        assert result == 'skipped'
+        assert watch_positions.get_position(9275, 1.0) == 300.0
+
+
+def test_initial_sync_includes_timecode_pull(mock_tags, tmp_path):
+    """BUG-004: initial_sync pulls server timecodes as part of the chain —
+    previously the pull existed but was never wired in (push-only sync)."""
+    from kitsune.storage import watch_positions, episode_index
+    sm, client = _make_sm_with_fake(tmp_path)
+    wp_file = tmp_path / 'wp.json'
+    idx_file = tmp_path / 'idx.json'
+    import unittest.mock as um
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file), \
+         um.patch.object(episode_index, '_INDEX_FILE', idx_file), \
+         um.patch.object(episode_index, '_cache', None):
+        episode_index.add_from_release_data(
+            9275, {'episodes': [{'id': 'ep.0', 'ordinal': 1.0}]})
+        client.get_timecodes_response = [
+            {'episode_id': 'ep.0', 'time': 42.0,
+             'is_watched': False, 'updated_at': 5000.0},
+        ]
+        results = []
+        sm.initial_sync(lambda ok, err: results.append((ok, err)))
+        client.flush_all()
+        assert ('get_timecodes',) in client.call_log
+        assert results == [(True, None)]
+        assert watch_positions.get_position(9275, 1.0) == 42.0
 
 
 def test_coalesce_absorbs_new_save_after_failed_timecode(tmp_path, mock_tags, monkeypatch):

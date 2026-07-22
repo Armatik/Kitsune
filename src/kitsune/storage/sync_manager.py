@@ -62,14 +62,15 @@ def _parse_collection_entry(entry):
 def _parse_timecode_item(item):
     """Parse a server timecode entry. Returns (episode_id, time, is_watched, updated_at) or None.
 
-    When `updated_at` is missing (None) we fall back to `time.time()` — server
-    is "fresh" by default. We distinguish missing from 0: `updated_at = 0` is
-    an explicit epoch timestamp and is preserved so conflict resolution can
-    compare it correctly (it will lose to any positive local timestamp).
+    When `updated_at` is missing (the production list-of-lists form has no
+    timestamp) we fall back to 0.0 — local-wins: `apply_server_entry` skips
+    any entry whose timestamp is not strictly newer than the local one, so
+    a timestamp-less server record can fill gaps but never stomps a local
+    position. An explicit `updated_at = 0` (epoch) is preserved as-is.
     """
     if isinstance(item, (list, tuple)) and len(item) >= 3:
         ep_id, time_val, is_watched = item[0], item[1], item[2]
-        updated_at = item[3] if len(item) >= 4 and item[3] is not None else time.time()
+        updated_at = item[3] if len(item) >= 4 and item[3] is not None else 0.0
         return (ep_id, float(time_val), bool(is_watched), float(updated_at))
     if isinstance(item, dict):
         ep_id = (item.get('episode_id')
@@ -78,7 +79,7 @@ def _parse_timecode_item(item):
         if not ep_id:
             return None
         raw_updated_at = item.get('updated_at')
-        updated_at = time.time() if raw_updated_at is None else raw_updated_at
+        updated_at = 0.0 if raw_updated_at is None else raw_updated_at
         return (
             ep_id,
             float(item.get('time', 0)),
@@ -190,10 +191,10 @@ class SyncManager:
 
     def _drain_queue(self):
         """Process ready ops from the queue. Reentrancy-guarded."""
+        self._drain_scheduled = False
         if self._draining:
             return
         self._draining = True
-        self._drain_scheduled = False
         self._drain_next()
 
     def _drain_next(self):
@@ -488,7 +489,9 @@ class SyncManager:
         self._schedule_drain()
         self._sync_favorites(
             lambda ok_f: self._sync_collections(
-                lambda ok_c: self._sync_done(callback, ok_f and ok_c)))
+                lambda ok_c: self._pull_and_save_timecodes(
+                    lambda ok_t: self._sync_done(
+                        callback, ok_f and ok_c and ok_t))))
 
     def sync_now(self, callback=None):
         """Manual sync — always merge."""
@@ -671,15 +674,18 @@ class SyncManager:
         (counted as 'unmapped' in the debug log). Conflict resolution is
         local-wins-on-tie per A4 — the server only overwrites when its
         `updated_at` is strictly greater than the local one.
+
+        `then(ok)` is invoked with False when the pull itself failed, so
+        callers can report partial sync honestly.
         """
         if not self.is_logged_in():
-            then()
+            then(True)
             return
 
         def on_timecodes(data, error):
             if error:
                 log.debug('Timecodes pull failed: %s', error)
-                then()
+                then(False)
                 return
             applied = skipped = unmapped = 0
             for item in (data or []):
@@ -697,7 +703,7 @@ class SyncManager:
                     unmapped += 1
             log.debug('Timecodes pulled: applied=%d skipped=%d unmapped=%d',
                       applied, skipped, unmapped)
-            then()
+            then(True)
 
         self._client.get_timecodes(callback=on_timecodes)
 
@@ -707,24 +713,35 @@ class SyncManager:
             if callback:
                 callback(True, None)
             return
-        def then():
+
+        def then(ok):
             if callback:
-                callback(True, None)
+                callback(ok, None if ok else 'timecodes pull failed')
         self._pull_and_save_timecodes(then)
 
     # --- Server counts (for merge dialog) ---
 
     def fetch_server_counts(self, callback):
-        """Fetch server favorite + collection counts for merge dialog."""
+        """Fetch server favorite + collection counts for merge dialog.
+
+        On any request failure the error is propagated (counts=None) so
+        the caller falls back to a safe strategy instead of presenting
+        zeroed server counts as real."""
         counts = {'favorites': 0, 'collections': {}}
 
         def on_favs(data, error):
-            if not error and data:
+            if error:
+                callback(None, error)
+                return
+            if data:
                 counts['favorites'] = len(data)
             self._client.get_collection_ids(on_collections)
 
         def on_collections(data, error):
-            if not error and data:
+            if error:
+                callback(None, error)
+                return
+            if data:
                 for entry in data:
                     _rid, ctype = _parse_collection_entry(entry)
                     tag_id = COLLECTION_MAP.get(ctype)
