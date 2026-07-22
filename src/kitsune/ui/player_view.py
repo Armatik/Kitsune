@@ -637,7 +637,7 @@ class PlayerView(Adw.NavigationPage):
         pos = self._player.get_position()
         dur = self._player.get_duration()
         ep_id = self._episode.id
-        if dur > 0 and pos > 5 and (dur - pos) > 60:
+        if dur > 0 and pos > 5 and not watch_positions.is_completed(pos, dur):
             watch_positions.save_position(
                 self._release.id, self._episode.ordinal, pos,
                 episode_id=ep_id,
@@ -650,7 +650,7 @@ class PlayerView(Adw.NavigationPage):
                     is_watched=False,
                 )
             self._handle_auto_collections(pos)
-        elif dur > 0 and (dur - pos) <= 60:
+        elif dur > 0 and watch_positions.is_completed(pos, dur):
             watch_positions.mark_completed(
                 self._release.id, self._episode.ordinal,
                 episode_id=ep_id,
