@@ -61,10 +61,41 @@ def test_expired_handler_fires_on_401_with_auth_header():
     client = AniLibriaClient()
     fired = []
     client.set_token_expired_handler(lambda: fired.append(True))
-    msg = Soup.Message.new('GET', 'https://example.com/x')
+    msg = Soup.Message.new('GET', 'https://example.com/accounts/users/me/profile')
     msg.get_request_headers().append('Authorization', 'Bearer abc')
-    client._maybe_fire_token_expired(msg)
+    client._maybe_fire_token_expired(msg, Soup.Status.UNAUTHORIZED)
     assert fired == [True]
+
+
+def test_expired_handler_fires_on_403_account_endpoint():
+    """Live AniLibria answers 403 (not 401) to an expired/invalid token —
+    the expired handler must fire for 403 on /accounts/ endpoints too,
+    or session expiry is never detected in production."""
+    from gi.repository import Soup
+    from kitsune.api.client import AniLibriaClient
+
+    client = AniLibriaClient()
+    fired = []
+    client.set_token_expired_handler(lambda: fired.append(True))
+    msg = Soup.Message.new('GET', 'https://example.com/accounts/users/me/profile')
+    msg.get_request_headers().append('Authorization', 'Bearer abc')
+    client._maybe_fire_token_expired(msg, Soup.Status.FORBIDDEN)
+    assert fired == [True]
+
+
+def test_expired_handler_skipped_on_403_public_endpoint():
+    """403 on public /anime/* endpoints is a content block (geo/copyright),
+    not a session expiry — even with a token attached."""
+    from gi.repository import Soup
+    from kitsune.api.client import AniLibriaClient
+
+    client = AniLibriaClient()
+    fired = []
+    client.set_token_expired_handler(lambda: fired.append(True))
+    msg = Soup.Message.new('GET', 'https://example.com/anime/releases/123')
+    msg.get_request_headers().append('Authorization', 'Bearer abc')
+    client._maybe_fire_token_expired(msg, Soup.Status.FORBIDDEN)
+    assert fired == []
 
 
 def test_expired_handler_skipped_on_401_without_auth_header():
@@ -76,8 +107,8 @@ def test_expired_handler_skipped_on_401_without_auth_header():
     client = AniLibriaClient()
     fired = []
     client.set_token_expired_handler(lambda: fired.append(True))
-    msg = Soup.Message.new('POST', 'https://example.com/login')
-    client._maybe_fire_token_expired(msg)
+    msg = Soup.Message.new('POST', 'https://example.com/accounts/users/auth/login')
+    client._maybe_fire_token_expired(msg, Soup.Status.UNAUTHORIZED)
     assert fired == []
 
 
