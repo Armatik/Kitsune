@@ -383,13 +383,14 @@ class ProfileView(Gtk.Box):
         # avatar (already resolved to a full URL by User.from_dict) and
         # set it as the custom image when it arrives. If the fetch
         # fails, the initials fallback stays visible.
+        # Reset first — on account switch the previous user's avatar must
+        # not linger while the new one downloads (or fails to).
+        self.avatar.set_custom_image(None)
         if user.avatar:
             from kitsune.ui.image_cache import load_image
             load_image(user.avatar, lambda tex, err:
                        self.avatar.set_custom_image(tex) if tex else None,
                        category='avatars')
-        else:
-            self.avatar.set_custom_image(None)
         self.email_label.set_label(user.email or '')
         if user.created_at:
             try:
@@ -400,6 +401,8 @@ class ProfileView(Gtk.Box):
                     _('Member since %s') % dt.strftime('%B %Y'))
             except Exception:
                 self.member_since_label.set_label('')
+        else:
+            self.member_since_label.set_label('')
 
     def refresh_counts(self):
         """Refresh all counters with count-up animation."""

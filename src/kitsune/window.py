@@ -8,7 +8,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, GLib, Gtk, Gio
+from gi.repository import Adw, GLib, Gtk, Gio, Pango
 
 from kitsune import ADW_TRANSITION
 from kitsune.api import AniLibriaClient
@@ -482,7 +482,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._narrow_auth_grid_avatar = Adw.Avatar(
             size=24, show_initials=True)
         auth_box.append(self._narrow_auth_grid_avatar)
-        self._narrow_auth_label = Gtk.Label(label=_('Login'))
+        self._narrow_auth_label = Gtk.Label(
+            label=_('Login'),
+            ellipsize=Pango.EllipsizeMode.END,
+            max_width_chars=12,
+        )
         self._narrow_auth_label.add_css_class('caption')
         auth_box.append(self._narrow_auth_label)
         self._narrow_auth_btn.set_child(auth_box)
@@ -912,10 +916,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
         dialog.add_response('continue', _('Continue'))
         dialog.set_response_appearance(
             'continue', Adw.ResponseAppearance.SUGGESTED)
-        dialog.set_default_response('continue')
+        dialog.set_default_response('cancel')
         dialog.set_close_response('cancel')
 
-        check = Gtk.CheckButton(label=_("Don't show again"))
+        check = Gtk.CheckButton(
+            label=_("Don't warn again and show 18+ posters"))
         check.set_margin_top(8)
         dialog.set_extra_child(check)
 
@@ -1113,13 +1118,14 @@ class KitsuneWindow(Adw.ApplicationWindow):
         """
         if user:
             avatar_widget.set_text(user.nickname or '')
+            # Reset first so the previous account's avatar never lingers
+            # under a new nickname while the fetch is in flight or fails.
+            avatar_widget.set_custom_image(None)
             if user.avatar:
                 from kitsune.ui.image_cache import load_image
                 load_image(user.avatar, lambda tex, err, a=avatar_widget:
                            a.set_custom_image(tex) if tex else None,
                            category='avatars')
-            else:
-                avatar_widget.set_custom_image(None)
         else:
             avatar_widget.set_text('')
             avatar_widget.set_custom_image(None)
@@ -1246,21 +1252,23 @@ class KitsuneWindow(Adw.ApplicationWindow):
                     self._on_sync_complete, MergeStrategy.MERGE)
                 return
 
-            body = (
-                f'{_("Local")}: {local_favs} {_("favorites")}, '
-                f'{local_cols} {_("in collections")}\n'
-                f'{_("Server")}: {server_favs} {_("favorites")}, '
-                f'{server_cols} {_("in collections")}'
-            )
+            body = '\n'.join((
+                _('Local: %(favorites)d favorites, %(collections)d in collections')
+                % {'favorites': local_favs, 'collections': local_cols},
+                _('Server: %(favorites)d favorites, %(collections)d in collections')
+                % {'favorites': server_favs, 'collections': server_cols},
+            ))
 
             dialog = Adw.AlertDialog(
                 heading=_('Sync data'),
                 body=body,
             )
+            dialog.add_response('cancel', _('Cancel'))
             dialog.add_response('merge', _('Merge'))
             dialog.add_response('local', _('Keep local'))
             dialog.add_response('server', _('Keep server'))
             dialog.set_default_response('merge')
+            dialog.set_close_response('cancel')
             dialog.set_response_appearance(
                 'merge', Adw.ResponseAppearance.SUGGESTED)
 
@@ -1270,7 +1278,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
                     'local': MergeStrategy.PREFER_LOCAL,
                     'server': MergeStrategy.PREFER_SERVER,
                 }
-                strategy = strategies.get(response, MergeStrategy.MERGE)
+                strategy = strategies.get(response)
+                if strategy is None:
+                    # 'cancel' / close — no strategy chosen, no sync started
+                    return
                 self._sync.initial_sync(
                     self._on_sync_complete, strategy)
 
@@ -1350,8 +1361,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _start_periodic_sync(self):
         """Pull from server every 5 minutes."""
         self._stop_periodic_sync()
-        self._sync_timer_id = GLib.timeout_add(
-            5 * 60 * 1000, self._periodic_sync)
+        self._sync_timer_id = GLib.timeout_add_seconds(
+            5 * 60, self._periodic_sync)
 
     def _stop_periodic_sync(self):
         if self._sync_timer_id:
@@ -1497,7 +1508,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             'watching': _('Watching'),
             'watched': _('Watched'),
             'planned': _('Planned'),
-            'postponed': _('Paused'),
+            'postponed': _('Postponed'),
             'abandoned': _('Abandoned'),
         }
         target = target_names.get(action.to_tag, action.to_tag)

@@ -224,7 +224,9 @@ class AuthDialog(Adw.Dialog):
 
     def _do_login(self):
         login = self.login_entry.get_text().strip()
-        password = self.password_entry.get_text().strip()
+        # The password is a secret, not an identifier — stripping edge
+        # spaces would silently reject valid passwords that contain them.
+        password = self.password_entry.get_text()
 
         # Clear previous error styling
         self._clear_error_fields()
@@ -372,7 +374,7 @@ class AuthDialog(Adw.Dialog):
 
         # Open browser
         launcher = Gtk.UriLauncher(uri=url)
-        launcher.launch(None, None, None)
+        launcher.launch(self, None, None)
 
         # Start polling for completion
         self._social_state = state
