@@ -29,7 +29,8 @@ def read_stream_capped(stream, max_bytes, cancellable, on_done):
 
     `on_done(gbytes, error)` is invoked exactly once: with (GLib.Bytes,
     None) on success, (None, 'too large') when the cap was crossed
-    mid-stream, or (None, str(GLib.Error)) on a read failure.
+    mid-stream, or (None, GLib.Error) on a read failure (callers can
+    match CANCELLED against it).
     """
     chunks = []
     total = [0]
@@ -45,7 +46,7 @@ def read_stream_capped(stream, max_bytes, cancellable, on_done):
         try:
             gbytes = stream.read_bytes_finish(result)
         except GLib.Error as e:
-            finish(None, str(e))
+            finish(None, e)
             return
         data = gbytes.get_data()
         if not data:
@@ -76,7 +77,7 @@ def send_and_read_capped(session, msg, max_bytes, cancellable, on_done):
         try:
             stream = session.send_finish(result)
         except GLib.Error as e:
-            on_done(None, str(e))
+            on_done(None, e)
             return
         read_stream_capped(stream, max_bytes, cancellable, on_done)
 

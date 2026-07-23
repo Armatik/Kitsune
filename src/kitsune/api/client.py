@@ -231,8 +231,18 @@ class AniLibriaClient:
                     GLib.source_remove(timeout_id)
                 safe_call(None, 'Response too large')
                 return
+            if isinstance(error, GLib.Error) and error.matches(
+                    Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+                # Caller-initiated cancellation (refresh superseding the
+                # request) is not a transport failure — swallow it, or the
+                # view would show a bogus error and flip offline mode.
+                log.debug('%s %s cancelled mid-body', method, path)
+                if not state[0]:
+                    state[0] = True
+                    GLib.source_remove(timeout_id)
+                return
             if error is not None:
-                self._handle_error(state, timeout_id, safe_call, error)
+                self._handle_error(state, timeout_id, safe_call, str(error))
                 return
             if state[0]:
                 return

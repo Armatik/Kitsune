@@ -104,3 +104,33 @@ def test_send_and_read_capped_full_send_path():
     gbytes, err = done[0]
     assert err is None
     assert gbytes.get_data() == payload
+
+
+class _ErrorStream:
+    def __init__(self, error):
+        self._error = error
+
+    def read_bytes_async(self, count, prio, cancellable, callback):
+        GLib.idle_add(lambda: callback(self, 'result'))
+
+    def read_bytes_finish(self, result):
+        raise self._error
+
+    def close_async(self, *args):
+        pass
+
+
+def test_glib_error_passed_through_as_object():
+    """Callers must be able to match CANCELLED against the raw GLib.Error
+    — stringifying it in netutil would make that impossible."""
+    err = GLib.Error.new_literal(
+        Gio.io_error_quark(), 'Operation was cancelled',
+        Gio.IOErrorEnum.CANCELLED)
+    done = []
+    read_stream_capped(_ErrorStream(err), 1024, None,
+                       lambda g, e: done.append((g, e)))
+    _drain(done)
+    gbytes, e = done[0]
+    assert gbytes is None
+    assert e is err
+    assert e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED)
