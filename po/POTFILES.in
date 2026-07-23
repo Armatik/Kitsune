@@ -2,6 +2,7 @@ src/kitsune/application.py
 src/kitsune/storage/tags_store.py
 src/kitsune/window.py
 src/kitsune/ui/auth_dialog.py
+src/kitsune/ui/catalog_view.py
 src/kitsune/ui/create_tag_dialog.py
 src/kitsune/ui/filter_dialog.py
 src/kitsune/ui/player_view.py
@@ -11,6 +12,7 @@ src/kitsune/ui/release_view_episodes.py
 src/kitsune/ui/release_view_related.py
 src/kitsune/ui/search_dialog.py
 src/kitsune/ui/tag_popover.py
+src/kitsune/ui/tag_releases_view.py
 src/kitsune/ui/tags_view.py
 src/kitsune/ui/profile_view.py
 src/kitsune/ui/widgets/franchise_card.py

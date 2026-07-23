@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-23 01:57+0300\n"
+"POT-Creation-Date: 2026-07-23 19:43+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,172 +56,184 @@ msgstr ""
 msgid "Favorites"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1497
-#: src/kitsune/ui/tag_popover.py:133
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1508
+#: src/kitsune/ui/tag_popover.py:134
 msgid "Watching"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1498
-#: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:326
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1509
+#: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:327
 #: src/kitsune/ui/release_view_episodes.py:66
-#: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:134
+#: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:135
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1499
-#: src/kitsune/ui/tag_popover.py:135
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1510
+#: src/kitsune/ui/tag_popover.py:136
 msgid "Planned"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1511
+#: src/kitsune/ui/tag_popover.py:137
 msgid "Postponed"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1501
-#: src/kitsune/ui/tag_popover.py:137
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1512
+#: src/kitsune/ui/tag_popover.py:138
 msgid "Abandoned"
 msgstr ""
 
 #: src/kitsune/window.py:262 src/kitsune/window.py:301
-#: src/kitsune/window.py:843 src/kitsune/ui/preferences_window.py:268
+#: src/kitsune/window.py:847 src/kitsune/ui/preferences_window.py:268
 #: src/kitsune/ui/window.blp:124
 msgid "Catalog"
 msgstr ""
 
 #: src/kitsune/window.py:263 src/kitsune/window.py:302
-#: src/kitsune/window.py:844 src/kitsune/ui/filter_dialog.py:148
+#: src/kitsune/window.py:848 src/kitsune/ui/filter_dialog.py:148
 #: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:254
 #: src/kitsune/ui/preferences_window.py:269 src/kitsune/ui/search_dialog.py:71
 msgid "Genres"
 msgstr ""
 
 #: src/kitsune/window.py:264 src/kitsune/window.py:303
-#: src/kitsune/window.py:845 src/kitsune/ui/preferences_window.py:255
+#: src/kitsune/window.py:849 src/kitsune/ui/preferences_window.py:255
 #: src/kitsune/ui/preferences_window.py:270 src/kitsune/ui/search_dialog.py:71
 msgid "Franchises"
 msgstr ""
 
-#: src/kitsune/window.py:265 src/kitsune/window.py:846
+#: src/kitsune/window.py:265 src/kitsune/window.py:850
 #: src/kitsune/ui/preferences_window.py:271
 msgid "Favorites and Tags"
 msgstr ""
 
-#: src/kitsune/window.py:403 src/kitsune/window.py:512
+#: src/kitsune/window.py:403 src/kitsune/window.py:516
 #: src/kitsune/ui/window.blp:322
 msgid "Preferences"
 msgstr ""
 
-#: src/kitsune/window.py:410 src/kitsune/window.py:513
+#: src/kitsune/window.py:410 src/kitsune/window.py:517
 #: src/kitsune/ui/window.blp:323
 msgid "About Kitsune"
 msgstr ""
 
-#: src/kitsune/window.py:485 src/kitsune/window.py:1135
-#: src/kitsune/window.py:1176 src/kitsune/window.py:1189
+#: src/kitsune/window.py:486 src/kitsune/window.py:1141
+#: src/kitsune/window.py:1182 src/kitsune/window.py:1195
 #: src/kitsune/ui/auth_dialog.blp:77
 msgid "Login"
 msgstr ""
 
-#: src/kitsune/window.py:620 src/kitsune/window.py:686
+#: src/kitsune/window.py:624 src/kitsune/window.py:690
 msgid "Card view"
 msgstr ""
 
-#: src/kitsune/window.py:689 src/kitsune/ui/release_view.py:354
+#: src/kitsune/window.py:693 src/kitsune/ui/release_view.py:357
 msgid "List view"
 msgstr ""
 
-#: src/kitsune/window.py:847
+#: src/kitsune/window.py:851
 msgid "Profile"
 msgstr ""
 
-#: src/kitsune/window.py:908 src/kitsune/ui/preferences_window.blp:184
+#: src/kitsune/window.py:912 src/kitsune/ui/preferences_window.blp:184
 msgid "Adult content"
 msgstr ""
 
-#: src/kitsune/window.py:909
+#: src/kitsune/window.py:913
 msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr ""
 
-#: src/kitsune/window.py:911 src/kitsune/ui/create_tag_dialog.py:55
-#: src/kitsune/ui/release_view.py:460 src/kitsune/ui/tags_view.py:392
-#: src/kitsune/ui/profile_view.py:527 src/kitsune/ui/search_dialog.blp:32
+#: src/kitsune/window.py:915 src/kitsune/window.py:1266
+#: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/release_view.py:466
+#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:533
+#: src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr ""
 
-#: src/kitsune/window.py:912
+#: src/kitsune/window.py:916
 msgid "Continue"
 msgstr ""
 
-#: src/kitsune/window.py:918
-msgid "Don't show again"
+#: src/kitsune/window.py:923
+msgid "Don't warn again and show 18+ posters"
 msgstr ""
 
-#: src/kitsune/window.py:1011 src/kitsune/ui/release_view.blp:25
+#: src/kitsune/window.py:1016 src/kitsune/ui/release_view.blp:25
 msgid "Home"
 msgstr ""
 
-#: src/kitsune/window.py:1151
+#: src/kitsune/window.py:1157
 msgid "Not synced yet"
 msgstr ""
 
-#: src/kitsune/window.py:1156 src/kitsune/ui/profile_view.py:443
+#: src/kitsune/window.py:1162 src/kitsune/ui/profile_view.py:449
 #, python-format
 msgid "Synced at %s"
 msgstr ""
 
-#: src/kitsune/window.py:1157
+#: src/kitsune/window.py:1163
 #, python-format
 msgid "Synced %s"
 msgstr ""
 
-#: src/kitsune/window.py:1257
+#: src/kitsune/window.py:1256
+#, python-format
+msgid "Local: %(favorites)d favorites, %(collections)d in collections"
+msgstr ""
+
+#: src/kitsune/window.py:1258
+#, python-format
+msgid "Server: %(favorites)d favorites, %(collections)d in collections"
+msgstr ""
+
+#: src/kitsune/window.py:1263
 msgid "Sync data"
 msgstr ""
 
-#: src/kitsune/window.py:1260
+#: src/kitsune/window.py:1267
 msgid "Merge"
 msgstr ""
 
-#: src/kitsune/window.py:1261
+#: src/kitsune/window.py:1268
 msgid "Keep local"
 msgstr ""
 
-#: src/kitsune/window.py:1262
+#: src/kitsune/window.py:1269
 msgid "Keep server"
 msgstr ""
 
-#: src/kitsune/window.py:1455
+#: src/kitsune/window.py:1466
 msgid "Failed to sync your change with the server"
 msgstr ""
 
-#: src/kitsune/window.py:1489
+#: src/kitsune/window.py:1500
 msgid "Move"
 msgstr ""
 
-#: src/kitsune/window.py:1500 src/kitsune/ui/tag_popover.py:136
-msgid "Paused"
-msgstr ""
-
-#: src/kitsune/window.py:1506
+#: src/kitsune/window.py:1517
 #, python-brace-format
 msgid "{prefix}move to {target}?"
 msgstr ""
 
-#: src/kitsune/ui/auth_dialog.py:230 src/kitsune/ui/auth_dialog.py:328
+#: src/kitsune/ui/auth_dialog.py:235 src/kitsune/ui/auth_dialog.py:333
 msgid "Fill in all fields"
 msgstr ""
 
-#: src/kitsune/ui/auth_dialog.py:324
+#: src/kitsune/ui/auth_dialog.py:329
 msgid "Wrong login or password"
 msgstr ""
 
-#: src/kitsune/ui/auth_dialog.py:330 src/kitsune/ui/auth_dialog.py:359
-#: src/kitsune/ui/auth_dialog.py:367 src/kitsune/ui/auth_dialog.py:419
+#: src/kitsune/ui/auth_dialog.py:335 src/kitsune/ui/auth_dialog.py:364
+#: src/kitsune/ui/auth_dialog.py:372 src/kitsune/ui/auth_dialog.py:424
 msgid "No connection to server"
 msgstr ""
 
-#: src/kitsune/ui/auth_dialog.py:386
+#: src/kitsune/ui/auth_dialog.py:391
 msgid "Authorization timed out"
+msgstr ""
+
+#: src/kitsune/ui/catalog_view.py:319
+msgid "Nothing matches the current filters"
 msgstr ""
 
 #: src/kitsune/ui/create_tag_dialog.py:29
@@ -342,7 +354,7 @@ msgstr ""
 msgid "By rating"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:612
+#: src/kitsune/ui/filter_dialog.py:69 src/kitsune/ui/release_view.py:621
 msgid "Ongoing"
 msgstr ""
 
@@ -358,11 +370,11 @@ msgstr ""
 msgid "Dubbing completed"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:599
+#: src/kitsune/ui/filter_dialog.py:140 src/kitsune/ui/release_view.py:608
 msgid "Type"
 msgstr ""
 
-#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:603
+#: src/kitsune/ui/filter_dialog.py:141 src/kitsune/ui/release_view.py:612
 msgid "Season"
 msgstr ""
 
@@ -407,7 +419,7 @@ msgstr ""
 msgid "Tags"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:234 src/kitsune/ui/release_view.py:610
+#: src/kitsune/ui/release_view.py:234 src/kitsune/ui/release_view.py:619
 #: src/kitsune/ui/preferences_window.blp:84
 msgid "Episodes"
 msgstr ""
@@ -424,106 +436,126 @@ msgstr ""
 msgid "Torrents"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:310 src/kitsune/ui/release_view.py:326
+#: src/kitsune/ui/release_view.py:310 src/kitsune/ui/release_view.py:327
 msgid "All"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:312 src/kitsune/ui/release_view.py:326
+#: src/kitsune/ui/release_view.py:312 src/kitsune/ui/release_view.py:327
 msgid "Unwatched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:341 src/kitsune/ui/release_view.py:430
+#: src/kitsune/ui/release_view.py:321
+msgid "Filter episodes"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:344 src/kitsune/ui/release_view.py:436
 msgid "Newest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:358
+#: src/kitsune/ui/release_view.py:361
 msgid "Grid view"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:368
+#: src/kitsune/ui/release_view.py:371
 msgid "Mark all as watched"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:372
+#: src/kitsune/ui/release_view.py:375
 msgid "Unmark all"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:427
+#: src/kitsune/ui/release_view.py:433
 msgid "Oldest first"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:456
+#: src/kitsune/ui/release_view.py:462
 msgid "Clear Watch Progress?"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:457
+#: src/kitsune/ui/release_view.py:463
 #, python-format
 msgid ""
 "Progress for all %d episodes will be removed, including partially watched "
 "positions. This cannot be undone."
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:461
+#: src/kitsune/ui/release_view.py:467
 msgid "Clear Progress"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:500
+#: src/kitsune/ui/release_view.py:509
 msgid "Remove this title from “Watched”?"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:501
+#: src/kitsune/ui/release_view.py:510
 msgid "Remove"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:601
+#: src/kitsune/ui/release_view.py:610
 msgid "Year"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:606
+#: src/kitsune/ui/release_view.py:615
 msgid "Age rating"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:612
+#: src/kitsune/ui/release_view.py:621
 msgid "Completed"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:613
+#: src/kitsune/ui/release_view.py:622
 msgid "Status"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:616
+#: src/kitsune/ui/release_view.py:625
 msgid "Release day"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:699
+#: src/kitsune/ui/release_view.py:708
 msgid "Failed to load"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:703
+#: src/kitsune/ui/release_view.py:712
 #: src/kitsune/ui/widgets/content_grid.py:105 src/kitsune/ui/window.blp:302
 msgid "Retry"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:849
+#: src/kitsune/ui/release_view.py:759 src/kitsune/ui/release_view.blp:158
+msgid "Nothing here yet"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:762
+msgid "No episodes match your search or filter"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:866
 #, python-format
 msgid "Episodes: %s"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:864
+#: src/kitsune/ui/release_view.py:881
 msgid "Hardsub"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:876
+#: src/kitsune/ui/release_view.py:893
 msgid "Download torrent"
 msgstr ""
 
-#: src/kitsune/ui/release_view.py:885
+#: src/kitsune/ui/release_view.py:902
 msgid "Open magnet link"
 msgstr ""
 
+#: src/kitsune/ui/release_view.py:1011
+msgid "Remove from favorites"
+msgstr ""
+
+#: src/kitsune/ui/release_view.py:1011 src/kitsune/ui/release_view.blp:32
+msgid "Add to favorites"
+msgstr ""
+
 #: src/kitsune/ui/release_view_episodes.py:57
-#: src/kitsune/ui/release_view_episodes.py:230
-#: src/kitsune/ui/release_view_episodes.py:244
+#: src/kitsune/ui/release_view_episodes.py:231
+#: src/kitsune/ui/release_view_episodes.py:245
 msgid "Episode {}"
 msgstr ""
 
@@ -536,7 +568,11 @@ msgstr ""
 msgid "Remaining: {} min of {} min"
 msgstr ""
 
-#: src/kitsune/ui/release_view_episodes.py:254
+#: src/kitsune/ui/release_view_episodes.py:147
+msgid "Play episode"
+msgstr ""
+
+#: src/kitsune/ui/release_view_episodes.py:255
 msgid "Remaining: {} min"
 msgstr ""
 
@@ -585,24 +621,32 @@ msgstr ""
 msgid "Search tags…"
 msgstr ""
 
-#: src/kitsune/ui/tag_popover.py:69
+#: src/kitsune/ui/tag_popover.py:50
+msgid "Create new tag"
+msgstr ""
+
+#: src/kitsune/ui/tag_popover.py:70
 msgid "Tag not found"
 msgstr ""
 
-#: src/kitsune/ui/tag_popover.py:73
+#: src/kitsune/ui/tag_popover.py:74
 msgid "Press + to create it"
 msgstr ""
 
-#: src/kitsune/ui/tag_popover.py:148
+#: src/kitsune/ui/tag_popover.py:151
 #, python-format
-msgid "Removed from \"%s\""
+msgid "Moved to \"%s\" (removed from \"%s\")"
+msgstr ""
+
+#: src/kitsune/ui/tag_releases_view.py:47
+msgid "No releases in this tag yet"
 msgstr ""
 
 #: src/kitsune/ui/tags_view.py:171
 msgid "New tag"
 msgstr ""
 
-#: src/kitsune/ui/tags_view.py:268
+#: src/kitsune/ui/tags_view.py:268 src/kitsune/ui/widgets/tag_card.blp:54
 msgid "Synced with your AniLibria account"
 msgstr ""
 
@@ -631,37 +675,37 @@ msgstr ""
 msgid "Episodes watched"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:397
+#: src/kitsune/ui/profile_view.py:401
 #, python-format
 msgid "Member since %s"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:462
+#: src/kitsune/ui/profile_view.py:468
 msgid "Sync failed"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:480
+#: src/kitsune/ui/profile_view.py:486
 #, python-brace-format
 msgid "{n} operation waiting to sync"
 msgid_plural "{n} operations waiting to sync"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/kitsune/ui/profile_view.py:491
+#: src/kitsune/ui/profile_view.py:497
 msgid "Unknown error"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:522
+#: src/kitsune/ui/profile_view.py:528
 msgid "Log Out?"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:523
+#: src/kitsune/ui/profile_view.py:529
 msgid ""
 "Your watch progress, favorites and collections will be removed from this "
 "device. Anything not yet synced to the server will be lost."
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:528
+#: src/kitsune/ui/profile_view.py:534
 msgid "Log Out"
 msgstr ""
 
@@ -1006,16 +1050,8 @@ msgstr ""
 msgid "Tags and Favorites"
 msgstr ""
 
-#: src/kitsune/ui/release_view.blp:32
-msgid "Add to favorites"
-msgstr ""
-
 #: src/kitsune/ui/release_view.blp:145
 msgid "Enter name or number…"
-msgstr ""
-
-#: src/kitsune/ui/release_view.blp:158
-msgid "Nothing here yet"
 msgstr ""
 
 #: src/kitsune/ui/release_view.blp:198
@@ -1059,7 +1095,7 @@ msgstr ""
 msgid "Failed to load content"
 msgstr ""
 
-#: src/kitsune/ui/widgets/tag_card.blp:66
+#: src/kitsune/ui/widgets/tag_card.blp:67
 msgid "Delete tag"
 msgstr ""
 
