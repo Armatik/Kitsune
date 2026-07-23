@@ -85,6 +85,10 @@ def index_release(release_id: int, data: dict):
     idx = load()
     name_data = data.get('name', {})
     type_data = data.get('type', {})
+    age_data = data.get('age_rating') or {}
+    is_adult = (
+        bool(age_data.get('is_adult')) or age_data.get('value') == 'R18_PLUS'
+    ) if isinstance(age_data, dict) else False
     poster_preview = _extract_poster_preview(data.get('poster'))
 
     entry = {
@@ -96,6 +100,7 @@ def index_release(release_id: int, data: dict):
         'type': type_data.get('value', '') if isinstance(type_data, dict) else str(type_data),
         'year': data.get('year', 0),
         'is_ongoing': data.get('is_ongoing', False),
+        'is_adult': is_adult,
         'episodes_total': data.get('episodes_total'),
         'genres': [g.get('id') for g in (data.get('genres') or []) if isinstance(g, dict)],
         'episodes': [

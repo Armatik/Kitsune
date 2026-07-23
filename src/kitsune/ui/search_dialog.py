@@ -1007,6 +1007,7 @@ class SearchDialog(Adw.Dialog):
             type=entry.get('type', ''),
             year=entry.get('year', 0),
             is_ongoing=entry.get('is_ongoing', False),
+            is_adult=entry.get('is_adult', False),
         )
         if self._on_release_activated:
             self._on_release_activated(release)
@@ -1046,10 +1047,9 @@ class SearchDialog(Adw.Dialog):
             self._activate_anime(entry)
             return
         release = Release.from_dict(raw)
-        # First push release page, then player on top —
-        # so "back" from player lands on release page
-        if self._on_release_activated:
-            self._on_release_activated(release)
+        # The window pushes the release page and the player on top (so
+        # "back" from the player lands on the release page), honoring the
+        # 18+ gate exactly once.
         for ep in release.episodes:
             if ep.ordinal == ordinal:
                 self._on_episode_play(release, ep)

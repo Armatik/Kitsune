@@ -76,6 +76,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
     auth_sidebar_list = Gtk.Template.Child()
     sidebar_title = Gtk.Template.Child()
     wide_content_title = Gtk.Template.Child()
+    narrow_content_title = Gtk.Template.Child()
     back_btn = Gtk.Template.Child()
     narrow_back_btn = Gtk.Template.Child()
     narrow_sheet = Gtk.Template.Child()
@@ -122,6 +123,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if sys.platform != 'darwin':
             self.sidebar_title.set_title('Kitsune')
         self._active_player = None
+        self._active_player_view = None
         self._setup_window_state()
         self._setup_actions()
         self._setup_views()
@@ -866,6 +868,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         )
 
         self.wide_content_title.set_title(title)
+        self.narrow_content_title.set_title(title)
         self.back_btn.set_visible(show_back)
         self.narrow_back_btn.set_visible(show_back)
         self.filter_btn.set_visible(show_filter)
@@ -885,6 +888,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
     def _go_home(self):
         self.nav_view.pop_to_tag('main')
 
+    def show_release_detail(self, release):
+        """Public navigation entry — includes the 18+ gate."""
+        self._show_release_detail(release)
+
     def _show_release_detail(self, release):
         # 18+ gate. The warning is suppressible — once the user has
         # toggled "don't show again" we open the page directly. Reading
@@ -896,7 +903,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
             return
         self._do_show_release_detail(release)
 
-    def _show_adult_warning_then(self, release):
+    def _show_adult_warning_then(self, release, on_accept=None):
         dialog = Adw.AlertDialog.new(
             _('Adult content'),
             _('This title is marked 18+ and may contain explicit material. Continue?'),
@@ -917,7 +924,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 return
             if check.get_active():
                 self._settings.set_boolean('adult-warning-disabled', True)
-            self._do_show_release_detail(release)
+            if on_accept is not None:
+                on_accept()
+            else:
+                self._do_show_release_detail(release)
 
         dialog.connect('response', on_response)
         dialog.present(self)
@@ -1026,7 +1036,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         if not hasattr(self, '_search_dialog') or self._search_dialog is None:
             self._search_dialog = SearchDialog(client=self._client)
             self._search_dialog.set_on_release_activated(self._show_release_detail)
-            self._search_dialog.set_on_episode_play(self._play_episode)
+            self._search_dialog.set_on_episode_play(self.show_release_and_play)
             self._search_dialog.set_on_genre_activated(self._navigate_to_genre)
             self._search_dialog.set_on_franchise_activated(self._navigate_to_franchise)
             self._search_dialog.set_on_tag_activated(self._navigate_to_tag)
@@ -1270,10 +1280,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._sync.fetch_server_counts(on_counts)
 
     def _on_sync_complete(self, ok, error):
-        if self._profile_view:
+        # The profile's "Synced at HH:MM" advances only on success —
+        # showing a fresh timestamp after a failed sync would contradict
+        # the sidebar (which reads get_last_sync_time) and lie about
+        # the state of the user's data.
+        if self._profile_view and ok:
             import datetime
             now = datetime.datetime.now().strftime('%H:%M')
             self._profile_view.set_sync_time(now)
+        if self._profile_view:
             self._profile_view.refresh_counts()
         # After a successful pull, local tag state mirrors the server.
         # Refresh views that visualise that state — the tags page (for
@@ -1281,8 +1296,11 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # tag badges that newly-added releases would carry).
         if ok:
             self._refresh_synced_views(synced=True)
-        # Start periodic sync if not already running
-        if ok and not self._sync_timer_id:
+        # Start periodic sync if not already running — regardless of
+        # this sync's result. A failed first sync (offline start) must
+        # not silence periodic pulls until the next restart; the tick
+        # itself handles already_syncing/offline gracefully.
+        if not self._sync_timer_id:
             self._start_periodic_sync()
         if not ok and error and error != 'already_syncing':
             import logging
@@ -1505,6 +1523,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_retry(self, _banner):
+        # A pushed release page is not a content_stack tab — retry it first.
+        from kitsune.ui.release_view import ReleaseView
+        page = self.nav_view.get_visible_page()
+        if isinstance(page, ReleaseView):
+            page.retry()
+            return
         tab = self.content_stack.get_visible_child_name()
         if tab == 'catalog':
             self._catalog_view.retry()
@@ -1514,6 +1538,8 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._franchises_view.retry()
         elif tab == 'tags' and self._tags_view:
             self._tags_view.refresh()
+        elif tab == 'profile' and self._session:
+            self._session.validate_session(self._on_session_validated)
 
     def _on_nav_popped(self, _nav_view, page):
         self._stop_active_player()
@@ -1527,6 +1553,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _stop_active_player(self):
         if self._active_player:
+            # Save the live position BEFORE the pipeline is torn down —
+            # after cleanup() the position query reads 0 and the final
+            # ~30s of progress would be lost.
+            view = self._active_player_view
+            self._active_player_view = None
+            if view is not None:
+                view.save_position_now()
             player = self._active_player
             self._active_player = None
             player.cleanup()
@@ -1558,8 +1591,33 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self.session_expired_banner.set_revealed(False)
 
     def _play_episode(self, release, episode):
+        # 18+ gate at the single playback choke point (release page,
+        # search quick-play) — previously only the release-page navigation
+        # was gated, so episodes from search played without confirmation.
+        if release.is_adult and not self._settings.get_boolean(
+                'adult-warning-disabled'):
+            self._show_adult_warning_then(
+                release,
+                on_accept=lambda: self._do_play_episode(release, episode))
+            return
+        self._do_play_episode(release, episode)
+
+    def show_release_and_play(self, release, episode):
+        """Push the release page and start playback on top, gating 18+
+        exactly once (used by the search episode flow)."""
+        def proceed():
+            self._do_show_release_detail(release)
+            self._do_play_episode(release, episode)
+        if release.is_adult and not self._settings.get_boolean(
+                'adult-warning-disabled'):
+            self._show_adult_warning_then(release, on_accept=proceed)
+        else:
+            proceed()
+
+    def _do_play_episode(self, release, episode):
         from kitsune.ui.player_view import PlayerView
         view = PlayerView(release=release, episode=episode,
                           sync_manager=self._sync)
+        self._active_player_view = view
         self._active_player = view._player
         self.nav_view.push(view)

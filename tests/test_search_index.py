@@ -63,6 +63,20 @@ def test_index_release(mock_index):
     assert 'cached_at' in meta
 
 
+def test_index_release_stores_is_adult(mock_index):
+    """SEC-003: the 18+ flag must survive indexing — offline/cached search
+    results need it for poster blur."""
+    adult = dict(_SAMPLE_RAW)
+    adult['age_rating'] = {'value': 'R18_PLUS'}
+    search_index.index_release(43, adult)
+    assert search_index.get_release_meta(43)['is_adult'] is True
+
+    explicit = dict(_SAMPLE_RAW)
+    explicit['age_rating'] = {'value': 'R0_PLUS', 'is_adult': False}
+    search_index.index_release(44, explicit)
+    assert search_index.get_release_meta(44)['is_adult'] is False
+
+
 def test_index_release_poster_preview(mock_index):
     search_index.index_release(42, _SAMPLE_RAW)
     meta = search_index.get_release_meta(42)
