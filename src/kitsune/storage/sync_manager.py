@@ -180,6 +180,13 @@ class SyncManager:
     def last_queue_error(self):
         return self._queue.last_error()
 
+    def clear_queue_for_user(self, user_id):
+        """Drop all pending ops owned by `user_id` (account switch).
+
+        Public wrapper — UI must not reach into `self._queue` directly.
+        """
+        self._queue.clear_for_user(user_id)
+
     # --- Drain queue (Stage 2) ---
 
     _OP_DISPATCH = {
@@ -687,23 +694,27 @@ class SyncManager:
                 log.debug('Timecodes pull failed: %s', error)
                 then(False)
                 return
-            applied = skipped = unmapped = 0
-            for item in (data or []):
-                parsed = _parse_timecode_item(item)
-                if parsed is None:
-                    continue
-                ep_id, time_val, is_watched, updated_at = parsed
-                result = watch_positions.apply_server_entry(
-                    ep_id, time_val, is_watched, updated_at)
-                if result == 'applied':
-                    applied += 1
-                elif result == 'skipped':
-                    skipped += 1
-                elif result == 'unmapped':
-                    unmapped += 1
-            log.debug('Timecodes pulled: applied=%d skipped=%d unmapped=%d',
-                      applied, skipped, unmapped)
-            then(True)
+            try:
+                applied = skipped = unmapped = 0
+                for item in (data or []):
+                    parsed = _parse_timecode_item(item)
+                    if parsed is None:
+                        continue
+                    ep_id, time_val, is_watched, updated_at = parsed
+                    result = watch_positions.apply_server_entry(
+                        ep_id, time_val, is_watched, updated_at)
+                    if result == 'applied':
+                        applied += 1
+                    elif result == 'skipped':
+                        skipped += 1
+                    elif result == 'unmapped':
+                        unmapped += 1
+                log.debug('Timecodes pulled: applied=%d skipped=%d unmapped=%d',
+                          applied, skipped, unmapped)
+                then(True)
+            except Exception:
+                log.exception('Timecodes pull raised; aborting sync')
+                then(False)
 
         self._client.get_timecodes(callback=on_timecodes)
 
@@ -772,40 +783,50 @@ class SyncManager:
                 log.debug('Favorites sync failed: %s', error)
                 then(False)
                 return
-            local_ids = set(tags_store.get_release_ids_for_tag('favorites'))
-            server_set = set(server_ids) if server_ids else set()
-            strategy = self._strategy
-            snapshot = self._pull_snapshot
-
-            if strategy == MergeStrategy.PREFER_SERVER:
-                # Clear local, set to server — BUT skip snapshot ids
-                # (pending queue owns them)
-                for rid in (local_ids - server_set) - snapshot:
-                    tags_store.remove_release('favorites', rid)
-                for rid in (server_set - local_ids) - snapshot:
-                    tags_store.add_release('favorites', rid)
-                then(True)
-            elif strategy == MergeStrategy.PREFER_LOCAL:
-                # Push all local to server — snapshot ids go via queue
-                to_add = (local_ids - server_set) - snapshot
-                to_remove = (server_set - local_ids) - snapshot
-                if to_add:
-                    self._client.add_favorites(list(to_add), _noop)
-                if to_remove:
-                    self._client.remove_favorites(list(to_remove), _noop)
-                then(True)
-            else:
-                # MERGE: server wins conflicts — snapshot ids excluded
-                for rid in (server_set - local_ids) - snapshot:
-                    tags_store.add_release('favorites', rid)
-                local_only = (local_ids - server_set) - snapshot
-                if local_only:
-                    self._client.add_favorites(
-                        list(local_only), lambda d, e: then(True))
-                else:
-                    then(True)
+            try:
+                self._apply_favorites(server_ids, then)
+            except Exception:
+                # Without this guard the exception bubbles into the API
+                # client's one-shot callback wrapper and is swallowed —
+                # `then` never fires and `_syncing` stays True forever.
+                log.exception('Favorites sync raised; aborting sync')
+                then(False)
 
         self._client.get_favorite_ids(on_server_favs)
+
+    def _apply_favorites(self, server_ids, then):
+        local_ids = set(tags_store.get_release_ids_for_tag('favorites'))
+        server_set = set(server_ids) if server_ids else set()
+        strategy = self._strategy
+        snapshot = self._pull_snapshot
+
+        if strategy == MergeStrategy.PREFER_SERVER:
+            # Clear local, set to server — BUT skip snapshot ids
+            # (pending queue owns them)
+            for rid in (local_ids - server_set) - snapshot:
+                tags_store.remove_release('favorites', rid)
+            for rid in (server_set - local_ids) - snapshot:
+                tags_store.add_release('favorites', rid)
+            then(True)
+        elif strategy == MergeStrategy.PREFER_LOCAL:
+            # Push all local to server — snapshot ids go via queue
+            to_add = (local_ids - server_set) - snapshot
+            to_remove = (server_set - local_ids) - snapshot
+            if to_add:
+                self._client.add_favorites(list(to_add), _noop)
+            if to_remove:
+                self._client.remove_favorites(list(to_remove), _noop)
+            then(True)
+        else:
+            # MERGE: server wins conflicts — snapshot ids excluded
+            for rid in (server_set - local_ids) - snapshot:
+                tags_store.add_release('favorites', rid)
+            local_only = (local_ids - server_set) - snapshot
+            if local_only:
+                self._client.add_favorites(
+                    list(local_only), lambda d, e: then(True))
+            else:
+                then(True)
 
     def _sync_collections(self, then):
         def on_server_collections(server_entries, error):
@@ -813,44 +834,58 @@ class SyncManager:
                 log.debug('Collections sync failed: %s', error)
                 then(False)
                 return
-
-            server_by_tag = {}
-            for entry in (server_entries or []):
-                rid, ctype = _parse_collection_entry(entry)
-                tag_id = COLLECTION_MAP.get(ctype)
-                if tag_id and rid:
-                    server_by_tag.setdefault(tag_id, set()).add(rid)
-
-            strategy = self._strategy
-            snapshot = self._pull_snapshot
-            push_queue = []
-
-            for tag_id in COLLECTION_MAP.values():
-                local_ids = set(tags_store.get_release_ids_for_tag(tag_id))
-                server_ids = server_by_tag.get(tag_id, set())
-
-                if strategy == MergeStrategy.PREFER_SERVER:
-                    for rid in (local_ids - server_ids) - snapshot:
-                        tags_store.remove_release(tag_id, rid)
-                    for rid in (server_ids - local_ids) - snapshot:
-                        tags_store.add_release(tag_id, rid)
-                elif strategy == MergeStrategy.PREFER_LOCAL:
-                    for rid in (local_ids - server_ids) - snapshot:
-                        ctype = _TAG_TO_COLLECTION.get(tag_id)
-                        if ctype:
-                            push_queue.append((rid, ctype))
-                else:
-                    # MERGE
-                    for rid in (server_ids - local_ids) - snapshot:
-                        tags_store.add_release(tag_id, rid)
-                    for rid in (local_ids - server_ids) - snapshot:
-                        ctype = _TAG_TO_COLLECTION.get(tag_id)
-                        if ctype:
-                            push_queue.append((rid, ctype))
-
-            self._push_collections(push_queue, lambda: then(True))
+            try:
+                self._apply_collections(server_entries, then)
+            except Exception:
+                log.exception('Collections sync raised; aborting sync')
+                then(False)
 
         self._client.get_collection_ids(on_server_collections)
+
+    def _apply_collections(self, server_entries, then):
+        server_by_tag = {}
+        for entry in (server_entries or []):
+            rid, ctype = _parse_collection_entry(entry)
+            tag_id = COLLECTION_MAP.get(ctype)
+            if tag_id and rid:
+                server_by_tag.setdefault(tag_id, set()).add(rid)
+
+        strategy = self._strategy
+        snapshot = self._pull_snapshot
+        push_queue = []
+        remove_queue = []
+
+        for tag_id in COLLECTION_MAP.values():
+            local_ids = set(tags_store.get_release_ids_for_tag(tag_id))
+            server_ids = server_by_tag.get(tag_id, set())
+
+            if strategy == MergeStrategy.PREFER_SERVER:
+                for rid in (local_ids - server_ids) - snapshot:
+                    tags_store.remove_release(tag_id, rid)
+                for rid in (server_ids - local_ids) - snapshot:
+                    tags_store.add_release(tag_id, rid)
+            elif strategy == MergeStrategy.PREFER_LOCAL:
+                for rid in (local_ids - server_ids) - snapshot:
+                    ctype = _TAG_TO_COLLECTION.get(tag_id)
+                    if ctype:
+                        push_queue.append((rid, ctype))
+                # Symmetric to favorites: server-only entries are
+                # removed, otherwise the next periodic PREFER_SERVER
+                # pull silently resurrects them locally.
+                for rid in (server_ids - local_ids) - snapshot:
+                    remove_queue.append(rid)
+            else:
+                # MERGE
+                for rid in (server_ids - local_ids) - snapshot:
+                    tags_store.add_release(tag_id, rid)
+                for rid in (local_ids - server_ids) - snapshot:
+                    ctype = _TAG_TO_COLLECTION.get(tag_id)
+                    if ctype:
+                        push_queue.append((rid, ctype))
+
+        if remove_queue:
+            self._client.remove_from_collection(remove_queue, _noop)
+        self._push_collections(push_queue, lambda: then(True))
 
     def _push_collections(self, queue, then):
         if not queue:

@@ -36,6 +36,7 @@ class FakeSyncClient:
         self.pushed_favorites = []
         self.removed_favorites = []
         self.pushed_collections = []
+        self.removed_collections = []
         self._get_token = lambda: 'test-token'
 
     def get_favorite_ids(self, callback=None):
@@ -60,6 +61,7 @@ class FakeSyncClient:
             callback(None, None)
 
     def remove_from_collection(self, release_ids, callback=None):
+        self.removed_collections.extend(release_ids)
         if callback:
             callback(None, None)
 
@@ -122,6 +124,59 @@ def test_merge_collections(mock_tags):
 
     assert 10 in tags_store.get_release_ids_for_tag('watching')
     assert 40 in tags_store.get_release_ids_for_tag('watched')
+
+
+def test_prefer_local_removes_server_only_collections(mock_tags):
+    """BUG-009: PREFER_LOCAL must remove server-only collection entries,
+    symmetric to favorites — otherwise the next periodic PREFER_SERVER
+    pull silently resurrects them locally."""
+    client = FakeSyncClient()
+    client.server_collections = [
+        [10, 'WATCHING'],
+        [40, 'WATCHED'],
+    ]
+    sm = SyncManager(client)
+    tags_store.add_release('watching', 99)  # local-only
+
+    sm.initial_sync(lambda ok, err: None,
+                    strategy=MergeStrategy.PREFER_LOCAL)
+
+    # Local-only kept and pushed to server
+    assert 99 in tags_store.get_release_ids_for_tag('watching')
+    assert (99, 'WATCHING') in client.pushed_collections
+    # Server-only entries removed from server
+    assert set(client.removed_collections) == {10, 40}
+
+
+def test_sync_recovers_from_callback_exception(mock_tags, monkeypatch):
+    """BUG-020: an exception inside a sync callback must not wedge
+    `_syncing` forever — the chain must terminate with failure and the
+    next sync must run."""
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+
+    calls = {'n': 0}
+    real_get = tags_store.get_release_ids_for_tag
+
+    def boom(tag_id):
+        calls['n'] += 1
+        if calls['n'] == 1:
+            raise KeyError('corrupt tags.json')
+        return real_get(tag_id)
+
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.tags_store.get_release_ids_for_tag',
+        boom,
+    )
+
+    results = []
+    sm.initial_sync(lambda ok, err: results.append((ok, err)))
+    assert results == [(False, 'sync_partial')]
+    assert sm.is_syncing is False
+
+    results2 = []
+    sm.initial_sync(lambda ok, err: results2.append((ok, err)))
+    assert results2 == [(True, None)]
 
 
 def test_sync_sets_last_sync_time(mock_tags):
