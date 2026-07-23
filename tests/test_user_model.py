@@ -46,3 +46,16 @@ def test_from_dict_empty():
     user = User.from_dict({})
     assert user.id == 0
     assert user.nickname == ''
+
+
+def test_avatar_safe_url_rules():
+    """SEC-009: avatar URL must accept only relative paths and https:// —
+    http:// and schemeless//host are rejected."""
+    from kitsune.models.user import _safe_url
+    assert _safe_url('/avatars/1.png') is not None
+    assert _safe_url('/avatars/1.png').startswith('https://')
+    assert _safe_url('https://cdn.example.com/a.png') == 'https://cdn.example.com/a.png'
+    assert _safe_url('http://evil.example.com/a.png') is None
+    assert _safe_url('//evil.example.com/a.png') is None
+    assert _safe_url('') is None
+    assert _safe_url(None) is None

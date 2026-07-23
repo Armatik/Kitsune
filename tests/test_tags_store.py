@@ -170,3 +170,16 @@ def test_load_tolerates_wrong_shape_json(mock_tags):
     mock_tags.write_text('{"notags": true}')
     tags = tags_store.get_all_tags()
     assert any(t['id'] == 'favorites' for t in tags)
+
+
+def test_builtin_migration_updates_name(mock_tags):
+    """BUG-015: stores migrated from 0.8.5 kept the Russian builtin name
+    ('Избранное') forever — display_name() could not translate it."""
+    mock_tags.write_text(
+        '{"tags": [{"id": "favorites", "name": "Избранное", '
+        '"icon_type": "emoji", "icon_value": "⭐", "color": "#e5a50a", '
+        '"builtin": true, "order": 0, "releases": [42]}]}')
+    tag = tags_store.get_tag('favorites')
+    assert tag['name'] == 'Favorites'
+    assert tags_store.display_name(tag) == 'Favorites'
+    assert 42 in tags_store.get_release_ids_for_tag('favorites')

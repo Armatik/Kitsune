@@ -8,11 +8,16 @@ from kitsune import SITE_URL
 
 
 def _safe_url(path: str | None) -> str | None:
+    """Accept only site-relative paths and absolute https:// URLs."""
     if not path or not isinstance(path, str):
+        return None
+    if path.startswith('//'):
         return None
     if path.startswith('/'):
         return SITE_URL + path
-    return path
+    if path.startswith('https://'):
+        return path
+    return None
 
 
 @dataclass

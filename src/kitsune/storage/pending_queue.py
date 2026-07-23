@@ -134,8 +134,29 @@ class PendingQueue:
 
         Returns the new op id, or None if the op was coalesced.
         """
-        if payload is None:
-            payload = {}
+        new_id = self._enqueue_one(
+            op_kind, release_id, user_id, payload or {})
+        self._save()
+        log.debug('enqueue %s rid=%d id=%s (size=%d)',
+                  op_kind, release_id, new_id, len(self._ops))
+        return new_id
+
+    def enqueue_many(self, ops: list, user_id: int) -> list:
+        """Enqueue several ops with a single persist at the end.
+
+        `ops` items are (op_kind, release_id, payload) tuples. Used by
+        mark-all / unmark-all, which would otherwise fsync the queue file
+        once per episode and visibly freeze the UI on 200+ episode series.
+        """
+        ids = [
+            self._enqueue_one(op_kind, release_id, user_id, payload or {})
+            for op_kind, release_id, payload in ops
+        ]
+        self._save()
+        log.debug('enqueue_many: %d ops (size=%d)', len(ops), len(self._ops))
+        return ids
+
+    def _enqueue_one(self, op_kind, release_id, user_id, payload) -> str | None:
         if self._try_coalesce(op_kind, release_id, payload):
             log.debug('enqueue %s rid=%d coalesced (size=%d)',
                       op_kind, release_id, len(self._ops))
@@ -149,9 +170,6 @@ class PendingQueue:
             created_at=time.time(),
         )
         self._ops.append(new_op)
-        self._save()
-        log.debug('enqueue %s rid=%d id=%s (size=%d)',
-                  op_kind, release_id, new_op.id, len(self._ops))
         return new_op.id
 
     _OPPOSITES = {
@@ -266,6 +284,10 @@ class PendingQueue:
         After BACKOFF_STEPS is exhausted, next_retry_at stays at the last
         (largest) step — retries continue forever until success or clear.
         """
+        # Discard first: the op may have been removed from _ops mid-flight
+        # (clear_for_user while the HTTP request was in the air), in which
+        # case the loop below never runs and the id would leak.
+        self._in_flight.discard(op_id)
         for op in self._ops:
             if op.id != op_id:
                 continue
@@ -274,7 +296,6 @@ class PendingQueue:
             backoff = BACKOFF_STEPS[idx]
             op.next_retry_at = time.time() + backoff
             op.last_error = str(error)[:MAX_ERROR_LEN]
-            self._in_flight.discard(op_id)
             self._save()
             log.debug(
                 'mark_failure id=%s attempt=%d backoff=%ds error=%s',
@@ -311,7 +332,9 @@ class PendingQueue:
     def clear_for_user(self, user_id: int) -> int:
         """Drop every op belonging to a given user. Returns count removed."""
         before = len(self._ops)
+        removed_ids = {op.id for op in self._ops if op.user_id == user_id}
         self._ops = [op for op in self._ops if op.user_id != user_id]
+        self._in_flight -= removed_ids
         removed = before - len(self._ops)
         if removed:
             self._save()
@@ -331,3 +354,7 @@ class PendingQueue:
 
     def size(self) -> int:
         return len(self._ops)
+
+    def has_dispatchable(self, known_kinds: set) -> bool:
+        """True if any queued op's kind is in `known_kinds`."""
+        return any(op.op in known_kinds for op in self._ops)

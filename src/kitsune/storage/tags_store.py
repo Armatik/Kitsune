@@ -166,6 +166,11 @@ def _read_and_migrate() -> dict:
         if latest.get('color') and tag.get('color') != latest['color']:
             tag['color'] = latest['color']
             migrated = True
+        # Refresh builtin names too — 0.8.5 stored 'Избранное' as the
+        # favorites name, which display_name() can never translate.
+        if tag.get('name') != latest['name']:
+            tag['name'] = latest['name']
+            migrated = True
 
     # Persist the migrated shape so subsequent loads are no-ops. Without
     # this, every _load on an old store re-runs the migration in memory.

@@ -1459,3 +1459,23 @@ def test_clear_queue_on_logout_also_stops_retry_timer(tmp_path, mock_tags):
     sm.clear_queue_on_logout()
     # Timer stopped (no point retrying after logout)
     assert sm._retry_timer_id is None
+
+
+def test_retry_timer_stops_when_only_unknown_ops_remain(tmp_path, mock_tags, monkeypatch):
+    """BUG-029: a queue holding only unknown op kinds is never drained —
+    the retry timer must not tick forever."""
+    sm, client = _make_sm_with_fake(tmp_path)
+    stopped = []
+    monkeypatch.setattr(sm, '_stop_retry_timer', lambda: stopped.append(True))
+    sm._queue.enqueue('future_op_kind', 1, user_id=1)
+    sm._stop_retry_timer_if_idle()
+    assert stopped == [True]
+
+
+def test_retry_timer_kept_for_known_ops(tmp_path, mock_tags, monkeypatch):
+    sm, client = _make_sm_with_fake(tmp_path)
+    stopped = []
+    monkeypatch.setattr(sm, '_stop_retry_timer', lambda: stopped.append(True))
+    sm._queue.enqueue(OP_ADD_FAVORITE, 1, user_id=1)
+    sm._stop_retry_timer_if_idle()
+    assert stopped == []

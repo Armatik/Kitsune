@@ -118,11 +118,44 @@ def mark_completed(release_id: int, ordinal: float,
     _save(entries)
 
 
+def mark_completed_many(release_id: int, episodes: list):
+    """Mark many episodes of one release watched with a single disk write.
+
+    `episodes` items are (ordinal, episode_id) tuples. Mark-all on a 200+
+    episode series would otherwise fsync the positions file once per
+    episode and visibly freeze the UI.
+    """
+    entries = _load()
+    now = time.time()
+    for ordinal, episode_id in episodes:
+        key = f'{release_id}_{ordinal}'
+        entries[key] = {
+            'pos': -1,
+            'episode_id': episode_id if episode_id is not None
+                          else (entries.get(key, {}).get('episode_id')),
+            'updated_at': now,
+        }
+    _save(entries)
+
+
 def remove_position(release_id: int, ordinal: float):
     entries = _load()
     key = f'{release_id}_{ordinal}'
     if key in entries:
         del entries[key]
+        _save(entries)
+
+
+def remove_positions(release_id: int, ordinals: list):
+    """Drop many positions of one release with a single disk write."""
+    entries = _load()
+    changed = False
+    for ordinal in ordinals:
+        key = f'{release_id}_{ordinal}'
+        if key in entries:
+            del entries[key]
+            changed = True
+    if changed:
         _save(entries)
 
 

@@ -357,8 +357,13 @@ class SyncManager:
         after every drained operation, burning ~9000 idle wakeups per
         day on a logged-in app — wasteful on mobile (Phosh battery).
         Re-armed automatically on the next _schedule_drain.
+
+        Also stops when only unknown op kinds remain (a downgrade loaded
+        a newer queue) — those ops are never dispatched, so the timer
+        would tick forever without ever draining anything.
         """
-        if self._queue.size() == 0:
+        known = set(self._OP_DISPATCH) | {OP_SAVE_TIMECODE}
+        if not self._queue.has_dispatchable(known):
             self._stop_retry_timer()
 
     def _schedule_drain(self):
@@ -627,6 +632,27 @@ class SyncManager:
                 'time': pos,
                 'is_watched': is_watched,
             })
+        self._emit_queue_changed()
+        self._schedule_drain()
+
+    def enqueue_timecodes_many(self, items):
+        """Batch-enqueue timecode ops with a single persist + drain kick.
+
+        `items` are (release_id, episode_id, pos, is_watched) tuples.
+        Used by mark-all / unmark-all — per-episode enqueue would fsync
+        the queue once per episode and freeze the UI on long series.
+        """
+        if not self.is_logged_in():
+            return
+        ops = [
+            (OP_SAVE_TIMECODE, release_id, {
+                'episode_id': episode_id,
+                'time': pos,
+                'is_watched': is_watched,
+            })
+            for release_id, episode_id, pos, is_watched in items
+        ]
+        self._queue.enqueue_many(ops, self._user_id)
         self._emit_queue_changed()
         self._schedule_drain()
 

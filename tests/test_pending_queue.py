@@ -662,3 +662,51 @@ def test_load_tolerates_read_oserror(mock_pending_queue, monkeypatch):
     )
     q = PendingQueue.load()
     assert q.size() == 0
+
+
+def test_clear_for_user_drops_in_flight_ids(tmp_path):
+    """BUG-023: ops removed while in-flight must not leak their ids —
+    a later mark_failure cannot find them in _ops and would never discard."""
+    q = PendingQueue(tmp_path / 'q.json')
+    op_id = q.enqueue(OP_ADD_FAVORITE, 1, user_id=7)
+    q.mark_in_flight(op_id)
+    q.clear_for_user(7)
+    assert op_id not in q._in_flight
+
+
+def test_mark_failure_discards_in_flight_even_if_op_gone(tmp_path):
+    q = PendingQueue(tmp_path / 'q.json')
+    op_id = q.enqueue(OP_ADD_FAVORITE, 1, user_id=1)
+    q.mark_in_flight(op_id)
+    q._ops = []  # op removed mid-flight (e.g. by clear_for_user)
+    q.mark_failure(op_id, 'err')
+    assert op_id not in q._in_flight
+
+
+def test_enqueue_many_single_save(tmp_path, monkeypatch):
+    """BUG-026: batch enqueue persists once for the whole batch."""
+    q = PendingQueue(tmp_path / 'q.json')
+    saves = []
+    monkeypatch.setattr(q, '_save', lambda: saves.append(1))
+    q.enqueue_many([
+        ('save_timecode', 9275, {'episode_id': 'ep.0', 'time': 0, 'is_watched': True}),
+        ('save_timecode', 9275, {'episode_id': 'ep.1', 'time': 0, 'is_watched': True}),
+    ], user_id=1)
+    assert len(saves) == 1
+    assert q.size() == 2
+
+
+def test_enqueue_timecodes_many_integration(tmp_path, mock_tags, monkeypatch):
+    from test_sync_manager import _make_sm_with_fake
+    sm, client = _make_sm_with_fake(tmp_path)
+    scheduled = []
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.GLib.idle_add',
+        lambda fn: scheduled.append(fn),
+    )
+    sm.enqueue_timecodes_many([
+        (9275, 'ep.0', 0, True),
+        (9275, 'ep.1', 0, True),
+    ])
+    assert sm._queue.size() == 2
+    assert len(scheduled) == 1

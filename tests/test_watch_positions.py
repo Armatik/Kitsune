@@ -352,3 +352,27 @@ def test_read_from_disk_tolerates_oserror(mock_positions, monkeypatch):
         lambda self: (_ for _ in ()).throw(PermissionError('denied')),
     )
     assert wp._read_from_disk() == {}
+
+
+def test_mark_completed_many_single_write(mock_positions, monkeypatch):
+    """BUG-026: batch completion mutates all entries with ONE disk write."""
+    saves = []
+    real_save = wp._save
+    monkeypatch.setattr(wp, '_save', lambda e: (saves.append(1), real_save(e)))
+    wp.mark_completed_many(9275, [(1.0, 'ep.0'), (2.0, 'ep.1'), (3.0, 'ep.2')])
+    assert len(saves) == 1
+    assert wp.get_position(9275, 1.0) == -1
+    assert wp.get_position(9275, 3.0) == -1
+    assert wp.get_episode_id(9275, 2.0) == 'ep.1'
+
+
+def test_remove_positions_single_write(mock_positions, monkeypatch):
+    wp.save_position(9275, 1.0, 60.0, episode_id='ep.0')
+    wp.save_position(9275, 2.0, 90.0, episode_id='ep.1')
+    saves = []
+    real_save = wp._save
+    monkeypatch.setattr(wp, '_save', lambda e: (saves.append(1), real_save(e)))
+    wp.remove_positions(9275, [1.0, 2.0])
+    assert len(saves) == 1
+    assert wp.get_position(9275, 1.0) == 0
+    assert wp.get_position(9275, 2.0) == 0
