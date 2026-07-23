@@ -63,7 +63,7 @@ def test_expired_handler_fires_on_401_with_auth_header():
     client.set_token_expired_handler(lambda: fired.append(True))
     msg = Soup.Message.new('GET', 'https://example.com/accounts/users/me/profile')
     msg.get_request_headers().append('Authorization', 'Bearer abc')
-    client._maybe_fire_token_expired(msg, Soup.Status.UNAUTHORIZED)
+    client._maybe_fire_token_expired('/accounts/users/me/profile', msg, Soup.Status.UNAUTHORIZED)
     assert fired == [True]
 
 
@@ -79,7 +79,7 @@ def test_expired_handler_fires_on_403_account_endpoint():
     client.set_token_expired_handler(lambda: fired.append(True))
     msg = Soup.Message.new('GET', 'https://example.com/accounts/users/me/profile')
     msg.get_request_headers().append('Authorization', 'Bearer abc')
-    client._maybe_fire_token_expired(msg, Soup.Status.FORBIDDEN)
+    client._maybe_fire_token_expired('/accounts/users/me/profile', msg, Soup.Status.FORBIDDEN)
     assert fired == [True]
 
 
@@ -94,7 +94,7 @@ def test_expired_handler_skipped_on_403_public_endpoint():
     client.set_token_expired_handler(lambda: fired.append(True))
     msg = Soup.Message.new('GET', 'https://example.com/anime/releases/123')
     msg.get_request_headers().append('Authorization', 'Bearer abc')
-    client._maybe_fire_token_expired(msg, Soup.Status.FORBIDDEN)
+    client._maybe_fire_token_expired('/anime/releases/123', msg, Soup.Status.FORBIDDEN)
     assert fired == []
 
 
@@ -108,7 +108,7 @@ def test_expired_handler_skipped_on_401_without_auth_header():
     fired = []
     client.set_token_expired_handler(lambda: fired.append(True))
     msg = Soup.Message.new('POST', 'https://example.com/accounts/users/auth/login')
-    client._maybe_fire_token_expired(msg, Soup.Status.UNAUTHORIZED)
+    client._maybe_fire_token_expired('/accounts/users/auth/login', msg, Soup.Status.UNAUTHORIZED)
     assert fired == []
 
 
@@ -141,3 +141,31 @@ def test_make_callback_parser_exception_after_success_path_not_swallowed():
     assert calls == [(None, 'timeout')]
     cb({'x': 1}, None)
     assert calls[1] == (('parsed', {'x': 1}), None)
+
+
+def test_expired_handler_with_prefixed_api_paths():
+    """Production paths: /accounts/... (fire) vs /anime/... (no fire) —
+    the request path must come from the client arg, NOT the message URI
+    (which carries the /api/v1 prefix and breaks startswith checks)."""
+    from gi.repository import Soup
+    from kitsune.api.client import AniLibriaClient
+
+    client = AniLibriaClient()
+    fired = []
+    client.set_token_expired_handler(lambda: fired.append(True))
+    msg = Soup.Message.new(
+        'GET', 'https://anilibria.top/api/v1/accounts/users/me/profile')
+    msg.get_request_headers().append('Authorization', 'Bearer abc')
+    client._maybe_fire_token_expired(
+        '/accounts/users/me/profile', msg, Soup.Status.FORBIDDEN)
+    assert fired == [True]
+
+    client2 = AniLibriaClient()
+    fired2 = []
+    client2.set_token_expired_handler(lambda: fired2.append(True))
+    msg2 = Soup.Message.new(
+        'GET', 'https://anilibria.top/api/v1/anime/releases/123')
+    msg2.get_request_headers().append('Authorization', 'Bearer abc')
+    client2._maybe_fire_token_expired(
+        '/anime/releases/123', msg2, Soup.Status.FORBIDDEN)
+    assert fired2 == []

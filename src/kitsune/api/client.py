@@ -109,7 +109,7 @@ class AniLibriaClient:
         log.debug('GET %s (auth=%s)', path, bool(token))
         self._send(msg, 'GET', path, callback, cancellable)
 
-    def _maybe_fire_token_expired(self, msg, status):
+    def _maybe_fire_token_expired(self, request_path, msg, status):
         """Fire the session-expired handler for a rejected Bearer token.
 
         Guards against three false positives:
@@ -119,23 +119,25 @@ class AniLibriaClient:
             expired token — both statuses must count as rejection;
           - 403 on public /anime/* endpoints is a content block (geo /
             copyright), not a session issue, even with a token attached.
+
+        `request_path` is the client-side path ('/accounts/...') — the
+        message URI carries the /api/v1 prefix and must not be used here.
         """
         if not self._token_expired_handler:
             return
         method = msg.get_method()
-        path = msg.get_uri().get_path()
         if status not in (Soup.Status.UNAUTHORIZED, Soup.Status.FORBIDDEN):
             return
-        if not path.startswith('/accounts/'):
+        if not request_path.startswith('/accounts/'):
             log.debug('%s %s → %d on non-account endpoint, not a session expiry',
-                      method, path, status.real)
+                      method, request_path, status.real)
             return
         if not msg.get_request_headers().get_one('Authorization'):
             log.debug('%s %s → %d without auth header, not a session expiry',
-                      method, path, status.real)
+                      method, request_path, status.real)
             return
         log.debug('%s %s → %d, firing token_expired_handler',
-                  method, path, status.real)
+                  method, request_path, status.real)
         try:
             self._token_expired_handler()
         except Exception:
@@ -221,7 +223,7 @@ class AniLibriaClient:
                 GLib.source_remove(timeout_id)
                 log.debug('%s %s → HTTP %d %s',
                           method, path, status.real, status.value_nick)
-                self._maybe_fire_token_expired(msg, status)
+                self._maybe_fire_token_expired(path, msg, status)
                 safe_call(None, f'HTTP {status.value_nick}')
                 return
             if gbytes is None:
