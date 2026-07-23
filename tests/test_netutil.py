@@ -74,3 +74,33 @@ def test_on_done_called_exactly_once():
                        lambda gbytes, err: done.append((gbytes, err)))
     _drain(done)
     assert len(done) == 1
+
+
+class _FakeSession:
+    """Mimics libsoup3's send_async callback contract: (session, result,
+    user_data) — the arity a real Soup.Session invokes with."""
+
+    def __init__(self, payload):
+        self._stream = Gio.MemoryInputStream.new_from_bytes(
+            GLib.Bytes.new(payload))
+
+    def send_async(self, msg, prio, cancellable, callback, *user_data):
+        callback(self, 'fake-result', *user_data)
+
+    def send_finish(self, result):
+        return self._stream
+
+
+def test_send_and_read_capped_full_send_path():
+    """Regression: send_async callbacks must accept (session, result,
+    user_data) — a 2-arg callback dies with TypeError on a real session."""
+    from kitsune.netutil import send_and_read_capped
+
+    payload = b'{"ok": 1}'
+    done = []
+    send_and_read_capped(_FakeSession(payload), None, 1024, None,
+                         lambda g, e: done.append((g, e)))
+    _drain(done)
+    gbytes, err = done[0]
+    assert err is None
+    assert gbytes.get_data() == payload

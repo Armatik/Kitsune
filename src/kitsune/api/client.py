@@ -188,7 +188,7 @@ class AniLibriaClient:
             called[0] = True
             callback(data, err)
 
-        def on_sent(session, result):
+        def on_sent(session, result, _user_data):
             if state[0]:
                 return  # timeout already handled
             try:

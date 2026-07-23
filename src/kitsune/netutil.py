@@ -72,7 +72,7 @@ def send_and_read_capped(session, msg, max_bytes, cancellable, on_done):
 
     HTTP status is NOT inspected here — callers handle response semantics.
     """
-    def on_sent(session, result):
+    def on_sent(session, result, _user_data):
         try:
             stream = session.send_finish(result)
         except GLib.Error as e:
