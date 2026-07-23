@@ -260,41 +260,11 @@ template $KitsuneWindow: Adw.ApplicationWindow {
     }
     }
 
-    Gtk.Revealer session_expired_banner {
-      reveal-child: false;
-      transition-type: slide_up;
-
-      Gtk.Box {
-        orientation: horizontal;
-        spacing: 12;
-        margin-start: 12;
-        margin-end: 6;
-        margin-top: 6;
-        margin-bottom: 6;
-        css-classes: ["session-banner"];
-
-        Gtk.Label {
-          label: _("Your session has expired. Log in again to resume sync.");
-          wrap: true;
-          hexpand: true;
-          xalign: 0;
-          valign: center;
-        }
-
-        Gtk.Button {
-          label: _("Log in again");
-          valign: center;
-          clicked => $on_session_banner_login();
-        }
-
-        Gtk.Button {
-          icon-name: "net.armatik.Kitsune.cross-large-symbolic";
-          css-classes: ["flat", "circular"];
-          valign: center;
-          tooltip-text: _("Dismiss");
-          clicked => $on_session_banner_dismiss();
-        }
-      }
+    Adw.Banner session_expired_banner {
+      title: _("Your session has expired. Log in again to resume sync.");
+      button-label: _("Log in again");
+      revealed: false;
+      button-clicked => $on_session_banner_login();
     }
 
     Adw.Banner offline_banner {
