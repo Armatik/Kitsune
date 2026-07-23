@@ -1215,12 +1215,19 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 lambda user, err: self._on_profile_loaded(user))
         self._update_auth_sidebar()
         self._switch_tab('profile')
+        # Every explicit login reindexes: while the local session was
+        # dead, other devices may have produced timecodes for titles the
+        # local episode index has never seen (and ongoing shows grew).
+        self._sync.invalidate_reindex()
         # Skip the merge dialog on expired-session re-login: the auth_dialog
         # _finalize_login flow will call session.clear_expired(), which emits
         # session-restored and resumes sync via SyncManager.resume_after_expired_session.
         # Showing the merge dialog on top of that is confusing — the user just
         # wants to continue where they left off, not pick a merge strategy.
+        # A quiet pull still runs so server-side changes from other devices
+        # (and the reindex invalidated above) are applied.
         if self._session and self._session.is_expired():
+            self._sync.pull_from_server(self._on_sync_complete)
             return
         self._show_merge_dialog()
 

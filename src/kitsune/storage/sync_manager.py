@@ -268,6 +268,19 @@ class SyncManager:
         except OSError as e:
             log.debug('could not persist reindex flag: %s', e)
 
+    def invalidate_reindex(self):
+        """Drop the reindex flag so the next sync reindexes the library.
+
+        Called on every explicit login (including expired-session
+        re-login): while the local session was dead the user may have
+        watched titles on other devices that the local episode index
+        has never seen, and ongoing shows gained new episodes.
+        """
+        try:
+            self._reindex_flag_path().unlink(missing_ok=True)
+        except OSError:
+            pass
+
     def reset_local_data(self):
         """Manual 'clear local data' action (profile button): wipe synced
         local state and re-download everything (RESET_TO_SERVER)."""

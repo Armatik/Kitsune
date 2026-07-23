@@ -1625,3 +1625,17 @@ def test_needs_reindex_flag_lifecycle(tmp_path, mock_tags, monkeypatch):
     sm.set_user_id(42)
     sm._wipe_local_synced()
     assert sm.needs_reindex() is True          # wipe invalidates
+
+
+def test_invalidate_reindex(tmp_path, mock_tags, monkeypatch):
+    flag = tmp_path / 'reindexed_user_id'
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.SyncManager._reindex_flag_path',
+        staticmethod(lambda: flag))
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    sm.set_user_id(42)
+    sm._mark_reindexed()
+    assert sm.needs_reindex() is False
+    sm.invalidate_reindex()
+    assert sm.needs_reindex() is True
