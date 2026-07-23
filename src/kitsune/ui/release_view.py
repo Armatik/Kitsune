@@ -382,7 +382,10 @@ class ReleaseView(Adw.NavigationPage):
         self._episodes_view = name
         self._settings.set_string('episodes-view', name)
         if name == 'grid':
-            self._refresh_episodes_grid()
+            # Populate directly: _refresh_episodes_grid is a no-op while
+            # the grid is still invisible (list mode), which used to make
+            # the first toggle click appear dead.
+            self._populate_episodes_grid()
         else:
             # _update_empty_placeholder owns visibility for both list,
             # grid and the empty-state label based on filter results.
@@ -626,6 +629,23 @@ class ReleaseView(Adw.NavigationPage):
             callback=self._on_raw_release_loaded,
         )
 
+    def retry(self):
+        """Public retry entry — offline banner and the error-state button."""
+        self._clear_episodes_error()
+        if not self._release.episodes:
+            self.episodes_spinner.set_visible(True)
+        else:
+            self._header_spinner.set_visible(True)
+        self._start_refresh()
+
+    def _clear_episodes_error(self):
+        w = getattr(self, '_episodes_error_widget', None)
+        if w is not None:
+            parent = w.get_parent()
+            if parent is not None:
+                parent.remove(w)
+            self._episodes_error_widget = None
+
     def _on_raw_release_loaded(self, data, error):
         if not self.get_mapped():
             return
@@ -666,14 +686,28 @@ class ReleaseView(Adw.NavigationPage):
 
     def _show_spinner_error(self, spinner):
         spinner.set_visible(False)
-        error = Gtk.Image(
+        box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=8,
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+        )
+        box.append(Gtk.Image(
             icon_name='net.armatik.Kitsune.cross-large-symbolic',
             pixel_size=32,
             css_classes=['error'],
+        ))
+        box.append(Gtk.Label(
+            label=_('Failed to load'),
+            css_classes=['dim-label'],
+        ))
+        retry = Gtk.Button(
+            label=_('Retry'), css_classes=['pill'],
             halign=Gtk.Align.CENTER,
         )
+        retry.connect('clicked', lambda _b: self.retry())
+        box.append(retry)
         parent = spinner.get_parent()
-        parent.insert_child_after(error, spinner)
+        parent.insert_child_after(box, spinner)
+        self._episodes_error_widget = box
 
     def _show_refresh_done(self):
         self._header_spinner.set_visible(False)
@@ -771,8 +805,8 @@ class ReleaseView(Adw.NavigationPage):
         # wiring and other cross-cutting concerns apply uniformly to
         # related-release navigations.
         root = self.get_root()
-        if root is not None and hasattr(root, '_show_release_detail'):
-            root._show_release_detail(release)
+        if root is not None and hasattr(root, 'show_release_detail'):
+            root.show_release_detail(release)
 
     # --- Team ---
 

@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from kitsune.ui import register_css
 
@@ -45,6 +45,7 @@ class ContentGrid(Gtk.Box):
         register_css(_PULL_REFRESH_CSS)
         self._on_scroll_near_end = None
         self._on_child_activated = None
+        self._on_retry = None
         self._has_content = False
         self._error_widget = None
         self._vadjustment = self.scrolled.get_vadjustment()
@@ -66,6 +67,10 @@ class ContentGrid(Gtk.Box):
     def set_on_child_activated(self, callback):
         self._on_child_activated = callback
 
+    def set_on_retry(self, callback):
+        """Wire a retry action shown inside the error state."""
+        self._on_retry = callback
+
     def set_spinner_visible(self, visible: bool):
         if self._has_content:
             self.spinner.set_visible(visible)
@@ -82,13 +87,26 @@ class ContentGrid(Gtk.Box):
         self.spinner.set_visible(False)
         self.initial_spinner.set_visible(False)
         self.clear_error()
-        error = Gtk.Image(
+        error = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, spacing=12,
+            halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER,
+        )
+        error.append(Gtk.Image(
             icon_name='net.armatik.Kitsune.cross-large-symbolic',
             pixel_size=48,
             css_classes=['error'],
-            halign=Gtk.Align.CENTER,
-            valign=Gtk.Align.CENTER,
-        )
+        ))
+        error.append(Gtk.Label(
+            label=_('Failed to load content'),
+            css_classes=['dim-label'],
+        ))
+        if self._on_retry:
+            btn = Gtk.Button(
+                label=_('Retry'), css_classes=['pill'],
+                halign=Gtk.Align.CENTER,
+            )
+            btn.connect('clicked', lambda _b: self._on_retry())
+            error.append(btn)
         self._error_widget = error
         if not self._has_content:
             overlay = self.initial_spinner.get_parent()
@@ -114,12 +132,28 @@ class ContentGrid(Gtk.Box):
         self.initial_spinner.set_visible(False)
         self.end_label.set_visible(True)
 
-    def clear(self):
+    def clear(self, preserve_scroll=False):
+        # Sync-triggered repopulations (periodic refresh every 5 min)
+        # must not teleport the user to the top of the list.
+        if preserve_scroll:
+            self._saved_scroll_value = self._vadjustment.get_value()
         self._has_content = False
         self.end_label.set_visible(False)
+        self.clear_error()
         while child := self.flowbox.get_first_child():
             self.flowbox.remove(child)
-        self._vadjustment.set_value(0)
+        if preserve_scroll:
+            GLib.idle_add(self._restore_scroll, priority=GLib.PRIORITY_LOW)
+        else:
+            self._vadjustment.set_value(0)
+
+    def _restore_scroll(self):
+        v = getattr(self, '_saved_scroll_value', None)
+        self._saved_scroll_value = None
+        if v is not None:
+            adj = self._vadjustment
+            adj.set_value(min(v, max(0.0, adj.get_upper() - adj.get_page_size())))
+        return GLib.SOURCE_REMOVE
 
     def append_child(self, widget):
         if not self._has_content:

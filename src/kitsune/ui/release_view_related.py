@@ -11,6 +11,7 @@ from gi.repository import Adw, Gtk
 
 from kitsune.models import Franchise, Release
 from kitsune.ui.image_cache import load_image
+from kitsune.ui import apply_adult_blur
 
 
 def related_subtitle(release: Release) -> str:
@@ -108,6 +109,9 @@ def populate_related(header, list_widget, franchise: Franchise,
         )
         pic_overlay.set_child(pic)
         clamp.set_child(pic_overlay)
+        # pic_overlay already clips (Overflow.HIDDEN), matching the
+        # adult-blur hosting requirement used by cards and mini-cards.
+        apply_adult_blur(pic, release.is_adult)
         if release.poster:
             load_image(release.poster, lambda tex, err, p=pic:
                        p.set_paintable(tex) if tex else None)

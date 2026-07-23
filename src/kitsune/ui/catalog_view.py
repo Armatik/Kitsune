@@ -51,6 +51,7 @@ class CatalogView(Gtk.Box):
         self._grid = ContentGrid()
         self._grid.set_on_scroll_near_end(self._on_scroll_near_end)
         self._grid.set_on_child_activated(self._on_child_activated)
+        self._grid.set_on_retry(self.retry)
         self.append(self._grid)
 
         # Pull-to-refresh: fires on kinetic overshoot at the top edge.

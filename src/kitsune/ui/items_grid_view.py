@@ -34,6 +34,7 @@ class ItemsGridView(Gtk.Box):
 
         self._grid = ContentGrid()
         self._grid.set_on_child_activated(self._on_child_activated)
+        self._grid.set_on_retry(self.retry)
         self._stack.add_named(self._grid, 'grid')
 
         self._releases_placeholder = Gtk.Box()
