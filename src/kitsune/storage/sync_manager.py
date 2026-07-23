@@ -5,7 +5,7 @@ import time
 
 from gi.repository import GLib
 
-from kitsune.storage import tags_store, watch_positions
+from kitsune.storage import release_cache, tags_store, watch_positions
 from kitsune.storage.pending_queue import (
     PendingQueue, OP_ADD_FAVORITE, OP_REMOVE_FAVORITE,
     OP_ADD_COLLECTION, OP_REMOVE_COLLECTION, OP_SAVE_TIMECODE,
@@ -779,6 +779,68 @@ class SyncManager:
             if callback:
                 callback(ok, None if ok else 'timecodes pull failed')
         self._pull_and_save_timecodes(then)
+
+    def reindex_library(self, callback=None):
+        """Fetch full data for every release in the user's server lists
+        (favorites + collections), then re-run the timecode pull.
+
+        Server timecodes arrive as bare episode UUIDs — they resolve only
+        through episode_index, which is populated by release_cache.save
+        (i.e. when release data is fetched). After a fresh install or
+        wiped local data the index is empty, every pulled entry falls
+        into 'unmapped' and watched counts stay 0. Fetching the ~tens of
+        list titles in the background rebuilds the mapping; the re-pull
+        then applies everything. Sequential on purpose — gentle on the
+        server and the UI thread.
+        """
+        if not self.is_logged_in():
+            if callback:
+                callback(True, None)
+            return
+        ids = set()
+
+        def on_favs(data, error):
+            if not error and data:
+                ids.update(data)
+            self._client.get_collection_ids(on_collections)
+
+        def on_collections(data, error):
+            if not error and data:
+                for entry in data:
+                    rid, _ctype = _parse_collection_entry(entry)
+                    if rid:
+                        ids.add(rid)
+            if not ids:
+                log.debug('reindex: empty lists, re-pulling timecodes only')
+                self._pull_and_save_timecodes(
+                    lambda ok: callback(ok, None) if callback else None)
+                return
+            queue = list(ids)
+            state = {'indexed': 0}
+            log.debug('reindex: fetching %d list releases', len(queue))
+
+            def fetch_next():
+                if not queue:
+                    log.debug('reindex: %d releases indexed, re-pulling timecodes',
+                              state['indexed'])
+                    self._pull_and_save_timecodes(
+                        lambda ok: callback(ok, None) if callback else None)
+                    return
+                rid = queue.pop()
+
+                def on_release(rel_data, rel_err, rid=rid):
+                    if rel_err:
+                        log.debug('reindex: release %d fetch failed: %s',
+                                  rid, rel_err)
+                    elif rel_data:
+                        release_cache.save(rid, rel_data)
+                        state['indexed'] += 1
+                    fetch_next()
+                self._client.get_release_raw(rid, on_release)
+
+            fetch_next()
+
+        self._client.get_favorite_ids(on_favs)
 
     # --- Server counts (for merge dialog) ---
 

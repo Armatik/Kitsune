@@ -65,6 +65,16 @@ class FakeSyncClient:
         if callback:
             callback(None, None)
 
+    def get_release_raw(self, id_or_alias, callback=None):
+        callback({
+            'id': int(id_or_alias),
+            'name': {'main': f'Release {id_or_alias}'},
+            'episodes': [
+                {'id': f'ep.{id_or_alias}.0', 'ordinal': 1.0, 'sort_order': 1},
+                {'id': f'ep.{id_or_alias}.1', 'ordinal': 2.0, 'sort_order': 2},
+            ],
+        }, None)
+
     def get_timecodes(self, since=None, callback=None):
         callback([], None)
 
@@ -1508,3 +1518,46 @@ def test_parse_collection_entry_dict_coerces_string_id():
     assert _parse_collection_entry(
         {'release_id': 'abc', 'type_of_collection': 'WATCHING'}
     ) == (0, '')
+
+
+def test_reindex_library_indexes_and_applies_timecodes(mock_tags, tmp_path):
+    """After a wipe/fresh install the episode index is empty and pulled
+    server timecodes are 'unmapped' (watched counts stay 0). Reindexing
+    the user's list titles rebuilds the mapping and the re-pull applies."""
+    from kitsune.storage import watch_positions, episode_index, release_cache
+    import unittest.mock as um
+    client = FakeSyncClient()
+    client.server_favorites = [9275]
+    client.server_collections = [[9276, 'WATCHED']]
+    client.get_timecodes = lambda since=None, callback=None: callback(
+        [['ep.9275.0', 0, True], ['ep.9276.1', 120.5, False]], None)
+    sm = SyncManager(client)
+
+    wp_file = tmp_path / 'wp.json'
+    idx_file = tmp_path / 'idx.json'
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file), \
+         um.patch.object(episode_index, '_INDEX_FILE', idx_file), \
+         um.patch.object(episode_index, '_cache', None), \
+         um.patch.object(release_cache, '_CACHE_DIR', tmp_path / 'rc'):
+        results = []
+        sm.reindex_library(lambda ok, err: results.append((ok, err)))
+
+        assert results == [(True, None)]
+        # is_watched=True applied as completed (-1)
+        assert watch_positions.get_position(9275, 1.0) == -1
+        # position entry applied with its episode id
+        assert watch_positions.get_position(9276, 2.0) == 120.5
+        assert watch_positions.get_episode_id(9276, 2.0) == 'ep.9276.1'
+
+
+def test_reindex_library_empty_lists_just_repulls(mock_tags, tmp_path):
+    client = FakeSyncClient()
+    client.server_favorites = []
+    client.server_collections = []
+    pulled = []
+    sm = SyncManager(client)
+    sm._pull_and_save_timecodes = lambda then: (pulled.append(True), then(True))
+    results = []
+    sm.reindex_library(lambda ok, err: results.append((ok, err)))
+    assert results == [(True, None)]
+    assert pulled == [True]
