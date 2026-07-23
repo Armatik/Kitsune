@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
+import os
 import uuid
+from pathlib import Path
 
 from kitsune.auth import token_store
 
@@ -14,7 +16,7 @@ class SessionManager:
         self._client = client
         self._token = token_store.load_token()
         self._user = None
-        self._device_id = str(uuid.uuid4())
+        self._device_id = self._load_or_create_device_id()
         self._expired = False
         self._on_logged_in = []
         self._on_logged_out = []
@@ -23,11 +25,37 @@ class SessionManager:
         self._on_session_restored = []
 
         log.debug('init: token_loaded=%s device_id=%s',
-                  bool(self._token), self._device_id)
+                  bool(self._token), self._device_id[:8])
 
         client.set_token_getter(self.get_token)
         if hasattr(client, 'set_token_expired_handler'):
             client.set_token_expired_handler(self._on_token_expired)
+
+    @staticmethod
+    def _load_or_create_device_id():
+        """Stable per-device UUID for the OTP flow, persisted on disk.
+
+        A fresh uuid on every launch meant an OTP code requested before an
+        app restart could never be redeemed after it. A plain XDG file is
+        used instead of GSettings: the settings schema aborts the process
+        when a key is missing from an older compiled schema.
+        """
+        path = Path(
+            os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
+        ) / 'kitsune' / 'device_id'
+        try:
+            device_id = path.read_text().strip()
+            if device_id:
+                return device_id
+        except OSError:
+            pass
+        device_id = str(uuid.uuid4())
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(device_id)
+        except OSError:
+            log.debug('could not persist device_id: %s', path)
+        return device_id
 
     def is_logged_in(self):
         return self._token is not None
@@ -115,7 +143,7 @@ class SessionManager:
             cb()
 
     def login_with_credentials(self, login, password, callback=None):
-        log.debug('login_with_credentials: login=%s', login)
+        log.debug('login_with_credentials: login=%s', login[:2] + '***' if login else login)
         def on_result(token, error):
             if error or not token:
                 log.debug('login_with_credentials failed: %s', error)
@@ -128,7 +156,7 @@ class SessionManager:
         self._client.login(login, password, on_result)
 
     def login_with_otp(self, code, device_id, callback=None):
-        log.debug('login_with_otp: device_id=%s', device_id)
+        log.debug('login_with_otp: device_id=%s', device_id[:8])
         def on_result(token, error):
             if error or not token:
                 log.debug('login_with_otp failed: %s', error)

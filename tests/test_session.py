@@ -611,3 +611,14 @@ def test_logout_resets_expired_flag(client_stub, mock_synced_storage):
     sm.logout()
     assert sm.is_expired() is False
     assert sm.is_logged_in() is False
+
+
+def test_device_id_persists_across_instances(client_stub, tmp_path, monkeypatch):
+    """BUG-028: device_id must survive an app restart, or an OTP code
+    requested before the restart can never be redeemed."""
+    from kitsune.auth.session import SessionManager
+    monkeypatch.setenv('XDG_DATA_HOME', str(tmp_path))
+    sm1 = SessionManager(client_stub)
+    sm2 = SessionManager(client_stub)
+    assert sm1._device_id == sm2._device_id
+    assert (tmp_path / 'kitsune' / 'device_id').read_text() == sm1._device_id
