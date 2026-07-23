@@ -192,12 +192,19 @@ class TagPopover(Gtk.Popover):
         return tag_id in SYNCED_TAGS
 
     def _on_search_changed(self, entry):
+        from kitsune.storage import tags_store
         text = entry.get_text().lower()
         any_visible = False
         row = self._list.get_first_child()
         while row:
             if hasattr(row, '_tag'):
-                visible = not text or text in row._tag['name'].lower()
+                # Match against the localized display name (what the user
+                # actually sees — builtin names are stored in English) and
+                # fall back to the raw stored name.
+                tag = row._tag
+                haystacks = (tags_store.display_name(tag).lower(),
+                             tag['name'].lower())
+                visible = not text or any(text in h for h in haystacks)
                 row.set_visible(visible)
                 if visible:
                     any_visible = True

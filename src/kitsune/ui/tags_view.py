@@ -7,7 +7,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 
-from gi.repository import Adw, Gtk
+from gi.repository import Adw, GLib, Gtk
 
 from kitsune.api import AniLibriaClient
 from kitsune.models import Release
@@ -39,6 +39,7 @@ class TagsView(Gtk.Box):
         # cloud sync badge (grid) or the cloud suffix (list). Window
         # flips this via set_synced on login / logout / sync_complete.
         self._synced = False
+        self._expanded_tag_id = None
         register_css(_TAGS_CSS)
 
         # Navigation stack: main (cards/list) + releases detail
@@ -142,7 +143,7 @@ class TagsView(Gtk.Box):
         self._populate_list(tags)
 
     def _populate_cards(self, tags: list[dict]):
-        self._card_grid.clear()
+        self._card_grid.clear(preserve_scroll=True)
         for tag in tags:
             self._card_grid.append_child(
                 TagCard(tag, on_delete=self._confirm_delete_tag,
@@ -175,6 +176,8 @@ class TagsView(Gtk.Box):
         self._card_grid.append_child(add_child)
 
     def _populate_list(self, tags: list[dict]):
+        adj = self._list_scroll.get_vadjustment()
+        saved_scroll = adj.get_value()
         while child := self._list_container.get_first_child():
             self._list_container.remove(child)
 
@@ -186,6 +189,24 @@ class TagsView(Gtk.Box):
             row = self._create_list_row(tag)
             block.append(row)
             self._list_container.append(block)
+
+        def restore():
+            adj.set_value(min(
+                saved_scroll,
+                max(0.0, adj.get_upper() - adj.get_page_size())))
+            if self._expanded_tag_id:
+                block = self._list_container.get_first_child()
+                while block:
+                    row_widget = block.get_first_child()
+                    if isinstance(row_widget, Gtk.ListBoxRow):
+                        row_widget = row_widget.get_child()
+                    if getattr(row_widget, '_tag_id', None) == \
+                            self._expanded_tag_id:
+                        row_widget.set_expanded(True)
+                        break
+                    block = block.get_next_sibling()
+            return GLib.SOURCE_REMOVE
+        GLib.idle_add(restore, priority=GLib.PRIORITY_LOW)
 
     def _create_list_row(self, tag: dict) -> Adw.ExpanderRow:
         from kitsune.ui.widgets.tag_card import create_color_circle
@@ -248,12 +269,19 @@ class TagsView(Gtk.Box):
             row.add_suffix(sync_icon)
 
         row._tag = tag
+        row._tag_id = tag['id']
         row._loaded = False
         row.connect('notify::expanded', self._on_row_expanded)
 
         return row
 
     def _on_row_expanded(self, row, _pspec):
+        # Track the expanded row across sync-triggered repopulations so
+        # the periodic refresh (every 5 min) does not collapse it.
+        if row.get_expanded():
+            self._expanded_tag_id = row._tag_id
+        elif self._expanded_tag_id == row._tag_id:
+            self._expanded_tag_id = None
         if not row.get_expanded() or row._loaded:
             return
         row._loaded = True
