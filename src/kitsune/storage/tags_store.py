@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import os
 import secrets
 from pathlib import Path
 
 from kitsune.storage import _atomic_write_json
+
+log = logging.getLogger('kitsune.tags_store')
 
 _TAGS_FILE = Path(
     os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
@@ -102,12 +105,34 @@ TAG_COLORS = (
 
 
 def _load() -> dict:
+    """Return tags data, cached in-process.
+
+    The cache holds the same dict object that subsequent _save calls
+    persist, so in-place mutations between load and save remain
+    consistent. The cache auto-invalidates when `_TAGS_FILE` is rebound
+    (tests reassign it to tmp paths).
+    """
+    global _cache, _cache_path
+    if _cache is None or _cache_path != _TAGS_FILE:
+        _cache_path = _TAGS_FILE
+        _cache = _read_and_migrate()
+    return _cache
+
+
+_cache = None
+_cache_path = None
+
+
+def _read_and_migrate() -> dict:
     file_existed = _TAGS_FILE.exists()
     if file_existed:
         try:
             with open(_TAGS_FILE) as f:
                 data = json.load(f)
         except (json.JSONDecodeError, OSError):
+            data = {'tags': []}
+        if not isinstance(data, dict) or not isinstance(data.get('tags'), list):
+            log.warning('tags.json has unexpected root shape, resetting')
             data = {'tags': []}
     else:
         data = {'tags': []}
@@ -151,6 +176,9 @@ def _load() -> dict:
 
 
 def _save(data: dict):
+    global _cache, _cache_path
+    _cache = data
+    _cache_path = _TAGS_FILE
     _atomic_write_json(_TAGS_FILE, data, ensure_ascii=False)
 
 
@@ -159,6 +187,11 @@ def _find_tag(data: dict, tag_id: str) -> dict | None:
         if tag['id'] == tag_id:
             return tag
     return None
+
+
+def get_tag(tag_id: str) -> dict | None:
+    """Public single-tag accessor (goes through the shared cache)."""
+    return _find_tag(_load(), tag_id)
 
 
 def get_all_tags() -> list[dict]:

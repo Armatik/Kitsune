@@ -158,3 +158,15 @@ def test_builtin_tags_have_colors(mock_tags):
     for tag in tags:
         if tag.get('builtin'):
             assert 'color' in tag
+
+
+def test_load_tolerates_wrong_shape_json(mock_tags):
+    """BUG-014: valid JSON with a wrong root shape must reset, not crash
+    (a list or a dict without 'tags' would raise TypeError/KeyError)."""
+    mock_tags.write_text('[]')
+    tags = tags_store.get_all_tags()
+    assert any(t['id'] == 'favorites' for t in tags)
+
+    mock_tags.write_text('{"notags": true}')
+    tags = tags_store.get_all_tags()
+    assert any(t['id'] == 'favorites' for t in tags)

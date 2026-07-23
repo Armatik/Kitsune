@@ -71,7 +71,7 @@ class PendingQueue:
     def _load_from_disk(self):
         try:
             raw = json.loads(self._path.read_text())
-        except (FileNotFoundError, json.JSONDecodeError):
+        except (FileNotFoundError, json.JSONDecodeError, OSError):
             self._ops = []
             log.debug('load: no prior queue at %s', self._path)
             return

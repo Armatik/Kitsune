@@ -266,3 +266,11 @@ def test_apply_action_suggest_is_a_noop(isolated):
     )
     auto_collections.apply_action(action, sync)
     assert sync.calls == []
+
+
+def test_get_last_scan_time_tolerates_wrong_shape(tmp_path, monkeypatch):
+    """BUG-014: non-dict scan file must not raise AttributeError."""
+    f = tmp_path / 'scan.json'
+    f.write_text('[]')
+    monkeypatch.setattr(auto_collections, '_SCAN_FILE', f)
+    assert auto_collections.get_last_scan_time() == 0.0

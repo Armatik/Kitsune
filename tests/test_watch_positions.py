@@ -337,3 +337,18 @@ def test_v1_migrated_entry_overwritten_by_server_with_newer_timestamp(
     assert wp.get_position(9275, 1.0) == 120
     assert wp.get_episode_id(9275, 1.0) == 'ep.0'
     assert wp.get_updated_at(9275, 1.0) == 5000.0
+
+
+def test_get_position_tolerates_broken_entry(mock_positions):
+    """BUG-014: a malformed v2 entry (non-dict) must not crash."""
+    wp._save({'9275_1': 'garbage'})
+    assert wp.get_position(9275, 1.0) == 0
+
+
+def test_read_from_disk_tolerates_oserror(mock_positions, monkeypatch):
+    """BUG-014: unreadable positions file must reset to empty."""
+    monkeypatch.setattr(
+        'pathlib.Path.read_text',
+        lambda self: (_ for _ in ()).throw(PermissionError('denied')),
+    )
+    assert wp._read_from_disk() == {}

@@ -213,7 +213,8 @@ def get_last_scan_time() -> float:
     try:
         with open(_SCAN_FILE) as f:
             return float(json.load(f).get('last_scan', 0.0))
-    except (FileNotFoundError, json.JSONDecodeError, OSError, TypeError, ValueError):
+    except (FileNotFoundError, json.JSONDecodeError, OSError,
+            TypeError, ValueError, AttributeError):
         return 0.0
 
 

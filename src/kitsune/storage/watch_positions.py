@@ -26,7 +26,7 @@ def _read_from_disk() -> dict:
     """Parse the on-disk file into v2 entries shape. No caching."""
     try:
         raw = json.loads(_POSITIONS_FILE.read_text())
-    except (FileNotFoundError, json.JSONDecodeError):
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
         return {}
     if isinstance(raw, dict) and raw.get('version') == VERSION:
         entries = raw.get('entries', {})
@@ -79,9 +79,9 @@ def _save(entries: dict):
 def get_position(release_id: int, ordinal: float) -> float:
     entries = _load()
     entry = entries.get(f'{release_id}_{ordinal}')
-    if entry is None:
+    if not isinstance(entry, dict):
         return 0
-    return entry['pos']
+    return entry.get('pos', 0)
 
 
 def save_position(release_id: int, ordinal: float, position: float,

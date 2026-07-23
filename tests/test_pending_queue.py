@@ -651,3 +651,14 @@ def test_coalesce_still_works_when_no_in_flight_conflict(tmp_path):
     q.enqueue(OP_ADD_FAVORITE, 9275, user_id=42)
     q.enqueue(OP_REMOVE_FAVORITE, 9275, user_id=42)
     assert q.size() == 0  # cancelled as before
+
+
+def test_load_tolerates_read_oserror(mock_pending_queue, monkeypatch):
+    """BUG-014: unreadable queue file must start empty, not crash."""
+    from kitsune.storage.pending_queue import PendingQueue
+    monkeypatch.setattr(
+        'pathlib.Path.read_text',
+        lambda self: (_ for _ in ()).throw(PermissionError('denied')),
+    )
+    q = PendingQueue.load()
+    assert q.size() == 0
