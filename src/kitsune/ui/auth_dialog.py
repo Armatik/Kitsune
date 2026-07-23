@@ -14,7 +14,8 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 import random
 
 from kitsune.ui import register_css
-from kitsune.netutil import MAX_IMAGE_BYTES, send_and_read_capped
+
+_HERO_MAX_BYTES = 30 * 1024 * 1024
 
 log = logging.getLogger('kitsune.auth_dialog')
 
@@ -164,13 +165,14 @@ class AuthDialog(Adw.Dialog):
         self._hero_session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
-        def on_image(gbytes, error):
+        def on_image(_session, result):
             try:
-                if error is not None:
-                    log.debug('Hero: failed: %s', error)
-                    return
+                gbytes = _session.send_and_read_finish(result)
                 if not gbytes or gbytes.get_size() == 0:
                     log.debug('Hero: empty response')
+                    return
+                if gbytes.get_size() > _HERO_MAX_BYTES:
+                    log.debug('Hero: too large (%d bytes)', gbytes.get_size())
                     return
                 # Dialog may have been dismissed while the request was
                 # in flight; touching template children after dispose
@@ -185,8 +187,8 @@ class AuthDialog(Adw.Dialog):
             except Exception as e:
                 log.debug('Hero: failed: %s', e)
 
-        send_and_read_capped(
-            self._hero_session, msg, MAX_IMAGE_BYTES, None, on_image)
+        self._hero_session.send_and_read_async(
+            msg, GLib.PRIORITY_DEFAULT, None, on_image)
 
     def _fade_in_hero(self):
         """Fade in hero image, fade out logo block."""

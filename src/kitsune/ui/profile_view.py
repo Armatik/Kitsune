@@ -18,6 +18,8 @@ from kitsune.ui import register_css, resolved_tag_color
 
 log = logging.getLogger('kitsune.profile_view')
 
+_HERO_MAX_BYTES = 30 * 1024 * 1024
+
 _COLLECTION_TAGS = [
     ('favorites', 'Favorites', 'net.armatik.Kitsune.starred-symbolic'),
     ('watching', 'Watching', 'net.armatik.Kitsune.media-playback-start-symbolic'),
@@ -279,12 +281,14 @@ class ProfileView(Gtk.Box):
         self._hero_session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
-        def on_image(gbytes, error):
+        def on_image(_session, result):
             try:
-                if error is not None:
-                    log.debug('Profile hero: failed: %s', error)
-                    return
+                gbytes = _session.send_and_read_finish(result)
                 if not gbytes or gbytes.get_size() == 0:
+                    return
+                if gbytes.get_size() > _HERO_MAX_BYTES:
+                    log.debug('Profile hero: too large (%d bytes)',
+                              gbytes.get_size())
                     return
                 # View may have been unmapped/destroyed while the request
                 # was in flight; bail before touching template children.
@@ -296,9 +300,8 @@ class ProfileView(Gtk.Box):
             except Exception as e:
                 log.debug('Profile hero: failed: %s', e)
 
-        from kitsune.netutil import MAX_IMAGE_BYTES, send_and_read_capped
-        send_and_read_capped(
-            self._hero_session, msg, MAX_IMAGE_BYTES, None, on_image)
+        self._hero_session.send_and_read_async(
+            msg, GLib.PRIORITY_DEFAULT, None, on_image)
 
     def _start_parallax(self):
         """Parallax animation: hero slides more, content slides less."""

@@ -13,7 +13,6 @@ from gi.repository import GLib, Gio, Soup
 
 from kitsune import API_BASE_URL
 from kitsune.models import CatalogResponse, Franchise, Genre, Release
-from kitsune.netutil import read_stream_capped
 
 log = logging.getLogger('kitsune.api')
 
@@ -157,9 +156,14 @@ class AniLibriaClient:
                 self._on_network_error()
 
     def _send(self, msg, method, path, callback, cancellable):
-        """Two-phase request: status at headers via send_async, then a
-        capped streaming body read (SEC-005 — no unbounded buffering of
-        a hostile response in memory)."""
+        """Single-shot request via send_and_read.
+
+        send_and_read completes the message as soon as Content-Length
+        bytes arrive; a manual streaming read was tried and abandoned —
+        Cloudflare's HTTP/2 holds streams half-open ~10s after the body,
+        which stalled libsoup's per-host queue (the OTP poll meltdown).
+        Size cap is enforced post-read in _parse_success_body.
+        """
         timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS
         state = [False]  # [handled]
 
@@ -188,11 +192,11 @@ class AniLibriaClient:
             called[0] = True
             callback(data, err)
 
-        def on_sent(session, result, _user_data):
+        def on_response(session, result, _user_data):
             if state[0]:
                 return  # timeout already handled
             try:
-                stream = session.send_finish(result)
+                gbytes = session.send_and_read_finish(result)
             except GLib.Error as e:
                 if e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
                     log.debug('%s %s cancelled', method, path)
@@ -219,36 +223,14 @@ class AniLibriaClient:
                           method, path, status.real, status.value_nick)
                 self._maybe_fire_token_expired(msg, status)
                 safe_call(None, f'HTTP {status.value_nick}')
-                stream.close_async(GLib.PRIORITY_DEFAULT, None, None, None)
                 return
-            read_stream_capped(
-                stream, _MAX_RESPONSE_BYTES, cancellable, on_body)
-
-        def on_body(gbytes, error):
-            if error == 'too large':
-                if not state[0]:
-                    state[0] = True
-                    GLib.source_remove(timeout_id)
-                safe_call(None, 'Response too large')
-                return
-            if isinstance(error, GLib.Error) and error.matches(
-                    Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
-                # Caller-initiated cancellation (refresh superseding the
-                # request) is not a transport failure — swallow it, or the
-                # view would show a bogus error and flip offline mode.
-                log.debug('%s %s cancelled mid-body', method, path)
-                if not state[0]:
-                    state[0] = True
-                    GLib.source_remove(timeout_id)
-                return
-            if error is not None:
-                self._handle_error(state, timeout_id, safe_call, str(error))
-                return
-            if state[0]:
+            if gbytes is None:
+                self._handle_error(state, timeout_id, safe_call,
+                                   'Empty response')
                 return
             state[0] = True
             GLib.source_remove(timeout_id)
-            raw = gbytes.get_data() if gbytes else b''
+            raw = gbytes.get_data()
             log.debug('%s %s → HTTP 200 (%d bytes)', method, path, len(raw))
             data, err = _parse_success_body(raw)
             if err:
@@ -262,8 +244,8 @@ class AniLibriaClient:
                 if self._on_network_ok:
                     self._on_network_ok()
 
-        self._session.send_async(
-            msg, GLib.PRIORITY_DEFAULT, cancellable, on_sent, None)
+        self._session.send_and_read_async(
+            msg, GLib.PRIORITY_DEFAULT, cancellable, on_response, None)
 
     def _post(self, path: str, body, callback, cancellable: Gio.Cancellable | None = None):
         uri = f'{API_BASE_URL}{path}'
