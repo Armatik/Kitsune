@@ -310,6 +310,18 @@ class CatalogView(Gtk.Box):
             self._end_pull_refresh()
             if self._page >= self._last_page:
                 self._show_end()
+            else:
+                # Re-check near-end right after the batch, once layout
+                # settles. The 'changed' signal alone is racy here: on a
+                # fullscreen-open every emission lands either while the
+                # first request is in flight or mid-batch, and no further
+                # emission follows — the grid stalls at two rows with
+                # nothing to scroll.
+                GLib.idle_add(self._recheck_near_end)
+
+    def _recheck_near_end(self):
+        self._on_viewport_changed(self._grid.scrolled.get_vadjustment())
+        return GLib.SOURCE_REMOVE
 
     def _show_end(self):
         self._reached_end = True
