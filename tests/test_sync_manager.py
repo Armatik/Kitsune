@@ -1479,3 +1479,32 @@ def test_retry_timer_kept_for_known_ops(tmp_path, mock_tags, monkeypatch):
     sm._queue.enqueue(OP_ADD_FAVORITE, 1, user_id=1)
     sm._stop_retry_timer_if_idle()
     assert stopped == []
+
+
+def test_parse_timecode_item_tolerates_iso_updated_at():
+    """Server timestamps may arrive as ISO strings (like OTP expired_at),
+    not epoch floats — float() would raise and fail the whole sync."""
+    from kitsune.storage.sync_manager import _parse_timecode_item
+    parsed = _parse_timecode_item(
+        {'episode_id': 'ep.0', 'time': 60, 'is_watched': False,
+         'updated_at': '2026-07-23T19:25:07+00:00'})
+    assert parsed is not None
+    assert parsed[3] > 1_700_000_000  # parsed to epoch, not crashed
+    parsed = _parse_timecode_item(['ep.1', 30, False, '2026-01-01T00:00:00+00:00'])
+    assert parsed[3] > 1_700_000_000
+    parsed = _parse_timecode_item(
+        {'episode_id': 'ep.2', 'time': 5, 'is_watched': False,
+         'updated_at': 'garbage'})
+    assert parsed[3] == 0.0  # unparseable → local-wins, no crash
+
+
+def test_parse_collection_entry_dict_coerces_string_id():
+    """BUG-025: dict-form entries with string release_id must be coerced
+    to int like the list-form, or set operations in sync never match."""
+    from kitsune.storage.sync_manager import _parse_collection_entry
+    assert _parse_collection_entry(
+        {'release_id': '9275', 'type_of_collection': 'WATCHING'}
+    ) == (9275, 'WATCHING')
+    assert _parse_collection_entry(
+        {'release_id': 'abc', 'type_of_collection': 'WATCHING'}
+    ) == (0, '')

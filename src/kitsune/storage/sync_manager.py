@@ -55,8 +55,34 @@ def _parse_collection_entry(entry):
         except (TypeError, ValueError):
             return 0, ''
     if isinstance(entry, dict):
-        return entry.get('release_id', 0), entry.get('type_of_collection', '')
+        try:
+            return int(entry.get('release_id', 0)), str(entry.get('type_of_collection', ''))
+        except (TypeError, ValueError):
+            return 0, ''
     return 0, ''
+
+
+def _coerce_timestamp(value):
+    """Coerce a server timestamp to epoch seconds.
+
+    Numeric values pass through float(); ISO-8601 strings (the format the
+    API uses elsewhere, e.g. OTP expired_at) are parsed; anything else
+    degrades to 0.0 (local-wins) instead of raising into the sync chain.
+    """
+    if value is None:
+        return 0.0
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, str):
+        try:
+            from datetime import datetime
+            return datetime.fromisoformat(
+                value.replace('Z', '+00:00')).timestamp()
+        except ValueError:
+            return 0.0
+    return 0.0
 
 
 def _parse_timecode_item(item):
@@ -71,20 +97,18 @@ def _parse_timecode_item(item):
     if isinstance(item, (list, tuple)) and len(item) >= 3:
         ep_id, time_val, is_watched = item[0], item[1], item[2]
         updated_at = item[3] if len(item) >= 4 and item[3] is not None else 0.0
-        return (ep_id, float(time_val), bool(is_watched), float(updated_at))
+        return (ep_id, float(time_val), bool(is_watched), _coerce_timestamp(updated_at))
     if isinstance(item, dict):
         ep_id = (item.get('episode_id')
                  or item.get('release_episode_id')
                  or item.get('id'))
         if not ep_id:
             return None
-        raw_updated_at = item.get('updated_at')
-        updated_at = 0.0 if raw_updated_at is None else raw_updated_at
         return (
             ep_id,
             float(item.get('time', 0)),
             bool(item.get('is_watched', False)),
-            float(updated_at),
+            _coerce_timestamp(item.get('updated_at')),
         )
     return None
 
