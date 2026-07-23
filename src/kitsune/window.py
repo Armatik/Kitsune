@@ -169,8 +169,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # completes — the time was set by _sync_done minutes/seconds
         # before this callback fires, so the subtitle would otherwise
         # remain stale until the next manual auth-sidebar rebuild.
-        self._sync.connect_sync_complete(
-            lambda _ok: self._refresh_auth_sidebar_subtitle())
+        self._sync.connect_sync_complete(self._on_any_sync_complete)
         self._sync.connect_sync_started(self._on_sync_started)
 
         # Animated 'Syncing.' → 'Syncing..' → 'Syncing...' dots in the
@@ -1319,6 +1318,13 @@ class KitsuneWindow(Adw.ApplicationWindow):
             GLib.source_remove(self._sync_dots_timer)
             self._sync_dots_timer = 0
         self._refresh_auth_sidebar_subtitle()
+
+    def _on_any_sync_complete(self, _ok):
+        # Pub/sub completion channel (initial_sync AND reindex_library).
+        # The dots must stop here too — reindex signals only via
+        # _emit_sync_complete, never via the window._on_sync_complete
+        # callback argument.
+        self._stop_sync_dots()
 
     def _on_sync_complete(self, ok, error):
         self._stop_sync_dots()
