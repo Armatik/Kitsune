@@ -384,19 +384,29 @@ class PlayerView(Adw.NavigationPage):
         quality = self._settings.get_string('preferred-quality')
         url = self._episode.get_hls_url(quality)
         log.debug('start playback: quality=%s url=%s', quality, url)
-        if url:
-            saved = watch_positions.get_position(
-                self._release.id, self._episode.ordinal,
-            )
-            if saved > 5:
-                log.debug('restoring position: %.1fs', saved)
-                self._restore_position = saved
-                self._seeking = True
-            self._player.play_uri(url)
-            self._schedule_hide()
-            # Push Now Playing immediately so the macOS widget shows up
-            # right away, not 500 ms later on the first position tick.
-            self._update_macos_now_playing(0, 0, True)
+        if not url:
+            # Geo/copyright-blocked or external-player-only release —
+            # no HLS at all. Surface an error instead of an infinite
+            # spinner on the play button.
+            log.warning('no playable HLS stream: release=%s ep=%s',
+                        self._release.id, self._episode.ordinal)
+            self._buffering = False
+            self.play_btn.set_icon_name(
+                'net.armatik.Kitsune.media-playback-start-symbolic')
+            self._on_error(self._player, _('No playable stream for this episode'))
+            return
+        saved = watch_positions.get_position(
+            self._release.id, self._episode.ordinal,
+        )
+        if saved > 5:
+            log.debug('restoring position: %.1fs', saved)
+            self._restore_position = saved
+            self._seeking = True
+        self._player.play_uri(url)
+        self._schedule_hide()
+        # Push Now Playing immediately so the macOS widget shows up
+        # right away, not 500 ms later on the first position tick.
+        self._update_macos_now_playing(0, 0, True)
 
     # --- Controls visibility ---
 

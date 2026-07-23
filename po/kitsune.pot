@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-23 19:43+0300\n"
+"POT-Creation-Date: 2026-07-23 22:28+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -390,15 +390,19 @@ msgstr ""
 msgid "Dubbing status"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:586 src/kitsune/ui/player_view.blp:254
+#: src/kitsune/ui/player_view.py:396
+msgid "No playable stream for this episode"
+msgstr ""
+
+#: src/kitsune/ui/player_view.py:596 src/kitsune/ui/player_view.blp:254
 msgid "Skip Intro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:590
+#: src/kitsune/ui/player_view.py:600
 msgid "Skip Outro"
 msgstr ""
 
-#: src/kitsune/ui/player_view.py:710
+#: src/kitsune/ui/player_view.py:720
 msgid "Playback error: {}"
 msgstr ""
 
