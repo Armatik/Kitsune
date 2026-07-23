@@ -1561,3 +1561,46 @@ def test_reindex_library_empty_lists_just_repulls(mock_tags, tmp_path):
     sm.reindex_library(lambda ok, err: results.append((ok, err)))
     assert results == [(True, None)]
     assert pulled == [True]
+
+
+def test_reset_to_server_wipes_positions_and_queue(mock_tags, tmp_path):
+    """RESET_TO_SERVER (dialog 'Keep server' / profile reset) must wipe
+    watch positions, episode index and the pending queue — a true
+    'server is the only truth' mode."""
+    from kitsune.storage import watch_positions, episode_index
+    import unittest.mock as um
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    wp_file = tmp_path / 'wp.json'
+    idx_file = tmp_path / 'idx.json'
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file), \
+         um.patch.object(episode_index, '_INDEX_FILE', idx_file), \
+         um.patch.object(episode_index, '_cache', None):
+        tags_store.add_release('favorites', 99)  # local-only tag
+        watch_positions.save_position(99, 1.0, 120.0, episode_id='ep.x')
+        sm._queue.enqueue(OP_ADD_FAVORITE, 99, user_id=42)
+        assert sm._queue.size() == 1
+
+        sm.initial_sync(lambda ok, err: None,
+                        strategy=MergeStrategy.RESET_TO_SERVER)
+
+        # server state applied, local-only removed, positions+queue wiped
+        assert 99 not in tags_store.get_release_ids_for_tag('favorites')
+        assert 10 in tags_store.get_release_ids_for_tag('favorites')
+        assert watch_positions.get_position(99, 1.0) == 0
+        assert sm._queue.size() == 0
+
+
+def test_prefer_server_keeps_positions(mock_tags, tmp_path):
+    """Periodic pull (PREFER_SERVER) must NOT wipe watch positions —
+    only RESET_TO_SERVER does."""
+    from kitsune.storage import watch_positions
+    import unittest.mock as um
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    wp_file = tmp_path / 'wp.json'
+    with um.patch.object(watch_positions, '_POSITIONS_FILE', wp_file):
+        watch_positions.save_position(99, 1.0, 120.0, episode_id='ep.x')
+        sm.initial_sync(lambda ok, err: None,
+                        strategy=MergeStrategy.PREFER_SERVER)
+        assert watch_positions.get_position(99, 1.0) == 120.0

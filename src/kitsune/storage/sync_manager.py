@@ -30,7 +30,8 @@ SYNCED_TAGS = {'favorites'} | set(COLLECTION_MAP.values())
 class MergeStrategy:
     MERGE = 'merge'          # bidirectional, server wins conflicts
     PREFER_LOCAL = 'local'   # push local → server
-    PREFER_SERVER = 'server' # pull server → local
+    PREFER_SERVER = 'server' # pull server → local (keeps positions/queue)
+    RESET_TO_SERVER = 'reset'  # wipe local synced state, then pull
 
 
 def _noop(data, error):
@@ -128,6 +129,7 @@ class SyncManager:
         self._on_sync_error_cbs = []
         self._on_queue_changed_cbs = []
         self._on_sync_complete_cbs = []
+        self._on_sync_started_cbs = []
         self._on_tags_changed_cbs = []
 
     @property
@@ -159,6 +161,10 @@ class SyncManager:
         """callback(success: bool)"""
         self._on_sync_complete_cbs.append(callback)
 
+    def connect_sync_started(self, callback):
+        """callback() — fired when a sync/reindex run begins."""
+        self._on_sync_started_cbs.append(callback)
+
     def connect_tags_changed(self, callback):
         """callback(release_id: int) — fired after add/remove on any tag."""
         self._on_tags_changed_cbs.append(callback)
@@ -186,6 +192,10 @@ class SyncManager:
         for cb in self._on_sync_complete_cbs:
             cb(success)
 
+    def _emit_sync_started(self):
+        for cb in self._on_sync_started_cbs:
+            cb()
+
     def _emit_tags_changed(self, release_id):
         for cb in self._on_tags_changed_cbs:
             cb(release_id)
@@ -210,6 +220,29 @@ class SyncManager:
         Public wrapper — UI must not reach into `self._queue` directly.
         """
         self._queue.clear_for_user(user_id)
+
+    def _wipe_local_synced(self):
+        """Discard ALL local synced state (RESET_TO_SERVER / manual reset).
+
+        Removes favorites + collection memberships (the tags themselves
+        stay, and custom non-synced tags are preserved), every watch
+        position, the episode index and the pending queue. Caches
+        (posters, releases) are untouched. After this the server pull
+        is the single source of truth.
+        """
+        from kitsune.storage import episode_index
+        for tag_id in SYNCED_TAGS:
+            for rid in list(tags_store.get_release_ids_for_tag(tag_id)):
+                tags_store.remove_release(tag_id, rid)
+        watch_positions.clear_all()
+        episode_index.clear()
+        self._queue.clear()
+        self._emit_queue_changed()
+
+    def reset_local_data(self):
+        """Manual 'clear local data' action (profile button): wipe synced
+        local state and re-download everything (RESET_TO_SERVER)."""
+        self.initial_sync(None, MergeStrategy.RESET_TO_SERVER)
 
     # --- Drain queue (Stage 2) ---
 
@@ -512,7 +545,13 @@ class SyncManager:
                 callback(False, 'already_syncing')
             return
         self._syncing = True
+        self._emit_sync_started()
         log.debug('Starting sync with strategy: %s', strategy)
+        if strategy == MergeStrategy.RESET_TO_SERVER:
+            # Wipe FIRST so the pending-queue snapshot below is empty
+            # and nothing local survives the pull.
+            self._wipe_local_synced()
+            strategy = MergeStrategy.PREFER_SERVER
         self._strategy = strategy
         # Snapshot before kicking drain (see docstring). The snapshot and
         # the drain kick are deliberately independent: we always try to
@@ -797,7 +836,13 @@ class SyncManager:
             if callback:
                 callback(True, None)
             return
+        self._emit_sync_started()
         ids = set()
+
+        def finish(ok):
+            self._emit_sync_complete(ok)
+            if callback:
+                callback(ok, None)
 
         def on_favs(data, error):
             if not error and data:
@@ -812,8 +857,7 @@ class SyncManager:
                         ids.add(rid)
             if not ids:
                 log.debug('reindex: empty lists, re-pulling timecodes only')
-                self._pull_and_save_timecodes(
-                    lambda ok: callback(ok, None) if callback else None)
+                self._pull_and_save_timecodes(finish)
                 return
             queue = list(ids)
             state = {'indexed': 0}
@@ -823,8 +867,7 @@ class SyncManager:
                 if not queue:
                     log.debug('reindex: %d releases indexed, re-pulling timecodes',
                               state['indexed'])
-                    self._pull_and_save_timecodes(
-                        lambda ok: callback(ok, None) if callback else None)
+                    self._pull_and_save_timecodes(finish)
                     return
                 rid = queue.pop()
 

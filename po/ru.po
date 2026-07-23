@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune 0.7.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-23 22:28+0300\n"
+"POT-Creation-Date: 2026-07-24 00:25+0300\n"
 "PO-Revision-Date: 2026-03-17 15:00+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
@@ -51,184 +51,192 @@ msgstr "AniLiberty VK"
 msgid "Uses"
 msgstr "Использует"
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:304
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:311
 msgid "Favorites"
 msgstr "Избранное"
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1508
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1548
 #: src/kitsune/ui/tag_popover.py:134
 msgid "Watching"
 msgstr "Смотрю"
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1509
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1549
 #: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:327
 #: src/kitsune/ui/release_view_episodes.py:66
 #: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:135
 msgid "Watched"
 msgstr "Просмотрено"
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1510
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1550
 #: src/kitsune/ui/tag_popover.py:136
 msgid "Planned"
 msgstr "Запланировано"
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1511
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1551
 #: src/kitsune/ui/tag_popover.py:137
 msgid "Postponed"
 msgstr "На паузе"
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1512
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1552
 #: src/kitsune/ui/tag_popover.py:138
 msgid "Abandoned"
 msgstr "Брошено"
 
-#: src/kitsune/window.py:262 src/kitsune/window.py:301
-#: src/kitsune/window.py:847 src/kitsune/ui/preferences_window.py:268
+#: src/kitsune/window.py:269 src/kitsune/window.py:308
+#: src/kitsune/window.py:854 src/kitsune/ui/preferences_window.py:268
 #: src/kitsune/ui/window.blp:124
 msgid "Catalog"
 msgstr "Каталог"
 
-#: src/kitsune/window.py:263 src/kitsune/window.py:302
-#: src/kitsune/window.py:848 src/kitsune/ui/filter_dialog.py:148
+#: src/kitsune/window.py:270 src/kitsune/window.py:309
+#: src/kitsune/window.py:855 src/kitsune/ui/filter_dialog.py:148
 #: src/kitsune/ui/filter_dialog.py:159 src/kitsune/ui/preferences_window.py:254
 #: src/kitsune/ui/preferences_window.py:269 src/kitsune/ui/search_dialog.py:71
 msgid "Genres"
 msgstr "Жанры"
 
-#: src/kitsune/window.py:264 src/kitsune/window.py:303
-#: src/kitsune/window.py:849 src/kitsune/ui/preferences_window.py:255
+#: src/kitsune/window.py:271 src/kitsune/window.py:310
+#: src/kitsune/window.py:856 src/kitsune/ui/preferences_window.py:255
 #: src/kitsune/ui/preferences_window.py:270 src/kitsune/ui/search_dialog.py:71
 msgid "Franchises"
 msgstr "Франшизы"
 
-#: src/kitsune/window.py:265 src/kitsune/window.py:850
+#: src/kitsune/window.py:272 src/kitsune/window.py:857
 #: src/kitsune/ui/preferences_window.py:271
 msgid "Favorites and Tags"
 msgstr "Избранное и теги"
 
-#: src/kitsune/window.py:403 src/kitsune/window.py:516
+#: src/kitsune/window.py:410 src/kitsune/window.py:523
 #: src/kitsune/ui/window.blp:322
 msgid "Preferences"
 msgstr "Настройки"
 
-#: src/kitsune/window.py:410 src/kitsune/window.py:517
+#: src/kitsune/window.py:417 src/kitsune/window.py:524
 #: src/kitsune/ui/window.blp:323
 msgid "About Kitsune"
 msgstr "О Кицунэ"
 
-#: src/kitsune/window.py:486 src/kitsune/window.py:1141
-#: src/kitsune/window.py:1182 src/kitsune/window.py:1195
+#: src/kitsune/window.py:493 src/kitsune/window.py:1148
+#: src/kitsune/window.py:1189 src/kitsune/window.py:1202
 #: src/kitsune/ui/auth_dialog.blp:77
 msgid "Login"
 msgstr "Войти"
 
-#: src/kitsune/window.py:624 src/kitsune/window.py:690
+#: src/kitsune/window.py:631 src/kitsune/window.py:697
 msgid "Card view"
 msgstr "Карточки"
 
-#: src/kitsune/window.py:693 src/kitsune/ui/release_view.py:357
+#: src/kitsune/window.py:700 src/kitsune/ui/release_view.py:357
 msgid "List view"
 msgstr "Список"
 
-#: src/kitsune/window.py:851
+#: src/kitsune/window.py:858
 msgid "Profile"
 msgstr "Профиль"
 
-#: src/kitsune/window.py:912 src/kitsune/ui/preferences_window.blp:184
+#: src/kitsune/window.py:919 src/kitsune/ui/preferences_window.blp:184
 msgid "Adult content"
 msgstr "Контент для взрослых"
 
-#: src/kitsune/window.py:913
+#: src/kitsune/window.py:920
 msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr ""
 "Этот тайтл помечен 18+ и может содержать откровенные материалы. Продолжить?"
 
-#: src/kitsune/window.py:915 src/kitsune/window.py:1266
+#: src/kitsune/window.py:922 src/kitsune/window.py:1274
 #: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/release_view.py:466
-#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:533
-#: src/kitsune/ui/search_dialog.blp:32
+#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:538
+#: src/kitsune/ui/profile_view.py:563 src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr "Отмена"
 
-#: src/kitsune/window.py:916
+#: src/kitsune/window.py:923
 msgid "Continue"
 msgstr "Продолжить"
 
-#: src/kitsune/window.py:923
+#: src/kitsune/window.py:930
 msgid "Don't warn again and show 18+ posters"
 msgstr "Больше не предупреждать и показывать постеры 18+"
 
-#: src/kitsune/window.py:1016 src/kitsune/ui/release_view.blp:25
+#: src/kitsune/window.py:1023 src/kitsune/ui/release_view.blp:25
 msgid "Home"
 msgstr "На главную"
 
-#: src/kitsune/window.py:1157
+#: src/kitsune/window.py:1164
 msgid "Not synced yet"
 msgstr "Ещё не синхронизировано"
 
-#: src/kitsune/window.py:1162 src/kitsune/ui/profile_view.py:449
+#: src/kitsune/window.py:1169 src/kitsune/ui/profile_view.py:452
 #, python-format
 msgid "Synced at %s"
 msgstr "Синхронизировано в %s"
 
-#: src/kitsune/window.py:1163
+#: src/kitsune/window.py:1170
 #, python-format
 msgid "Synced %s"
 msgstr "Синхронизировано %s"
 
-#: src/kitsune/window.py:1256
+#: src/kitsune/window.py:1263
 #, python-format
 msgid "Local: %(favorites)d favorites, %(collections)d in collections"
 msgstr "Локально: %(favorites)d в избранном, %(collections)d в коллекциях"
 
-#: src/kitsune/window.py:1258
+#: src/kitsune/window.py:1265
 #, python-format
 msgid "Server: %(favorites)d favorites, %(collections)d in collections"
 msgstr "На сервере: %(favorites)d в избранном, %(collections)d в коллекциях"
 
-#: src/kitsune/window.py:1263
+#: src/kitsune/window.py:1267
+msgid "\"Keep server\" removes the local data"
+msgstr "«Оставить серверные» удалит локальные данные"
+
+#: src/kitsune/window.py:1271
 msgid "Sync data"
 msgstr "Синхронизация данных"
 
-#: src/kitsune/window.py:1267
+#: src/kitsune/window.py:1275
 msgid "Merge"
 msgstr "Объединить"
 
-#: src/kitsune/window.py:1268
+#: src/kitsune/window.py:1276
 msgid "Keep local"
 msgstr "Оставить локальные"
 
-#: src/kitsune/window.py:1269
+#: src/kitsune/window.py:1277
 msgid "Keep server"
 msgstr "Оставить серверные"
 
-#: src/kitsune/window.py:1466
+#: src/kitsune/window.py:1315
+msgid "Syncing"
+msgstr "Синхронизация"
+
+#: src/kitsune/window.py:1506
 msgid "Failed to sync your change with the server"
 msgstr "Не удалось синхронизировать изменение с сервером"
 
-#: src/kitsune/window.py:1500
+#: src/kitsune/window.py:1540
 msgid "Move"
 msgstr "Переместить"
 
-#: src/kitsune/window.py:1517
+#: src/kitsune/window.py:1557
 #, python-brace-format
 msgid "{prefix}move to {target}?"
 msgstr "{prefix}переместить в {target}?"
 
-#: src/kitsune/ui/auth_dialog.py:235 src/kitsune/ui/auth_dialog.py:333
+#: src/kitsune/ui/auth_dialog.py:237 src/kitsune/ui/auth_dialog.py:335
 msgid "Fill in all fields"
 msgstr "Заполните все поля"
 
-#: src/kitsune/ui/auth_dialog.py:329
+#: src/kitsune/ui/auth_dialog.py:331
 msgid "Wrong login or password"
 msgstr "Неверный логин или пароль"
 
-#: src/kitsune/ui/auth_dialog.py:335 src/kitsune/ui/auth_dialog.py:364
-#: src/kitsune/ui/auth_dialog.py:372 src/kitsune/ui/auth_dialog.py:424
+#: src/kitsune/ui/auth_dialog.py:337 src/kitsune/ui/auth_dialog.py:366
+#: src/kitsune/ui/auth_dialog.py:374 src/kitsune/ui/auth_dialog.py:426
 msgid "No connection to server"
 msgstr "Нет соединения с сервером"
 
-#: src/kitsune/ui/auth_dialog.py:391
+#: src/kitsune/ui/auth_dialog.py:393
 msgid "Authorization timed out"
 msgstr "Время авторизации истекло"
 
@@ -673,24 +681,24 @@ msgstr "Тег «%s» будет удалён. Это действие нель�
 msgid "Delete"
 msgstr "Удалить"
 
-#: src/kitsune/ui/profile_view.py:244
+#: src/kitsune/ui/profile_view.py:246
 msgid "Total titles"
 msgstr "Всего тайтлов"
 
-#: src/kitsune/ui/profile_view.py:261
+#: src/kitsune/ui/profile_view.py:263
 msgid "Episodes watched"
 msgstr "Серий просмотрено"
 
-#: src/kitsune/ui/profile_view.py:401
+#: src/kitsune/ui/profile_view.py:404
 #, python-format
 msgid "Member since %s"
 msgstr "С нами с %s"
 
-#: src/kitsune/ui/profile_view.py:468
+#: src/kitsune/ui/profile_view.py:474
 msgid "Sync failed"
 msgstr "Синхронизация не удалась"
 
-#: src/kitsune/ui/profile_view.py:486
+#: src/kitsune/ui/profile_view.py:492
 #, python-brace-format
 msgid "{n} operation waiting to sync"
 msgid_plural "{n} operations waiting to sync"
@@ -698,15 +706,35 @@ msgstr[0] "{n} операция ждёт синхронизации"
 msgstr[1] "{n} операции ждут синхронизации"
 msgstr[2] "{n} операций ждут синхронизации"
 
-#: src/kitsune/ui/profile_view.py:497
+#: src/kitsune/ui/profile_view.py:503
 msgid "Unknown error"
 msgstr "Неизвестная ошибка"
 
-#: src/kitsune/ui/profile_view.py:528
+#: src/kitsune/ui/profile_view.py:532
+msgid "Clear Local Data?"
+msgstr "Очистить локальные данные?"
+
+#: src/kitsune/ui/profile_view.py:533
+msgid ""
+"Watch progress and list memberships (favorites, collections) will be removed "
+"from this device. Custom tags, image cache and your account are kept. Synced "
+"data will be downloaded again."
+msgstr ""
+"Прогресс просмотра и участие в списках (избранное, коллекции) будут удалены "
+"с этого устройства. Пользовательские теги, кэш изображений и аккаунт "
+"сохранятся. Синхронизированные данные будут загружены заново."
+"Прогресс просмотра, избранное и коллекции будут удалены с этого устройства. "
+"Всё, что ещё не синхронизировано с сервером, будет потеряно."
+
+#: src/kitsune/ui/profile_view.py:539
+msgid "Clear Data"
+msgstr "Очистить данные"
+
+#: src/kitsune/ui/profile_view.py:558
 msgid "Log Out?"
 msgstr "Выйти из аккаунта?"
 
-#: src/kitsune/ui/profile_view.py:529
+#: src/kitsune/ui/profile_view.py:559
 msgid ""
 "Your watch progress, favorites and collections will be removed from this "
 "device. Anything not yet synced to the server will be lost."
@@ -714,7 +742,7 @@ msgstr ""
 "Прогресс просмотра, избранное и коллекции будут удалены с этого устройства. "
 "Всё, что ещё не синхронизировано с сервером, будет потеряно."
 
-#: src/kitsune/ui/profile_view.py:534
+#: src/kitsune/ui/profile_view.py:564
 msgid "Log Out"
 msgstr "Выйти"
 
@@ -787,7 +815,11 @@ msgstr "Повторить сейчас"
 msgid "Account settings"
 msgstr "Настройки аккаунта"
 
-#: src/kitsune/ui/profile_view.blp:206
+#: src/kitsune/ui/profile_view.blp:207
+msgid "Clear local data"
+msgstr "Очистить локальные данные"
+
+#: src/kitsune/ui/profile_view.blp:214
 msgid "Log out"
 msgstr "Выйти"
 

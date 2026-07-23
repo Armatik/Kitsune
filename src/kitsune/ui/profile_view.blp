@@ -202,6 +202,14 @@ template $KitsuneProfileView: Gtk.Box {
                 styles ["pill", "profile-settings-pill"]
               }
 
+              Gtk.Button clear_data_button {
+                icon-name: "net.armatik.Kitsune.user-trash-symbolic";
+                tooltip-text: _("Clear local data");
+                clicked => $on_clear_data_clicked();
+
+                styles ["pill", "profile-settings-pill"]
+              }
+
               Gtk.Button logout_button {
                 label: _("Log out");
                 hexpand: true;

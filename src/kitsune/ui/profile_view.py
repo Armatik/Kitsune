@@ -460,7 +460,10 @@ class ProfileView(Gtk.Box):
         self._sync_manager.sync_now(self._on_sync_done)
 
     def _on_sync_done(self, ok, error):
-        self.sync_button.set_child(None)
+        # Restore the icon via set_icon_name — after a custom child,
+        # set_child(None) leaves the button EMPTY (GTK does not bring
+        # the icon-name image back), which made the button invisible.
+        self.sync_button.set_icon_name('net.armatik.Kitsune.update-symbolic')
         self.sync_button.set_sensitive(True)
         if ok:
             import datetime
@@ -520,6 +523,30 @@ class ProfileView(Gtk.Box):
     def on_settings_site_clicked(self, _button):
         launcher = Gtk.UriLauncher(uri='https://anilibria.top/app/settings/')
         launcher.launch(self.get_root(), None, None)
+
+    @Gtk.Template.Callback()
+    def on_clear_data_clicked(self, _button):
+        # Wipes synced local data (progress, favorites, collections) and
+        # re-downloads it — custom tags, caches and the account stay.
+        dialog = Adw.AlertDialog(
+            heading=_('Clear Local Data?'),
+            body=_('Watch progress and list memberships (favorites, '
+                   'collections) will be removed from this device. '
+                   'Custom tags, image cache and your account are kept. '
+                   'Synced data will be downloaded again.'),
+        )
+        dialog.add_response('cancel', _('Cancel'))
+        dialog.add_response('clear', _('Clear Data'))
+        dialog.set_response_appearance('clear', Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response('cancel')
+        dialog.set_close_response('cancel')
+
+        def on_response(_dialog, response):
+            if response == 'clear' and self._sync_manager:
+                self._sync_manager.reset_local_data()
+
+        dialog.connect('response', on_response)
+        dialog.present(self.get_root())
 
     @Gtk.Template.Callback()
     def on_logout_clicked(self, _button):

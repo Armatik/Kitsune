@@ -171,6 +171,12 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # remain stale until the next manual auth-sidebar rebuild.
         self._sync.connect_sync_complete(
             lambda _ok: self._refresh_auth_sidebar_subtitle())
+        self._sync.connect_sync_started(self._on_sync_started)
+
+        # Animated 'Syncing.' → 'Syncing..' → 'Syncing...' dots in the
+        # sidebar subtitle while a sync/reindex run is in flight.
+        self._sync_dots_timer = 0
+        self._sync_dots_count = 0
 
         # Auto-collection daily idle scan — fire 30s after launch (UI is
         # idle by then), and re-check every hour. Each tick respects
@@ -1258,6 +1264,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 % {'favorites': local_favs, 'collections': local_cols},
                 _('Server: %(favorites)d favorites, %(collections)d in collections')
                 % {'favorites': server_favs, 'collections': server_cols},
+                _('"Keep server" removes the local data'),
             ))
 
             dialog = Adw.AlertDialog(
@@ -1277,7 +1284,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
                 strategies = {
                     'merge': MergeStrategy.MERGE,
                     'local': MergeStrategy.PREFER_LOCAL,
-                    'server': MergeStrategy.PREFER_SERVER,
+                    'server': MergeStrategy.RESET_TO_SERVER,
                 }
                 strategy = strategies.get(response)
                 if strategy is None:
@@ -1291,7 +1298,30 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
         self._sync.fetch_server_counts(on_counts)
 
+    def _on_sync_started(self):
+        if self._sync_dots_timer:
+            return  # already animating
+        self._sync_dots_count = 1
+        self._update_syncing_subtitle()
+        self._sync_dots_timer = GLib.timeout_add(400, self._sync_dots_tick)
+
+    def _sync_dots_tick(self):
+        self._sync_dots_count = self._sync_dots_count % 3 + 1
+        self._update_syncing_subtitle()
+        return GLib.SOURCE_CONTINUE
+
+    def _update_syncing_subtitle(self):
+        if self._session and self._session.is_logged_in():
+            self._auth_row.set_subtitle(_('Syncing') + '.' * self._sync_dots_count)
+
+    def _stop_sync_dots(self):
+        if self._sync_dots_timer:
+            GLib.source_remove(self._sync_dots_timer)
+            self._sync_dots_timer = 0
+        self._refresh_auth_sidebar_subtitle()
+
     def _on_sync_complete(self, ok, error):
+        self._stop_sync_dots()
         # The profile's "Synced at HH:MM" advances only on success —
         # showing a fresh timestamp after a failed sync would contradict
         # the sidebar (which reads get_last_sync_time) and lie about
@@ -1386,6 +1416,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_logged_out(self):
         self._stop_periodic_sync()
+        self._stop_sync_dots()
         self._update_auth_sidebar()
         self._shown_collection_suggestions.clear()
         self._reindex_done = False
