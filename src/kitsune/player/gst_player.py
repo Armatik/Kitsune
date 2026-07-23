@@ -150,11 +150,13 @@ class GstPlayer(GObject.Object):
         ]
 
     def play_uri(self, uri: str):
-        if not uri or not uri.startswith(('https://', 'http://')):
-            log.error('refusing non-HTTP URI: %s', uri)
+        if not uri or not uri.startswith('https://'):
+            # Only TLS streams — an http:// HLS playlist would let a MITM
+            # feed crafted media straight into the decoder stack.
+            log.error('refusing non-HTTPS URI: %s', uri)
             self.emit('error', 'Invalid stream URL')
             return
-        log.debug('play_uri: %s', uri)
+        log.debug('play_uri: %s', uri.split('?')[0])
         self._playbin.set_state(Gst.State.NULL)
         self._playbin.set_property('uri', uri)
         self._target_state = Gst.State.PLAYING
