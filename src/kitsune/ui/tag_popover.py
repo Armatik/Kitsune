@@ -47,6 +47,7 @@ class TagPopover(Gtk.Popover):
             icon_name='list-add-symbolic',
             css_classes=['suggested-action'],
             valign=Gtk.Align.CENTER,
+            tooltip_text=_('Create new tag'),
         )
         add_btn.connect('clicked', self._on_create_clicked)
         search_row.append(add_btn)
@@ -133,7 +134,7 @@ class TagPopover(Gtk.Popover):
             'watching':  _('Watching'),
             'watched':   _('Watched'),
             'planned':   _('Planned'),
-            'postponed': _('Paused'),
+            'postponed': _('Postponed'),
             'abandoned': _('Abandoned'),
         }.get(tag_id, tag_id)
 
@@ -143,9 +144,11 @@ class TagPopover(Gtk.Popover):
                 return tag['id']
         return None
 
-    def _toast_moved(self, from_tag):
-        name = self._collection_name(from_tag)
-        toast = Adw.Toast.new(_('Removed from "%s"') % name)
+    def _toast_moved(self, from_tag, to_tag):
+        from_name = self._collection_name(from_tag)
+        to_name = self._collection_name(to_tag)
+        toast = Adw.Toast.new(
+            _('Moved to "%s" (removed from "%s")') % (to_name, from_name))
         toast.set_timeout(4)
         root = self.get_root()
         if root is not None and hasattr(root, 'toast_overlay'):
@@ -168,7 +171,7 @@ class TagPopover(Gtk.Popover):
                 else:
                     tags_store.remove_release(prev, self._release_id)
                     tags_store.add_release(tag_id, self._release_id)
-                self._toast_moved(prev)
+                self._toast_moved(prev, tag_id)
                 self._populate()
                 if self._on_changed:
                     self._on_changed()
