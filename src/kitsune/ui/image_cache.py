@@ -18,12 +18,14 @@ gi.require_version('GdkPixbuf', '2.0')
 
 from gi.repository import Gdk, GdkPixbuf, Gio, GLib, Soup
 
+from kitsune.netutil import MAX_IMAGE_BYTES, send_and_read_capped
+
 log = logging.getLogger('kitsune.image_cache')
 
 _session = Soup.Session()
 _base_cache_dir = os.path.join(GLib.get_user_cache_dir(), 'kitsune')
 _MAX_MEMORY_CACHE = 300
-_MAX_DOWNLOAD_SIZE = 30 * 1024 * 1024  # 30 MB
+_MAX_DOWNLOAD_SIZE = MAX_IMAGE_BYTES  # 30 MB
 _memory_cache: OrderedDict[str, Gdk.Texture] = OrderedDict()
 
 
@@ -75,9 +77,10 @@ def load_image(url: str, callback, category: str = 'posters'):
 
     log.debug('download: %s [%s]', url, category)
     msg = Soup.Message.new('GET', url)
-    _session.send_and_read_async(
-        msg, GLib.PRIORITY_DEFAULT, None,
-        _on_downloaded, (url, cache_path, callback, category),
+    send_and_read_capped(
+        _session, msg, _MAX_DOWNLOAD_SIZE, None,
+        lambda gbytes, err: _on_downloaded(
+            url, cache_path, callback, category, gbytes, err),
     )
 
 
@@ -138,16 +141,13 @@ def _generate_square_thumb(url: str, source_path: str):
         log.debug('thumbnail failed: %s — %s', url, e)
 
 
-def _on_downloaded(session, result, user_data):
-    url, cache_path, callback, category = user_data
+def _on_downloaded(url, cache_path, callback, category, gbytes, error):
+    if error is not None:
+        log.debug('download failed: %s — %s', url, error)
+        callback(None, error)
+        return
     try:
-        gbytes = session.send_and_read_finish(result)
         data = gbytes.get_data()
-
-        if len(data) > _MAX_DOWNLOAD_SIZE:
-            log.debug('download too large (%d bytes): %s', len(data), url)
-            callback(None, 'Image too large')
-            return
 
         texture = Gdk.Texture.new_from_bytes(gbytes)
 

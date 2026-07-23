@@ -14,6 +14,7 @@ from gi.repository import Adw, Gdk, GLib, Gtk
 import random
 
 from kitsune.ui import register_css
+from kitsune.netutil import MAX_IMAGE_BYTES, send_and_read_capped
 
 log = logging.getLogger('kitsune.auth_dialog')
 
@@ -163,9 +164,11 @@ class AuthDialog(Adw.Dialog):
         self._hero_session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
-        def on_image(_session, result):
+        def on_image(gbytes, error):
             try:
-                gbytes = _session.send_and_read_finish(result)
+                if error is not None:
+                    log.debug('Hero: failed: %s', error)
+                    return
                 if not gbytes or gbytes.get_size() == 0:
                     log.debug('Hero: empty response')
                     return
@@ -182,8 +185,8 @@ class AuthDialog(Adw.Dialog):
             except Exception as e:
                 log.debug('Hero: failed: %s', e)
 
-        self._hero_session.send_and_read_async(
-            msg, GLib.PRIORITY_DEFAULT, None, on_image)
+        send_and_read_capped(
+            self._hero_session, msg, MAX_IMAGE_BYTES, None, on_image)
 
     def _fade_in_hero(self):
         """Fade in hero image, fade out logo block."""
@@ -270,7 +273,7 @@ class AuthDialog(Adw.Dialog):
         if old_user_id is not None and new_user.id != old_user_id:
             self._session.force_logout_cleanup()
             if self._sync is not None:
-                self._sync._queue.clear_for_user(old_user_id)
+                self._sync.clear_queue_for_user(old_user_id)
         if self._sync is not None and getattr(new_user, 'id', None):
             self._sync.set_user_id(new_user.id)
         self._session.clear_expired()

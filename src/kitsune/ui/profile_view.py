@@ -279,9 +279,11 @@ class ProfileView(Gtk.Box):
         self._hero_session.set_timeout(10)
         msg = Soup.Message.new('GET', url)
 
-        def on_image(_session, result):
+        def on_image(gbytes, error):
             try:
-                gbytes = _session.send_and_read_finish(result)
+                if error is not None:
+                    log.debug('Profile hero: failed: %s', error)
+                    return
                 if not gbytes or gbytes.get_size() == 0:
                     return
                 # View may have been unmapped/destroyed while the request
@@ -294,8 +296,9 @@ class ProfileView(Gtk.Box):
             except Exception as e:
                 log.debug('Profile hero: failed: %s', e)
 
-        self._hero_session.send_and_read_async(
-            msg, GLib.PRIORITY_DEFAULT, None, on_image)
+        from kitsune.netutil import MAX_IMAGE_BYTES, send_and_read_capped
+        send_and_read_capped(
+            self._hero_session, msg, MAX_IMAGE_BYTES, None, on_image)
 
     def _start_parallax(self):
         """Parallax animation: hero slides more, content slides less."""
@@ -327,8 +330,7 @@ class ProfileView(Gtk.Box):
 
     def _on_collection_clicked(self, _button, tag_id):
         if self._on_navigate_tag:
-            data = tags_store._load()
-            tag = tags_store._find_tag(data, tag_id)
+            tag = tags_store.get_tag(tag_id)
             if tag:
                 self._on_navigate_tag(tag)
 
@@ -445,12 +447,22 @@ class ProfileView(Gtk.Box):
 
     @Gtk.Template.Callback()
     def on_sync_clicked(self, _button):
-        if self._sync_manager:
-            self._sync_manager.sync_now(self._on_sync_done)
+        if not self._sync_manager:
+            return
+        self.sync_button.set_sensitive(False)
+        self.sync_button.set_child(Adw.Spinner())
+        self._sync_manager.sync_now(self._on_sync_done)
 
     def _on_sync_done(self, ok, error):
-        import datetime
-        self.set_sync_time(datetime.datetime.now().strftime('%H:%M'))
+        self.sync_button.set_child(None)
+        self.sync_button.set_sensitive(True)
+        if ok:
+            import datetime
+            self.set_sync_time(datetime.datetime.now().strftime('%H:%M'))
+        else:
+            root = self.get_root()
+            if root is not None and hasattr(root, 'toast_overlay'):
+                root.toast_overlay.add_toast(Adw.Toast(title=_('Sync failed')))
         self.refresh_counts()
 
     def _refresh_indicator(self):
@@ -466,12 +478,11 @@ class ProfileView(Gtk.Box):
         last_error = self._sync_manager.last_queue_error()
         self.pending_row.set_visible(size > 0)
         if size > 0:
-            if size == 1:
-                self.pending_label.set_label(
-                    _('1 operation waiting to sync'))
-            else:
-                self.pending_label.set_label(
-                    _('{n} operations waiting to sync').format(n=size))
+            from gettext import ngettext
+            self.pending_label.set_label(
+                ngettext('{n} operation waiting to sync',
+                         '{n} operations waiting to sync', size
+                         ).format(n=size))
         # Keep error_row and retry_button visibility in sync: if any op
         # has failed, the user sees both the explanation AND the retry
         # button. Fall back to a generic label if last_error is missing
