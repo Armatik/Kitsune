@@ -1577,15 +1577,15 @@ class KitsuneWindow(Adw.ApplicationWindow):
 
     def _on_session_expired_show_banner(self):
         if not self._session_banner_dismissed:
-            self.session_expired_banner.set_revealed(True)
+            self.session_expired_banner.set_reveal_child(True)
 
     def _on_session_restored_hide_banner(self):
         self._session_banner_dismissed = False
-        self.session_expired_banner.set_revealed(False)
+        self.session_expired_banner.set_reveal_child(False)
 
     def _on_session_logged_out_hide_banner(self):
         self._session_banner_dismissed = False
-        self.session_expired_banner.set_revealed(False)
+        self.session_expired_banner.set_reveal_child(False)
 
     @Gtk.Template.Callback()
     def on_session_banner_login(self, _banner):
@@ -1599,7 +1599,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         """Hide the banner for the rest of the expired window — the expired
         state itself (paused sync queue) is untouched."""
         self._session_banner_dismissed = True
-        self.session_expired_banner.set_revealed(False)
+        self.session_expired_banner.set_reveal_child(False)
 
     def _play_episode(self, release, episode):
         # 18+ gate at the single playback choke point (release page,
