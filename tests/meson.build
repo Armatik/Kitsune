@@ -19,6 +19,7 @@ test_files = [
   'test_sync_flow.py',
   'test_api_client.py',
   'test_auto_collections.py',
+  'test_netutil.py',
 ]
 
 foreach test_file : test_files

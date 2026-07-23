@@ -13,6 +13,7 @@ from gi.repository import GLib, Gio, Soup
 
 from kitsune import API_BASE_URL
 from kitsune.models import CatalogResponse, Franchise, Genre, Release
+from kitsune.netutil import read_stream_capped
 
 log = logging.getLogger('kitsune.api')
 
@@ -24,7 +25,7 @@ def _make_callback(callback, parser):
     """Wrap a user callback with a parser for successful responses.
 
     Parser exceptions are surfaced as a terminal (None, error) call —
-    otherwise they bubble into _on_response's safe_call guard, which has
+    otherwise they bubble into _send's safe_call guard, which has
     already marked the callback as fired, and the caller is left waiting
     forever (infinite spinner / stuck sync chain).
     """
@@ -100,35 +101,14 @@ class AniLibriaClient:
         self._token_expired_handler = callback
 
     def _fetch(self, path: str, callback, cancellable: Gio.Cancellable | None = None):
-        uri = f'{API_BASE_URL}{path}'
-        msg = Soup.Message.new('GET', uri)
+        msg = Soup.Message.new('GET', f'{API_BASE_URL}{path}')
 
         token = self._get_token() if self._get_token else None
         if token:
             msg.get_request_headers().append('Authorization', f'Bearer {token}')
 
-        timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS
-        state = [False]  # [handled]
-
-        log.debug('GET %s (auth=%s, timeout=%dms)',
-                  path, bool(token), timeout_ms)
-
-        def on_timeout():
-            if not state[0]:
-                state[0] = True
-                self._offline = True
-                log.debug('GET %s timed out after %dms', path, timeout_ms)
-                callback(None, 'timeout')
-                if self._on_network_error:
-                    self._on_network_error()
-            return GLib.SOURCE_REMOVE
-
-        timeout_id = GLib.timeout_add(timeout_ms, on_timeout)
-
-        self._session.send_and_read_async(
-            msg, GLib.PRIORITY_DEFAULT, cancellable,
-            self._on_response, (callback, msg, state, timeout_id),
-        )
+        log.debug('GET %s (auth=%s)', path, bool(token))
+        self._send(msg, 'GET', path, callback, cancellable)
 
     def _maybe_fire_token_expired(self, msg):
         """Fire the 401 handler only if the request carried a Bearer token.
@@ -166,28 +146,57 @@ class AniLibriaClient:
             if self._on_network_error:
                 self._on_network_error()
 
-    def _on_response(self, session, result, user_data):
-        callback, msg, state, timeout_id = user_data
-        if state[0]:
-            return  # timeout already handled
-        method = msg.get_method()
-        path = msg.get_uri().get_path()
+    def _send(self, msg, method, path, callback, cancellable):
+        """Two-phase request: status at headers via send_async, then a
+        capped streaming body read (SEC-005 — no unbounded buffering of
+        a hostile response in memory)."""
+        timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS
+        state = [False]  # [handled]
+
+        log.debug('%s %s (timeout=%dms)', method, path, timeout_ms)
+
+        def on_timeout():
+            if not state[0]:
+                state[0] = True
+                self._offline = True
+                log.debug('%s %s timed out after %dms', method, path, timeout_ms)
+                callback(None, 'timeout')
+                if self._on_network_error:
+                    self._on_network_error()
+            return GLib.SOURCE_REMOVE
+
+        timeout_id = GLib.timeout_add(timeout_ms, on_timeout)
 
         # One-shot callback wrapper. Prevents re-entry if a subscriber
-        # inside callback raises and the exception bubbles back up into
-        # the except-block below — we must not surface that exception as
-        # a second "(None, error)" invocation (that would bury a real
-        # logic bug under a bogus sync error and confuse callers that
-        # already handled success).
+        # inside callback raises and the exception bubbles back up — we
+        # must not surface that as a second "(None, error)" invocation.
         called = [False]
+
         def safe_call(data, err):
             if called[0]:
                 return
             called[0] = True
             callback(data, err)
 
-        try:
-            gbytes = session.send_and_read_finish(result)
+        def on_sent(session, result):
+            if state[0]:
+                return  # timeout already handled
+            try:
+                stream = session.send_finish(result)
+            except GLib.Error as e:
+                if e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
+                    log.debug('%s %s cancelled', method, path)
+                    if not state[0]:
+                        state[0] = True
+                        GLib.source_remove(timeout_id)
+                    return
+                self._handle_error(state, timeout_id, safe_call, str(e))
+                return
+            except Exception as e:
+                log.exception('%s %s: unexpected error in response handler',
+                              method, path)
+                self._handle_error(state, timeout_id, safe_call, str(e))
+                return
             status = msg.get_status()
             if status != Soup.Status.OK:
                 # HTTP errors (including 401) are valid server responses,
@@ -201,14 +210,26 @@ class AniLibriaClient:
                 if status == Soup.Status.UNAUTHORIZED:
                     self._maybe_fire_token_expired(msg)
                 safe_call(None, f'HTTP {status.value_nick}')
+                stream.close_async(GLib.PRIORITY_DEFAULT, None, None, None)
                 return
-            if gbytes is None:
-                self._handle_error(state, timeout_id, safe_call,
-                                   'Empty response')
+            read_stream_capped(
+                stream, _MAX_RESPONSE_BYTES, cancellable, on_body)
+
+        def on_body(gbytes, error):
+            if error == 'too large':
+                if not state[0]:
+                    state[0] = True
+                    GLib.source_remove(timeout_id)
+                safe_call(None, 'Response too large')
+                return
+            if error is not None:
+                self._handle_error(state, timeout_id, safe_call, error)
+                return
+            if state[0]:
                 return
             state[0] = True
             GLib.source_remove(timeout_id)
-            raw = gbytes.get_data()
+            raw = gbytes.get_data() if gbytes else b''
             log.debug('%s %s → HTTP 200 (%d bytes)', method, path, len(raw))
             data, err = _parse_success_body(raw)
             if err:
@@ -221,26 +242,9 @@ class AniLibriaClient:
                 log.debug('marking offline=False (ok response)')
                 if self._on_network_ok:
                     self._on_network_ok()
-        except GLib.Error as e:
-            if e.matches(Gio.io_error_quark(), Gio.IOErrorEnum.CANCELLED):
-                log.debug('%s %s cancelled', method, path)
-                if not state[0]:
-                    state[0] = True
-                    GLib.source_remove(timeout_id)
-                return
-            self._handle_error(state, timeout_id, safe_call, str(e))
-        except Exception as e:
-            # If the exception came from a subscriber *after* safe_call
-            # already fired, called[0] is True and the second safe_call
-            # below is a no-op — the caller has already seen its success
-            # result, which is the truth. Only when we crashed *before*
-            # any callback does this become a real terminal error signal.
-            log.exception('%s %s: unexpected error in response handler',
-                          method, path)
-            if not state[0]:
-                state[0] = True
-                GLib.source_remove(timeout_id)
-            safe_call(None, str(e))
+
+        self._session.send_async(
+            msg, GLib.PRIORITY_DEFAULT, cancellable, on_sent, None)
 
     def _post(self, path: str, body, callback, cancellable: Gio.Cancellable | None = None):
         uri = f'{API_BASE_URL}{path}'
@@ -256,28 +260,9 @@ class AniLibriaClient:
             body_bytes = len(encoded)
             msg.set_request_body_from_bytes('application/json', GLib.Bytes.new(encoded))
 
-        timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS
-        state = [False]
-
-        log.debug('POST %s (auth=%s, body=%d bytes, timeout=%dms)',
-                  path, bool(token), body_bytes, timeout_ms)
-
-        def on_timeout():
-            if not state[0]:
-                state[0] = True
-                self._offline = True
-                log.debug('POST %s timed out after %dms', path, timeout_ms)
-                callback(None, 'timeout')
-                if self._on_network_error:
-                    self._on_network_error()
-            return GLib.SOURCE_REMOVE
-
-        timeout_id = GLib.timeout_add(timeout_ms, on_timeout)
-
-        self._session.send_and_read_async(
-            msg, GLib.PRIORITY_DEFAULT, cancellable,
-            self._on_response, (callback, msg, state, timeout_id),
-        )
+        log.debug('POST %s (auth=%s, body=%d bytes)',
+                  path, bool(token), body_bytes)
+        self._send(msg, 'POST', path, callback, cancellable)
 
     def _delete(self, path: str, body, callback, cancellable: Gio.Cancellable | None = None):
         uri = f'{API_BASE_URL}{path}'
@@ -293,28 +278,9 @@ class AniLibriaClient:
             body_bytes = len(encoded)
             msg.set_request_body_from_bytes('application/json', GLib.Bytes.new(encoded))
 
-        timeout_ms = _OFFLINE_TIMEOUT_MS if self._offline else _REQUEST_TIMEOUT_MS
-        state = [False]
-
-        log.debug('DELETE %s (auth=%s, body=%d bytes, timeout=%dms)',
-                  path, bool(token), body_bytes, timeout_ms)
-
-        def on_timeout():
-            if not state[0]:
-                state[0] = True
-                self._offline = True
-                log.debug('DELETE %s timed out after %dms', path, timeout_ms)
-                callback(None, 'timeout')
-                if self._on_network_error:
-                    self._on_network_error()
-            return GLib.SOURCE_REMOVE
-
-        timeout_id = GLib.timeout_add(timeout_ms, on_timeout)
-
-        self._session.send_and_read_async(
-            msg, GLib.PRIORITY_DEFAULT, cancellable,
-            self._on_response, (callback, msg, state, timeout_id),
-        )
+        log.debug('DELETE %s (auth=%s, body=%d bytes)',
+                  path, bool(token), body_bytes)
+        self._send(msg, 'DELETE', path, callback, cancellable)
 
     # --- Authentication ---
 

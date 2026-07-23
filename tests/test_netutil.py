@@ -1,0 +1,76 @@
+# tests/test_netutil.py
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+import os
+import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from gi.repository import Gio, GLib
+
+from kitsune.netutil import read_stream_capped
+
+
+def _drain(done):
+    ctx = GLib.MainContext.default()
+    while not done:
+        ctx.iteration(True)
+
+
+def test_assembles_small_body():
+    payload = b'{"hello": "world"}' * 100
+    stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(payload))
+    done = []
+    read_stream_capped(stream, 10 * 1024 * 1024, None,
+                       lambda gbytes, err: done.append((gbytes, err)))
+    _drain(done)
+    gbytes, err = done[0]
+    assert err is None
+    assert gbytes.get_data() == payload
+
+
+def test_empty_body_is_empty_bytes_not_error():
+    stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(b''))
+    done = []
+    read_stream_capped(stream, 1024, None,
+                       lambda gbytes, err: done.append((gbytes, err)))
+    _drain(done)
+    gbytes, err = done[0]
+    assert err is None
+    assert gbytes.get_data() == b''
+
+
+def test_aborts_mid_stream_when_cap_exceeded():
+    """SEC-005: the download must abort as soon as the cap is crossed —
+    not after the whole hostile body is buffered in memory."""
+    payload = b'x' * (1024 * 1024)
+    stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(payload))
+    done = []
+    read_stream_capped(stream, 100 * 1024, None,
+                       lambda gbytes, err: done.append((gbytes, err)))
+    _drain(done)
+    gbytes, err = done[0]
+    assert gbytes is None
+    assert err == 'too large'
+
+
+def test_exact_cap_is_accepted():
+    payload = b'y' * (100 * 1024)
+    stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(payload))
+    done = []
+    read_stream_capped(stream, 100 * 1024, None,
+                       lambda gbytes, err: done.append((gbytes, err)))
+    _drain(done)
+    gbytes, err = done[0]
+    assert err is None
+    assert gbytes.get_data() == payload
+
+
+def test_on_done_called_exactly_once():
+    payload = b'z' * (300 * 1024)
+    stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(payload))
+    done = []
+    read_stream_capped(stream, 1024, None,
+                       lambda gbytes, err: done.append((gbytes, err)))
+    _drain(done)
+    assert len(done) == 1
