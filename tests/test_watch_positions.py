@@ -376,3 +376,28 @@ def test_remove_positions_single_write(mock_positions, monkeypatch):
     assert len(saves) == 1
     assert wp.get_position(9275, 1.0) == 0
     assert wp.get_position(9275, 2.0) == 0
+
+
+def test_iter_pushable_skips_server_pulled_entries(mock_positions):
+    """Entries pulled FROM the server (updated_at == 0, our local-wins
+    marker) must not be re-pushed — otherwise every app close flushes
+    the entire synced library back."""
+    from kitsune.storage import watch_positions as w
+    w.apply_server_entry('ep.pulled', 0, True, 0.0)
+    w.save_position(9275, 1.0, 120.0, episode_id='ep.local')
+    pushable = {rid for rid, _ord, _e in w.iter_pushable()}
+    assert 9275 in pushable
+    assert all(e.get('updated_at', 0) > 0 for _r, _o, e in w.iter_pushable())
+
+
+def test_last_push_at_tracks_batch_progress(mock_positions):
+    """After a successful push, the same entries must not be pushable
+    again until they change locally."""
+    from kitsune.storage import watch_positions as w
+    w.save_position(9275, 1.0, 60.0, episode_id='ep.0')
+    assert any(True for _ in w.iter_pushable())
+    w.set_last_push_at(w._load()['9275_1.0']['updated_at'])
+    assert not any(True for _ in w.iter_pushable())
+    # local change makes it dirty again
+    w.save_position(9275, 1.0, 90.0, episode_id='ep.0')
+    assert any(True for _ in w.iter_pushable())

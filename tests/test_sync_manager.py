@@ -1604,3 +1604,24 @@ def test_prefer_server_keeps_positions(mock_tags, tmp_path):
         sm.initial_sync(lambda ok, err: None,
                         strategy=MergeStrategy.PREFER_SERVER)
         assert watch_positions.get_position(99, 1.0) == 120.0
+
+
+def test_needs_reindex_flag_lifecycle(tmp_path, mock_tags, monkeypatch):
+    """Reindex runs only for a new user or after a wipe — not on every
+    app start."""
+    flag = tmp_path / 'reindexed_user_id'
+    monkeypatch.setattr(
+        'kitsune.storage.sync_manager.SyncManager._reindex_flag_path',
+        staticmethod(lambda: flag))
+    client = FakeSyncClient()
+    sm = SyncManager(client)
+    sm.set_user_id(42)
+
+    assert sm.needs_reindex() is True          # no flag file
+    sm._mark_reindexed()
+    assert sm.needs_reindex() is False         # flag matches user
+    sm.set_user_id(7)
+    assert sm.needs_reindex() is True          # different user
+    sm.set_user_id(42)
+    sm._wipe_local_synced()
+    assert sm.needs_reindex() is True          # wipe invalidates

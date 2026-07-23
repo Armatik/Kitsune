@@ -164,7 +164,6 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # the suggest trigger re-fires on every position save (~30s)
         # until the user acts, and identical toasts must not stack.
         self._shown_collection_suggestions = set()
-        self._reindex_done = False
         # Refresh the sidebar's "Synced at HH:MM" subtitle when a sync
         # completes — the time was set by _sync_done minutes/seconds
         # before this callback fires, so the subtitle would otherwise
@@ -1350,13 +1349,6 @@ class KitsuneWindow(Adw.ApplicationWindow):
         # itself handles already_syncing/offline gracefully.
         if not self._sync_timer_id:
             self._start_periodic_sync()
-        # One reindex per login session: server timecodes resolve only
-        # through episode_index, which needs release data fetched. After
-        # a fresh install the first pull maps almost nothing — reindex
-        # the list titles, then its re-pull applies watched states.
-        if ok and not self._reindex_done:
-            self._reindex_done = True
-            self._sync.reindex_library()
         if not ok and error and error != 'already_syncing':
             import logging
             logging.getLogger('kitsune.sync').warning(
@@ -1425,7 +1417,6 @@ class KitsuneWindow(Adw.ApplicationWindow):
         self._stop_sync_dots()
         self._update_auth_sidebar()
         self._shown_collection_suggestions.clear()
-        self._reindex_done = False
         if self._profile_view:
             self._profile_view.update_profile(None)
         if self.content_stack.get_visible_child_name() == 'profile':

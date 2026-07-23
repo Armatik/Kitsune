@@ -238,6 +238,35 @@ class SyncManager:
         episode_index.clear()
         self._queue.clear()
         self._emit_queue_changed()
+        # The reindex flag lives next to the wiped data — without this,
+        # a wiped client would skip reindexing forever.
+        try:
+            self._reindex_flag_path().unlink(missing_ok=True)
+        except OSError:
+            pass
+
+    @staticmethod
+    def _reindex_flag_path():
+        import os
+        from pathlib import Path
+        return Path(
+            os.environ.get('XDG_DATA_HOME', os.path.expanduser('~/.local/share'))
+        ) / 'kitsune' / 'reindexed_user_id'
+
+    def needs_reindex(self) -> bool:
+        """True if the library was never reindexed for the current user
+        (fresh install, new account, or after a local-data wipe)."""
+        try:
+            stored = int(self._reindex_flag_path().read_text().strip() or 0)
+        except (OSError, ValueError):
+            stored = 0
+        return stored != self._user_id or stored == 0
+
+    def _mark_reindexed(self):
+        try:
+            self._reindex_flag_path().write_text(str(self._user_id))
+        except OSError as e:
+            log.debug('could not persist reindex flag: %s', e)
 
     def reset_local_data(self):
         """Manual 'clear local data' action (profile button): wipe synced
@@ -373,6 +402,16 @@ class SyncManager:
                 for op_id in op_ids:
                     self._queue.mark_success(op_id)
                 self._emit_queue_changed()
+                # Advance the push watermark so the same entries are not
+                # flushed again on the next app close / player exit.
+                pushed_ts = 0.0
+                for op in ops:
+                    pushed_ts = max(
+                        pushed_ts,
+                        watch_positions.get_updated_at_for_episode(
+                            op.payload.get('episode_id', '')))
+                if pushed_ts > watch_positions._load_last_push_at():
+                    watch_positions.set_last_push_at(pushed_ts)
                 self._stop_retry_timer_if_idle()
             self._drain_next()
         except Exception:
@@ -840,6 +879,10 @@ class SyncManager:
         ids = set()
 
         def finish(ok):
+            # Mark done even with partial fetch failures — otherwise one
+            # deleted/404 release in the user's lists would re-trigger
+            # the full reindex on every app start.
+            self._mark_reindexed()
             self._emit_sync_complete(ok)
             if callback:
                 callback(ok, None)
@@ -931,6 +974,8 @@ class SyncManager:
         self._emit_sync_complete(success)
         if callback:
             callback(success, None if success else 'sync_partial')
+        if success and self.needs_reindex():
+            self.reindex_library()
 
     def _sync_favorites(self, then):
         def on_server_favs(server_ids, error):

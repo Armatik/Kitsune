@@ -68,11 +68,45 @@ def _load() -> dict:
     return _cache
 
 
+def _load_last_push_at() -> float:
+    """Read the last successful timecode-push watermark from the file."""
+    try:
+        raw = json.loads(_POSITIONS_FILE.read_text())
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return 0.0
+    if isinstance(raw, dict):
+        try:
+            return float(raw.get('last_push_at') or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+    return 0.0
+
+
+def set_last_push_at(ts: float):
+    """Persist the timecode-push watermark (top-level metadata key —
+    the v2 loader ignores it, so old/new builds stay compatible)."""
+    entries = _load()
+    data = {'version': VERSION, 'entries': entries, 'last_push_at': ts}
+    _atomic_write_json(_POSITIONS_FILE, data)
+
+
+def get_updated_at_for_episode(episode_id: str) -> float:
+    """updated_at of the local entry owning this episode_id, or 0."""
+    entries = _load()
+    key = _find_key_by_episode_id(episode_id, entries)
+    if key is None:
+        return 0.0
+    return entries.get(key, {}).get('updated_at', 0.0)
+
+
 def _save(entries: dict):
     global _cache, _cache_path
     _cache = entries
     _cache_path = _POSITIONS_FILE
     data = {'version': VERSION, 'entries': entries}
+    lp = _load_last_push_at()
+    if lp:
+        data['last_push_at'] = lp
     _atomic_write_json(_POSITIONS_FILE, data)
 
 
@@ -260,13 +294,19 @@ def snapshot() -> dict:
 
 
 def iter_pushable():
-    """Yield (release_id, ordinal, entry) for every entry with an episode_id.
+    """Yield (release_id, ordinal, entry) for entries dirty since last push.
 
-    Used by Stage 5's timecode drain to push to the server.
+    Dirty = has episode_id AND updated_at newer than the push watermark.
+    Server-pulled entries (updated_at == 0 with a zero watermark, or
+    older than it) are never re-pushed — without this, every app close
+    flushed the entire synced library back to the server.
     """
     entries = _load()
+    last_push = _load_last_push_at()
     for key, entry in entries.items():
         if not entry.get('episode_id'):
+            continue
+        if entry.get('updated_at', 0) <= last_push:
             continue
         prefix, _, ord_part = key.rpartition('_')
         try:
