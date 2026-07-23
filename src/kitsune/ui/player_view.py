@@ -709,8 +709,8 @@ class PlayerView(Adw.NavigationPage):
         safe_msg = GLib.markup_escape_text(message, -1)
         toast = Adw.Toast(title=_('Playback error: {}').format(safe_msg))
         root = self.get_root()
-        if hasattr(root, 'add_toast'):
-            root.add_toast(toast)
+        if root is not None and hasattr(root, 'toast_overlay'):
+            root.toast_overlay.add_toast(toast)
 
     def _on_buffering_signal(self, _player, percent):
         log.debug('ui buffering: %d%%', percent)
@@ -736,6 +736,9 @@ class PlayerView(Adw.NavigationPage):
         )
         self._player.stop()
         self._player.reset_pipeline()
+        # reset_pipeline zeroes the rate to 1.0 — re-apply the dropdown's
+        # speed so the UI does not lie about the actual playback rate.
+        self._player.set_rate(self._speeds[self.speed_dropdown.get_selected()])
         self._setup_paintable()
         self._last_duration = 0
         self._skip_target = None
@@ -896,6 +899,11 @@ class PlayerView(Adw.NavigationPage):
             return f'{h}:{m:02d}:{s:02d}'
         return f'{m}:{s:02d}'
 
+    def save_position_now(self):
+        """Persist the current watch position — for external callers that
+        are about to tear the player down (window close)."""
+        self._save_watch_position()
+
     def do_unmap(self):
         log.debug('unmap')
         try:
@@ -920,7 +928,9 @@ class PlayerView(Adw.NavigationPage):
                 self._fade_anim = None
             # Stage 5: flush pending timecode ops so the server gets our
             # latest position even if the user closes the player without
-            # full app shutdown.
+            # full app shutdown. Save the live position first — flush only
+            # pushes what is already persisted.
+            self._save_watch_position()
             if self._sync:
                 self._sync.flush_timecodes(self._release.id)
             macos_media_keys.clear()
