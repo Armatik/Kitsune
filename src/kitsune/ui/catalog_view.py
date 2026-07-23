@@ -313,7 +313,12 @@ class CatalogView(Gtk.Box):
 
     def _show_end(self):
         self._reached_end = True
-        self._grid.show_end()
+        # A filter with zero matches is not "end of the catalog" —
+        # tell the user what actually happened.
+        if self._filters and not self._grid.has_content():
+            self._grid.show_end(_('Nothing matches the current filters'))
+        else:
+            self._grid.show_end()
 
     def _end_pull_refresh(self):
         if self._pull_refresh_active:

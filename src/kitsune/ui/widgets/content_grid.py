@@ -127,9 +127,11 @@ class ContentGrid(Gtk.Box):
                     parent.remove(self._error_widget)
             self._error_widget = None
 
-    def show_end(self):
+    def show_end(self, text=None):
         self.spinner.set_visible(False)
         self.initial_spinner.set_visible(False)
+        if text is not None:
+            self.end_label.set_label(text)
         self.end_label.set_visible(True)
 
     def clear(self, preserve_scroll=False):
@@ -154,6 +156,9 @@ class ContentGrid(Gtk.Box):
             adj = self._vadjustment
             adj.set_value(min(v, max(0.0, adj.get_upper() - adj.get_page_size())))
         return GLib.SOURCE_REMOVE
+
+    def has_content(self) -> bool:
+        return self._has_content
 
     def append_child(self, widget):
         if not self._has_content:

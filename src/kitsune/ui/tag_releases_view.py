@@ -44,7 +44,7 @@ class TagReleasesView(Gtk.Box):
         release_ids = tags_store.get_release_ids_for_tag(self._tag['id'])
         self._loaded_release_ids = set(release_ids)
         if not release_ids:
-            self._grid.show_end()
+            self._grid.show_end(_('No releases in this tag yet'))
             return
 
         self._grid.set_spinner_visible(True)

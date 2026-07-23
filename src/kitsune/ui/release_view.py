@@ -318,6 +318,7 @@ class ReleaseView(Adw.NavigationPage):
         self._filter_menu_btn = Gtk.MenuButton(
             icon_name='net.armatik.Kitsune.funnel-symbolic',
             visible=False,
+            tooltip_text=_('Filter episodes'),
         )
         popover = Gtk.Popover()
         self._filter_pop_list = Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE)
@@ -328,7 +329,9 @@ class ReleaseView(Adw.NavigationPage):
             row._filter_name = name
             self._filter_rows.append(row)
             self._filter_pop_list.append(row)
-        self._filter_rows[0].add_prefix(Gtk.Image(icon_name='net.armatik.Kitsune.object-select-symbolic'))
+        self._filter_rows[0]._filter_check = Gtk.Image(
+            icon_name='net.armatik.Kitsune.object-select-symbolic')
+        self._filter_rows[0].add_prefix(self._filter_rows[0]._filter_check)
         self._filter_pop_list.connect('row-activated', self._on_filter_row_activated)
         popover.set_child(self._filter_pop_list)
         self._filter_menu_btn.set_popover(popover)
@@ -409,14 +412,17 @@ class ReleaseView(Adw.NavigationPage):
         name = row._filter_name
         self._watch_filter = name
         self._filter_toggle.set_active_name(name)
+        # Check widgets are tracked by reference: an Adw.ActionRow's
+        # direct child is its internal box, so walking children looking
+        # for the Gtk.Image never found it and checks accumulated.
         for r in self._filter_rows:
-            child = r.get_first_child()
-            while child:
-                if isinstance(child, Gtk.Image):
-                    r.remove(child)
-                    break
-                child = child.get_next_sibling()
-        row.add_prefix(Gtk.Image(icon_name='net.armatik.Kitsune.object-select-symbolic'))
+            check = getattr(r, '_filter_check', None)
+            if check is not None:
+                r.remove(check)
+                r._filter_check = None
+        check = Gtk.Image(icon_name='net.armatik.Kitsune.object-select-symbolic')
+        row.add_prefix(check)
+        row._filter_check = check
         self._filter_menu_btn.get_popover().popdown()
         self._refresh_episodes()
 
@@ -431,19 +437,19 @@ class ReleaseView(Adw.NavigationPage):
         self._refresh_episodes()
 
     def _on_mark_all_watched(self, _button):
-        # Mark every episode of the release as fully watched. Each
-        # update touches local watch_positions and enqueues a server
-        # push via SyncManager; auto_collections will pick the
-        # completed state up through its standard hook.
-        for ep in self._release.episodes:
-            watch_positions.mark_completed(
-                self._release.id, ep.ordinal, episode_id=ep.id,
-            )
-            if self._sync and ep.id:
-                self._sync.enqueue_timecode(
-                    release_id=self._release.id, episode_id=ep.id,
-                    pos=0, is_watched=True,
-                )
+        # Mark every episode of the release as fully watched. One batched
+        # disk write for positions and one batched enqueue for the server
+        # push — per-episode writes would fsync twice per episode and
+        # freeze the UI on long series.
+        watch_positions.mark_completed_many(
+            self._release.id,
+            [(ep.ordinal, ep.id) for ep in self._release.episodes],
+        )
+        if self._sync:
+            self._sync.enqueue_timecodes_many([
+                (self._release.id, ep.id, 0, True)
+                for ep in self._release.episodes if ep.id
+            ])
         self._reload_watch_data()
         self._refresh_episodes()
         self._maybe_trigger_completion_check()
@@ -472,14 +478,17 @@ class ReleaseView(Adw.NavigationPage):
 
     def _do_unmark_all(self):
         # Inverse of mark-all: drop every local watch_positions entry
-        # and tell the server to reset (pos=0, is_watched=False).
-        for ep in self._release.episodes:
-            watch_positions.remove_position(self._release.id, ep.ordinal)
-            if self._sync and ep.id:
-                self._sync.enqueue_timecode(
-                    release_id=self._release.id, episode_id=ep.id,
-                    pos=0, is_watched=False,
-                )
+        # and tell the server to reset (pos=0, is_watched=False). Batched
+        # like mark-all to avoid per-episode fsync storms.
+        watch_positions.remove_positions(
+            self._release.id,
+            [ep.ordinal for ep in self._release.episodes],
+        )
+        if self._sync:
+            self._sync.enqueue_timecodes_many([
+                (self._release.id, ep.id, 0, False)
+                for ep in self._release.episodes if ep.id
+            ])
         self._reload_watch_data()
         self._refresh_episodes()
         self._maybe_suggest_remove_from_watched()
@@ -743,6 +752,14 @@ class ReleaseView(Adw.NavigationPage):
         consistent regardless of view mode.
         """
         is_empty = not filtered
+        if is_empty:
+            # Distinguish "no episodes at all" from "filter/search hid
+            # everything" — the same label for both reads like a bug.
+            if not self._release.episodes:
+                self.episodes_empty.set_label(_('Nothing here yet'))
+            else:
+                self.episodes_empty.set_label(
+                    _('No episodes match your search or filter'))
         self.episodes_empty.set_visible(is_empty)
         if self._episodes_view == 'grid':
             self.episodes_grid.set_visible(not is_empty)
@@ -891,7 +908,12 @@ class ReleaseView(Adw.NavigationPage):
 
     def _on_torrent_download(self, _button, torrent):
         from kitsune import API_BASE_URL
-        url = f'{API_BASE_URL}/anime/torrents/{int(torrent.id)}/file'
+        try:
+            torrent_id = int(torrent.id)
+        except (TypeError, ValueError):
+            log.warning('torrent id is not numeric: %r', torrent.id)
+            return
+        url = f'{API_BASE_URL}/anime/torrents/{torrent_id}/file'
         launcher = Gtk.UriLauncher(uri=url)
         launcher.launch(self.get_root(), None, None, None)
 
@@ -985,6 +1007,8 @@ class ReleaseView(Adw.NavigationPage):
         self.tag_split_btn.set_icon_name(
             'net.armatik.Kitsune.starred-symbolic' if is_fav else 'net.armatik.Kitsune.non-starred-symbolic'
         )
+        self.tag_split_btn.set_tooltip_text(
+            _('Remove from favorites') if is_fav else _('Add to favorites'))
         if is_fav:
             self.tag_split_btn.add_css_class('favorite-active')
         else:

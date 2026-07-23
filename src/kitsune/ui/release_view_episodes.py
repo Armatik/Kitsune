@@ -144,6 +144,7 @@ def populate_episode_list(list_widget, episodes, watch_data: dict, on_play):
         play_btn = Gtk.Button(
             icon_name='net.armatik.Kitsune.media-playback-start-symbolic',
             valign=Gtk.Align.CENTER, css_classes=['flat'],
+            tooltip_text=_('Play episode'),
         )
         play_btn.connect('clicked', lambda _b, ep=episode: on_play(ep))
         row.add_suffix(play_btn)
