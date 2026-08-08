@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-24 02:08+0300\n"
+"POT-Creation-Date: 2026-08-08 18:03+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,29 +56,29 @@ msgstr ""
 msgid "Favorites"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1539
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1546
 #: src/kitsune/ui/tag_popover.py:134
 msgid "Watching"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1540
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1547
 #: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:327
 #: src/kitsune/ui/release_view_episodes.py:66
 #: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:135
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1541
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1548
 #: src/kitsune/ui/tag_popover.py:136
 msgid "Planned"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1542
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1549
 #: src/kitsune/ui/tag_popover.py:137
 msgid "Postponed"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1543
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1550
 #: src/kitsune/ui/tag_popover.py:138
 msgid "Abandoned"
 msgstr ""
@@ -143,10 +143,10 @@ msgstr ""
 msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr ""
 
-#: src/kitsune/window.py:914 src/kitsune/window.py:1266
+#: src/kitsune/window.py:914 src/kitsune/window.py:1273
 #: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/release_view.py:466
-#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:538
-#: src/kitsune/ui/profile_view.py:563 src/kitsune/ui/search_dialog.blp:32
+#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:542
+#: src/kitsune/ui/profile_view.py:567 src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr ""
 
@@ -166,7 +166,7 @@ msgstr ""
 msgid "Not synced yet"
 msgstr ""
 
-#: src/kitsune/window.py:1161 src/kitsune/ui/profile_view.py:452
+#: src/kitsune/window.py:1161 src/kitsune/ui/profile_view.py:456
 #, python-format
 msgid "Synced at %s"
 msgstr ""
@@ -176,49 +176,49 @@ msgstr ""
 msgid "Synced %s"
 msgstr ""
 
-#: src/kitsune/window.py:1255
+#: src/kitsune/window.py:1262
 #, python-format
 msgid "Local: %(favorites)d favorites, %(collections)d in collections"
 msgstr ""
 
-#: src/kitsune/window.py:1257
+#: src/kitsune/window.py:1264
 #, python-format
 msgid "Server: %(favorites)d favorites, %(collections)d in collections"
 msgstr ""
 
-#: src/kitsune/window.py:1259
+#: src/kitsune/window.py:1266
 msgid "\"Keep server\" removes the local data"
 msgstr ""
 
-#: src/kitsune/window.py:1263
+#: src/kitsune/window.py:1270
 msgid "Sync data"
 msgstr ""
 
-#: src/kitsune/window.py:1267
+#: src/kitsune/window.py:1274
 msgid "Merge"
 msgstr ""
 
-#: src/kitsune/window.py:1268
+#: src/kitsune/window.py:1275
 msgid "Keep local"
 msgstr ""
 
-#: src/kitsune/window.py:1269
+#: src/kitsune/window.py:1276
 msgid "Keep server"
 msgstr ""
 
-#: src/kitsune/window.py:1307
+#: src/kitsune/window.py:1314
 msgid "Syncing"
 msgstr ""
 
-#: src/kitsune/window.py:1497
+#: src/kitsune/window.py:1504
 msgid "Failed to sync your change with the server"
 msgstr ""
 
-#: src/kitsune/window.py:1531
+#: src/kitsune/window.py:1538
 msgid "Move"
 msgstr ""
 
-#: src/kitsune/window.py:1548
+#: src/kitsune/window.py:1555
 #, python-brace-format
 msgid "{prefix}move to {target}?"
 msgstr ""
@@ -679,60 +679,60 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:246
+#: src/kitsune/ui/profile_view.py:249
 msgid "Total titles"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:263
+#: src/kitsune/ui/profile_view.py:266
 msgid "Episodes watched"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:404
+#: src/kitsune/ui/profile_view.py:407
 #, python-format
 msgid "Member since %s"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:474
+#: src/kitsune/ui/profile_view.py:478
 msgid "Sync failed"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:492
+#: src/kitsune/ui/profile_view.py:496
 #, python-brace-format
 msgid "{n} operation waiting to sync"
 msgid_plural "{n} operations waiting to sync"
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/kitsune/ui/profile_view.py:503
+#: src/kitsune/ui/profile_view.py:507
 msgid "Unknown error"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:532
+#: src/kitsune/ui/profile_view.py:536
 msgid "Clear Local Data?"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:533
+#: src/kitsune/ui/profile_view.py:537
 msgid ""
 "Watch progress and list memberships (favorites, collections) will be removed "
 "from this device. Custom tags, image cache and your account are kept. Synced "
 "data will be downloaded again."
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:539
+#: src/kitsune/ui/profile_view.py:543
 msgid "Clear Data"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:558
+#: src/kitsune/ui/profile_view.py:562
 msgid "Log Out?"
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:559
+#: src/kitsune/ui/profile_view.py:563
 msgid ""
 "Your watch progress, favorites and collections will be removed from this "
 "device. Anything not yet synced to the server will be lost."
 msgstr ""
 
-#: src/kitsune/ui/profile_view.py:564
+#: src/kitsune/ui/profile_view.py:568
 msgid "Log Out"
 msgstr ""
 
@@ -1308,9 +1308,9 @@ msgstr ""
 #: data/net.armatik.Kitsune.metainfo.xml.in:153
 msgid ""
 "Brand refresh. New scalable and symbolic app icons plus a refreshed brand "
-"color palette (contributed by @gingercat). Built-in tags switched to Adwaita "
-"symbolic icons with theme-aware color tints from the GNOME HIG palette A. "
-"Bundled symbolic icons namespaced under the app ID to avoid collisions."
+"color palette (contributed by @gingercat). Built-in tags use emoji icons "
+"with theme-aware color tints from the GNOME HIG palette A. Bundled symbolic "
+"icons namespaced under the app ID to avoid collisions."
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:154

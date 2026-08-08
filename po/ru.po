@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune 0.7.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-07-24 02:08+0300\n"
+"POT-Creation-Date: 2026-08-08 18:03+0300\n"
 "PO-Revision-Date: 2026-03-17 15:00+0300\n"
 "Last-Translator: Armatik <armatik@altlinux.org>\n"
 "Language-Team: Russian\n"
@@ -55,29 +55,29 @@ msgstr "Использует"
 msgid "Favorites"
 msgstr "Избранное"
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1539
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1546
 #: src/kitsune/ui/tag_popover.py:134
 msgid "Watching"
 msgstr "Смотрю"
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1540
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1547
 #: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:327
 #: src/kitsune/ui/release_view_episodes.py:66
 #: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:135
 msgid "Watched"
 msgstr "Просмотрено"
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1541
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1548
 #: src/kitsune/ui/tag_popover.py:136
 msgid "Planned"
 msgstr "Запланировано"
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1542
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1549
 #: src/kitsune/ui/tag_popover.py:137
 msgid "Postponed"
 msgstr "На паузе"
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1543
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1550
 #: src/kitsune/ui/tag_popover.py:138
 msgid "Abandoned"
 msgstr "Брошено"
@@ -143,10 +143,10 @@ msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr ""
 "Этот тайтл помечен 18+ и может содержать откровенные материалы. Продолжить?"
 
-#: src/kitsune/window.py:914 src/kitsune/window.py:1266
+#: src/kitsune/window.py:914 src/kitsune/window.py:1273
 #: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/release_view.py:466
-#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:538
-#: src/kitsune/ui/profile_view.py:563 src/kitsune/ui/search_dialog.blp:32
+#: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:542
+#: src/kitsune/ui/profile_view.py:567 src/kitsune/ui/search_dialog.blp:32
 msgid "Cancel"
 msgstr "Отмена"
 
@@ -166,7 +166,7 @@ msgstr "На главную"
 msgid "Not synced yet"
 msgstr "Ещё не синхронизировано"
 
-#: src/kitsune/window.py:1161 src/kitsune/ui/profile_view.py:452
+#: src/kitsune/window.py:1161 src/kitsune/ui/profile_view.py:456
 #, python-format
 msgid "Synced at %s"
 msgstr "Синхронизировано в %s"
@@ -176,49 +176,49 @@ msgstr "Синхронизировано в %s"
 msgid "Synced %s"
 msgstr "Синхронизировано %s"
 
-#: src/kitsune/window.py:1255
+#: src/kitsune/window.py:1262
 #, python-format
 msgid "Local: %(favorites)d favorites, %(collections)d in collections"
 msgstr "Локально: %(favorites)d в избранном, %(collections)d в коллекциях"
 
-#: src/kitsune/window.py:1257
+#: src/kitsune/window.py:1264
 #, python-format
 msgid "Server: %(favorites)d favorites, %(collections)d in collections"
 msgstr "На сервере: %(favorites)d в избранном, %(collections)d в коллекциях"
 
-#: src/kitsune/window.py:1259
+#: src/kitsune/window.py:1266
 msgid "\"Keep server\" removes the local data"
 msgstr "«Оставить серверные» удалит локальные данные"
 
-#: src/kitsune/window.py:1263
+#: src/kitsune/window.py:1270
 msgid "Sync data"
 msgstr "Синхронизация данных"
 
-#: src/kitsune/window.py:1267
+#: src/kitsune/window.py:1274
 msgid "Merge"
 msgstr "Объединить"
 
-#: src/kitsune/window.py:1268
+#: src/kitsune/window.py:1275
 msgid "Keep local"
 msgstr "Оставить локальные"
 
-#: src/kitsune/window.py:1269
+#: src/kitsune/window.py:1276
 msgid "Keep server"
 msgstr "Оставить серверные"
 
-#: src/kitsune/window.py:1307
+#: src/kitsune/window.py:1314
 msgid "Syncing"
 msgstr "Синхронизация"
 
-#: src/kitsune/window.py:1497
+#: src/kitsune/window.py:1504
 msgid "Failed to sync your change with the server"
 msgstr "Не удалось синхронизировать изменение с сервером"
 
-#: src/kitsune/window.py:1531
+#: src/kitsune/window.py:1538
 msgid "Move"
 msgstr "Переместить"
 
-#: src/kitsune/window.py:1548
+#: src/kitsune/window.py:1555
 #, python-brace-format
 msgid "{prefix}move to {target}?"
 msgstr "{prefix}переместить в {target}?"
@@ -681,24 +681,24 @@ msgstr "Тег «%s» будет удалён. Это действие нель�
 msgid "Delete"
 msgstr "Удалить"
 
-#: src/kitsune/ui/profile_view.py:246
+#: src/kitsune/ui/profile_view.py:249
 msgid "Total titles"
 msgstr "Всего тайтлов"
 
-#: src/kitsune/ui/profile_view.py:263
+#: src/kitsune/ui/profile_view.py:266
 msgid "Episodes watched"
 msgstr "Серий просмотрено"
 
-#: src/kitsune/ui/profile_view.py:404
+#: src/kitsune/ui/profile_view.py:407
 #, python-format
 msgid "Member since %s"
 msgstr "С нами с %s"
 
-#: src/kitsune/ui/profile_view.py:474
+#: src/kitsune/ui/profile_view.py:478
 msgid "Sync failed"
 msgstr "Синхронизация не удалась"
 
-#: src/kitsune/ui/profile_view.py:492
+#: src/kitsune/ui/profile_view.py:496
 #, python-brace-format
 msgid "{n} operation waiting to sync"
 msgid_plural "{n} operations waiting to sync"
@@ -706,15 +706,15 @@ msgstr[0] "{n} операция ждёт синхронизации"
 msgstr[1] "{n} операции ждут синхронизации"
 msgstr[2] "{n} операций ждут синхронизации"
 
-#: src/kitsune/ui/profile_view.py:503
+#: src/kitsune/ui/profile_view.py:507
 msgid "Unknown error"
 msgstr "Неизвестная ошибка"
 
-#: src/kitsune/ui/profile_view.py:532
+#: src/kitsune/ui/profile_view.py:536
 msgid "Clear Local Data?"
 msgstr "Очистить локальные данные?"
 
-#: src/kitsune/ui/profile_view.py:533
+#: src/kitsune/ui/profile_view.py:537
 msgid ""
 "Watch progress and list memberships (favorites, collections) will be removed "
 "from this device. Custom tags, image cache and your account are kept. Synced "
@@ -726,15 +726,15 @@ msgstr ""
 "просмотра, избранное и коллекции будут удалены с этого устройства. Всё, что "
 "ещё не синхронизировано с сервером, будет потеряно."
 
-#: src/kitsune/ui/profile_view.py:539
+#: src/kitsune/ui/profile_view.py:543
 msgid "Clear Data"
 msgstr "Очистить данные"
 
-#: src/kitsune/ui/profile_view.py:558
+#: src/kitsune/ui/profile_view.py:562
 msgid "Log Out?"
 msgstr "Выйти из аккаунта?"
 
-#: src/kitsune/ui/profile_view.py:559
+#: src/kitsune/ui/profile_view.py:563
 msgid ""
 "Your watch progress, favorites and collections will be removed from this "
 "device. Anything not yet synced to the server will be lost."
@@ -742,7 +742,7 @@ msgstr ""
 "Прогресс просмотра, избранное и коллекции будут удалены с этого устройства. "
 "Всё, что ещё не синхронизировано с сервером, будет потеряно."
 
-#: src/kitsune/ui/profile_view.py:564
+#: src/kitsune/ui/profile_view.py:568
 msgid "Log Out"
 msgstr "Выйти"
 
@@ -1283,7 +1283,7 @@ msgstr "Семён (Armatik) Фомченков"
 msgid ""
 "First major release — Kitsune now signs you in to your AniLiberty account "
 "and keeps your library in sync across devices."
-msgstr ""
+msgstr "Первый мажорный релиз — Kitsune теперь входит в ваш аккаунт AniLiberty и синхронизирует библиотеку между устройствами."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:149
 msgid ""
@@ -1296,7 +1296,7 @@ msgid ""
 "Periodic background sync pulls server changes every five minutes. Session-"
 "expired banner with a dismiss button and queue pause/resume handle 401/403 "
 "responses gracefully."
-msgstr ""
+msgstr "Синхронизация аккаунта. Вход по логину и паролю или OTP-коду через новый диалог с хранением токена в системном keyring (libsecret, KWallet или macOS Keychain). Избранное, пять встроенных коллекций (Смотрю, Просмотрено, В планах, Отложено, Брошено) и позиции просмотра серий синхронизируются с сервером в обе стороны. Постоянная очередь ожидания с экспоненциальной задержкой повторяет неудачные отправки, объединяет быстрые нажатия и переживает перезапуск приложения. Фоновая синхронизация подтягивает изменения с сервера каждые пять минут. Баннер об истёкшей сессии с кнопкой закрытия и приостановка/возобновление очереди корректно обрабатывают ответы 401/403."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:150
 msgid ""
@@ -1306,7 +1306,7 @@ msgid ""
 "manual sync and logout buttons, and a one-click local data reset. The left "
 "sidebar gains a bottom-pinned auth row showing nickname and last sync time, "
 "with an animated progress indicator while a sync is running."
-msgstr ""
+msgstr "Экран профиля. Новая страница профиля с параллакс-изображением, серверным аватаром с запасным вариантом по инициалам, карточками коллекций с анимацией счётчиков, счётчиками всего тайтлов и просмотренных серий, индикатором ожидающих операций с повтором, кнопками синхронизации и выхода и сбросом локальных данных в один клик. В левой панели внизу закреплена строка аккаунта с никнеймом и временем последней синхронизации, с анимированным индикатором во время синхронизации."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:151
 msgid ""
@@ -1317,7 +1317,7 @@ msgid ""
 "scan — 30-day pause and 180-day abandon thresholds, all toggleable in "
 "preferences. \"Mark all watched\" and \"Unmark all\" episode bulk actions on "
 "the release page."
-msgstr ""
+msgstr "Умные коллекции. Синхронизированные встроенные коллекции отмечены облачным значком. При смене коллекции уведомление сообщает о перемещении релиза из предыдущей. Автоколлекции перемещают релизы между Смотрю/Просмотрено/Отложено/Брошено по активности просмотра и фоновому сканированию — пороги 30 дней для отложено и 180 дней для брошено, всё настраивается в параметрах. Массовые действия «Отметить все серии» и «Снять отметки» на странице релиза."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:152
 msgid ""
@@ -1326,15 +1326,15 @@ msgid ""
 "driving Mutter via D-Bus for vertical content on convertible devices. "
 "Episode IDs threaded through watch position storage for cross-device "
 "timecode sync."
-msgstr ""
+msgstr "Плеер. Выбор скорости воспроизведения от 0.5x до 2.5x с коррекцией тона через фильтр scaletempo (спасибо @utlark). Кнопка поворота экрана через Mutter по D-Bus для вертикального контента на устройствах-трансформерах. ID эпизодов встроены в хранилище позиций просмотра для синхронизации таймкодов между устройствами."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:153
 msgid ""
 "Brand refresh. New scalable and symbolic app icons plus a refreshed brand "
-"color palette (contributed by @gingercat). Built-in tags switched to Adwaita "
-"symbolic icons with theme-aware color tints from the GNOME HIG palette A. "
-"Bundled symbolic icons namespaced under the app ID to avoid collisions."
-msgstr ""
+"color palette (contributed by @gingercat). Built-in tags use emoji icons "
+"with theme-aware color tints from the GNOME HIG palette A. Bundled symbolic "
+"icons namespaced under the app ID to avoid collisions."
+msgstr "Обновление бренда. Новые масштабируемые и символьные иконки приложения и обновлённая фирменная палитра (спасибо @gingercat). Встроенные теги используют эмодзи-значки с цветовыми акцентами из палитры GNOME HIG. Символьные иконки встроены в ресурсы под пространством имён приложения во избежание конфликтов."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:154
 msgid ""
@@ -1342,7 +1342,7 @@ msgid ""
 "confirmation dialog before opening the release page, with a global \"don't "
 "show again\" opt-out persisted in GSettings. Content rating bumped to "
 "oars-1.1 intense."
-msgstr ""
+msgstr "Контроль взрослого контента. Постеры тайтлов 18+ размыты, перед открытием страницы показывается диалог подтверждения с глобальной опцией «больше не показывать», сохраняемой в GSettings. Возрастной рейтинг поднят до oars-1.1 intense."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:155
 msgid ""
@@ -1350,14 +1350,14 @@ msgid ""
 "elevated headerbar, dedicated refresh button on desktop, viewport-sized "
 "loading that prefetches more cards as the window grows, mobile-only touchpad "
 "scroll filter to avoid accidental refreshes."
-msgstr ""
+msgstr "Улучшения каталога. Pull-to-refresh на мобильных с окрашенным индикатором и приподнятой панелью, отдельная кнопка обновления на десктопе, загрузка размером с вьюпорт с подгрузкой карточек при увеличении окна, фильтр прокрутки тачпада только на мобильных против случайных обновлений."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:156
 msgid ""
 "Adaptive layout. Edge-to-edge profile on mobile with transparent headerbar, "
 "Phosh form-factor declaration in the desktop file, mobile bottom-sheet "
 "navigation accommodating the auth row."
-msgstr ""
+msgstr "Адаптивная вёрстка. Профиль во всю ширину на мобильных с прозрачной панелью, декларация форм-фактора Phosh в desktop-файле, мобильная навигация bottom-sheet с учётом строки аккаунта."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:157
 msgid ""
@@ -1368,7 +1368,7 @@ msgid ""
 "commits on the soon-to-be-invalidated session. Hero image fetches no longer "
 "touch disposed widgets if the dialog closes mid-load. Watch positions and "
 "tags storage are now cached in-process to avoid per-call disk reads."
-msgstr ""
+msgstr "Надёжность. Атомарные JSON-записи теперь делают fsync перед rename, так что очередь ожидания и позиции просмотра переживают сбои и отключение питания. Ошибки синхронизации пробрасываются через конвейер загрузки — боковая панель больше не сообщает об успехе при частичном сбое. При выходе синхронизация приостанавливается перед очисткой локальных данных, чтобы избежать гонок на устаревающей сессии. Загрузка hero-изображений больше не обращается к уничтоженным виджетам при закрытии диалога. Хранилища позиций и тегов кешируются в памяти, чтобы не читать диск при каждом вызове."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:158
 msgid ""
@@ -1380,13 +1380,13 @@ msgid ""
 "unmark-all, data reset, \"Keep server\" merge — now ask for confirmation. An "
 "experimental macOS build with media keys and Now Playing integration joins "
 "the Linux release."
-msgstr ""
+msgstr "Стабильность. Движок синхронизации укреплён после полного аудита и живого тестирования: обработка очереди ожидания больше не может молча зависнуть, серверные таймкоды действительно загружаются (с одноразовой реиндексацией библиотеки при первом входе), отправляются только локально изменённые позиции, а истёкшая сессия определяется по ответам 401 и 403. Деструктивные действия — выход, снятие отметок, сброс данных, слияние «Оставить серверные» — теперь требуют подтверждения. Экспериментальная macOS-сборка с медиаклавишами и интеграцией Now Playing присоединяется к Linux-релизу."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:159
 msgid ""
 "Translations. Russian translation refreshed and completed for all new sync "
 "and profile strings."
-msgstr ""
+msgstr "Переводы. Русский перевод обновлён и дополнен для всех новых строк синхронизации и профиля."
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:164
 msgid ""
