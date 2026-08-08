@@ -55,6 +55,7 @@ jobs:
             adwaita-icon-theme \
             dylibbundler librsvg \
             appstream \
+            webp \
             gettext
 
       - name: Install Python packages

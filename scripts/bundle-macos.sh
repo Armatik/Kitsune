@@ -309,6 +309,11 @@ copy_dylib "jpeg-turbo"  "libjpeg"
 copy_dylib "libtiff"     "libtiff"
 copy_dylib "webp"        "libwebp.7"
 copy_dylib "webp"        "libwebpdemux"
+copy_dylib "webp"        "libwebpmux"
+# libwebp >= 1.3 splits the gamma tables into libsharpyuv — without it
+# the webp pixbuf loader fails to dlopen at runtime and gdk-pixbuf
+# silently drops webp support ("couldn't recognize the image file").
+copy_dylib "webp"        "libsharpyuv"
 copy_dylib "pcre2"       "libpcre2-8"
 copy_dylib "lzo"         "liblzo2"
 copy_dylib "pixman"      "libpixman-1"
@@ -447,7 +452,16 @@ find -L "$PIXBUF_SRC" \( -name "*.so" -o -name "*.dylib" \) \
     -exec cp -L {} "$PIXBUF_DEST/" \; 2>/dev/null || true
 
 LOADERS_CACHE="$RESOURCES/gdk-pixbuf/loaders.cache"
-"$BREW/bin/gdk-pixbuf-query-loaders" "$PIXBUF_DEST/"*.so > "$LOADERS_CACHE" 2>/dev/null || true
+# Keep stderr visible: loaders that fail to load here are silently
+# omitted from the cache and the format breaks at runtime.
+"$BREW/bin/gdk-pixbuf-query-loaders" "$PIXBUF_DEST/"*.so > "$LOADERS_CACHE" || true
+if [ -f "$PIXBUF_SRC/libpixbufloader-webp.so" ] && \
+   ! grep -q webp "$LOADERS_CACHE"; then
+    echo "  WARNING: webp loader present but missing from loaders.cache"
+fi
+if [ ! -f "$PIXBUF_SRC/libpixbufloader-webp.so" ]; then
+    echo "  WARNING: webp pixbuf loader not shipped by gdk-pixbuf bottle"
+fi
 # Replace absolute paths with @RESOURCES@ placeholder (replaced at runtime)
 sed -i '' "s|$(pwd)/$RESOURCES|@RESOURCES@|g" "$LOADERS_CACHE" 2>/dev/null || true
 sed -i '' "s|$BREW/lib/gdk-pixbuf-2.0|@RESOURCES@/gdk-pixbuf|g" "$LOADERS_CACHE" 2>/dev/null || true
