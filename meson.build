@@ -26,8 +26,10 @@ subdir('data')
 subdir('po')
 subdir('tests')
 
+# update-desktop-database is Linux-only; skip the post-install step on
+# platforms that don't ship it (macOS CI, BSDs without desktop-file-utils).
 gnome.post_install(
   glib_compile_schemas: true,
   gtk_update_icon_cache: true,
-  update_desktop_database: true,
+  update_desktop_database: find_program('update-desktop-database', required: false).found(),
 )
