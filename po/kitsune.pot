@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: kitsune\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-08 18:03+0300\n"
+"POT-Creation-Date: 2026-08-08 19:19+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -56,29 +56,29 @@ msgstr ""
 msgid "Favorites"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1546
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1549
 #: src/kitsune/ui/tag_popover.py:134
 msgid "Watching"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1547
+#: src/kitsune/storage/tags_store.py:25 src/kitsune/window.py:1550
 #: src/kitsune/ui/release_view.py:311 src/kitsune/ui/release_view.py:327
 #: src/kitsune/ui/release_view_episodes.py:66
 #: src/kitsune/ui/release_view_episodes.py:68 src/kitsune/ui/tag_popover.py:135
 msgid "Watched"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1548
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1551
 #: src/kitsune/ui/tag_popover.py:136
 msgid "Planned"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1549
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1552
 #: src/kitsune/ui/tag_popover.py:137
 msgid "Postponed"
 msgstr ""
 
-#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1550
+#: src/kitsune/storage/tags_store.py:26 src/kitsune/window.py:1553
 #: src/kitsune/ui/tag_popover.py:138
 msgid "Abandoned"
 msgstr ""
@@ -143,7 +143,7 @@ msgstr ""
 msgid "This title is marked 18+ and may contain explicit material. Continue?"
 msgstr ""
 
-#: src/kitsune/window.py:914 src/kitsune/window.py:1273
+#: src/kitsune/window.py:914 src/kitsune/window.py:1276
 #: src/kitsune/ui/create_tag_dialog.py:55 src/kitsune/ui/release_view.py:466
 #: src/kitsune/ui/tags_view.py:392 src/kitsune/ui/profile_view.py:542
 #: src/kitsune/ui/profile_view.py:567 src/kitsune/ui/search_dialog.blp:32
@@ -176,49 +176,49 @@ msgstr ""
 msgid "Synced %s"
 msgstr ""
 
-#: src/kitsune/window.py:1262
+#: src/kitsune/window.py:1265
 #, python-format
 msgid "Local: %(favorites)d favorites, %(collections)d in collections"
 msgstr ""
 
-#: src/kitsune/window.py:1264
+#: src/kitsune/window.py:1267
 #, python-format
 msgid "Server: %(favorites)d favorites, %(collections)d in collections"
 msgstr ""
 
-#: src/kitsune/window.py:1266
+#: src/kitsune/window.py:1269
 msgid "\"Keep server\" removes the local data"
 msgstr ""
 
-#: src/kitsune/window.py:1270
+#: src/kitsune/window.py:1273
 msgid "Sync data"
 msgstr ""
 
-#: src/kitsune/window.py:1274
+#: src/kitsune/window.py:1277
 msgid "Merge"
 msgstr ""
 
-#: src/kitsune/window.py:1275
+#: src/kitsune/window.py:1278
 msgid "Keep local"
 msgstr ""
 
-#: src/kitsune/window.py:1276
+#: src/kitsune/window.py:1279
 msgid "Keep server"
 msgstr ""
 
-#: src/kitsune/window.py:1314
+#: src/kitsune/window.py:1317
 msgid "Syncing"
 msgstr ""
 
-#: src/kitsune/window.py:1504
+#: src/kitsune/window.py:1507
 msgid "Failed to sync your change with the server"
 msgstr ""
 
-#: src/kitsune/window.py:1538
+#: src/kitsune/window.py:1541
 msgid "Move"
 msgstr ""
 
-#: src/kitsune/window.py:1555
+#: src/kitsune/window.py:1558
 #, python-brace-format
 msgid "{prefix}move to {target}?"
 msgstr ""
@@ -624,8 +624,8 @@ msgid "New episode"
 msgstr ""
 
 #: src/kitsune/ui/search_dialog.py:927
-#: src/kitsune/ui/widgets/franchise_card.py:39
-#: src/kitsune/ui/widgets/genre_card.py:34
+#: src/kitsune/ui/widgets/franchise_card.py:41
+#: src/kitsune/ui/widgets/genre_card.py:36
 msgid "titles"
 msgstr ""
 
@@ -1264,15 +1264,12 @@ msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:149
 msgid ""
-"Account sync. Log in with credentials or OTP through a new dialog backed by "
-"system keyring token storage (libsecret, KWallet or macOS Keychain). "
-"Favorites, the five built-in collections (Watching, Watched, Planned, "
-"Postponed, Abandoned) and per-episode watch positions sync bidirectionally "
-"with the server. A persistent pending queue with exponential backoff retries "
-"failed pushes forever, coalesces rapid clicks, and survives app restarts. "
-"Periodic background sync pulls server changes every five minutes. Session-"
-"expired banner with a dismiss button and queue pause/resume handle 401/403 "
-"responses gracefully."
+"Account sync. Log in with credentials or OTP through a new dialog with "
+"secure system token storage. Favorites, the five built-in collections "
+"(Watching, Watched, Planned, Postponed, Abandoned) and per-episode watch "
+"positions sync bidirectionally with the server — automatically in the "
+"background, and pending changes are queued so nothing is lost offline or "
+"between restarts. If the session expires, a banner offers to sign in again."
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:150
@@ -1298,11 +1295,10 @@ msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:152
 msgid ""
-"Player. Playback speed control with pitch-corrected scaletempo audio filter, "
-"ranging from 0.5x to 2.5x (contributed by @utlark). Screen rotation button "
-"driving Mutter via D-Bus for vertical content on convertible devices. "
-"Episode IDs threaded through watch position storage for cross-device "
-"timecode sync."
+"Player. Playback speed control from 0.5x to 2.5x with natural-sounding audio "
+"(contributed by @utlark). Screen rotation button for vertical content on "
+"convertible devices. Episode IDs threaded through watch position storage for "
+"cross-device timecode sync."
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:153
@@ -1317,8 +1313,8 @@ msgstr ""
 msgid ""
 "Adult content gating. 18+ titles ship with blurred posters and a "
 "confirmation dialog before opening the release page, with a global \"don't "
-"show again\" opt-out persisted in GSettings. Content rating bumped to "
-"oars-1.1 intense."
+"show again\" opt-out persisted in GSettings. Content rating updated "
+"accordingly."
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:155
@@ -1331,29 +1327,23 @@ msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:156
 msgid ""
-"Adaptive layout. Edge-to-edge profile on mobile with transparent headerbar, "
-"Phosh form-factor declaration in the desktop file, mobile bottom-sheet "
-"navigation accommodating the auth row."
+"Adaptive layout. Edge-to-edge profile on mobile with a transparent header "
+"bar, bottom-sheet navigation accommodating the auth row."
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:157
 msgid ""
-"Reliability. Atomic JSON writes now fsync before rename so the pending queue "
-"and watch positions survive crashes and power loss. Sync errors propagate "
-"through the pull pipeline so the sidebar no longer claims success on partial "
-"failure. Logout pauses the sync drain before wiping local data to avoid race-"
-"commits on the soon-to-be-invalidated session. Hero image fetches no longer "
-"touch disposed widgets if the dialog closes mid-load. Watch positions and "
-"tags storage are now cached in-process to avoid per-call disk reads."
+"UI polish. All grid cards — releases, tags, genres and franchises — glow on "
+"hover with the same animated halo as episode cards, and release cards add an "
+"Ambilight-style under-glow tinted by the poster's own colors."
 msgstr ""
 
 #: data/net.armatik.Kitsune.metainfo.xml.in:158
 msgid ""
-"Stability. The sync engine was hardened through a full multi-agent audit and "
-"live testing: the pending queue drain can no longer wedge silently, server "
-"timecodes actually pull down (with a one-time library reindex on first "
-"login), pushes flush only locally changed positions, and session expiry is "
-"detected on both 401 and 403 API responses. Destructive actions — logout, "
+"Stability. The sync engine was hardened through a full audit and live "
+"testing: pending changes can no longer get stuck, server watch positions "
+"pull down correctly (with a one-time library reindex on first login), and "
+"only locally changed positions are pushed. Destructive actions — logout, "
 "unmark-all, data reset, \"Keep server\" merge — now ask for confirmation. An "
 "experimental macOS build with media keys and Now Playing integration joins "
 "the Linux release."
