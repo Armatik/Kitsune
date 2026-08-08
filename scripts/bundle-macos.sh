@@ -459,6 +459,17 @@ mkdir -p "$PIXBUF_DEST"
 find -L "$PIXBUF_SRC" \( -name "*.so" -o -name "*.dylib" \) \
     -exec cp -L {} "$PIXBUF_DEST/" \; 2>/dev/null || true
 
+# The webp loader ships as a separate Homebrew formula
+# (webp-pixbuf-loader) and stays in its own keg — pull it in
+# explicitly or the bundled gdk-pixbuf silently loses webp.
+WEBP_LOADER_SRC="$BREW/opt/webp-pixbuf-loader/lib/gdk-pixbuf-2.0"
+if [ -d "$WEBP_LOADER_SRC" ]; then
+    find -L "$WEBP_LOADER_SRC" \( -name "*.so" -o -name "*.dylib" \) \
+        -exec cp -L {} "$PIXBUF_DEST/" \; 2>/dev/null || true
+else
+    echo "  WARNING: webp-pixbuf-loader keg not found, no webp support"
+fi
+
 LOADERS_CACHE="$RESOURCES/gdk-pixbuf/loaders.cache"
 QUERY_LOADERS="$PIXBUF_PREFIX/bin/gdk-pixbuf-query-loaders"
 [ -x "$QUERY_LOADERS" ] || QUERY_LOADERS="$BREW/bin/gdk-pixbuf-query-loaders"

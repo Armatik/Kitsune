@@ -55,8 +55,11 @@ jobs:
             adwaita-icon-theme \
             dylibbundler librsvg \
             appstream \
-            webp \
-            gettext
+            gettext \
+            webp-pixbuf-loader || true
+          # postinstall registers the loader with gdk-pixbuf; it fails
+          # non-fatally on CI runners, so retry and suppress the exit
+          brew postinstall webp-pixbuf-loader || true
 
       - name: Install Python packages
         run: |
@@ -71,29 +74,8 @@ jobs:
             pyobjc-framework-Quartz \
             --break-system-packages --quiet
 
-      - name: Build gdk-pixbuf with WebP loader
-        run: |
-          # The Homebrew gdk-pixbuf bottle omits the webp loader
-          # (no webp dependency), which breaks poster thumbnails and
-          # accent-color extraction for webp images. Build the same
-          # version from source with the loader enabled.
-          PIXBUF_VER="$(brew info --json=v2 gdk-pixbuf | python3 -c 'import json,sys; print(json.load(sys.stdin)["formulae"][0]["versions"]["stable"])')"
-          echo "Building gdk-pixbuf $PIXBUF_VER with webp"
-          curl -sL "https://download.gnome.org/sources/gdk-pixbuf/${PIXBUF_VER%.*}/gdk-pixbuf-${PIXBUF_VER}.tar.xz" -o /tmp/gdk-pixbuf.tar.xz
-          tar -xf /tmp/gdk-pixbuf.tar.xz -C /tmp
-          meson setup /tmp/gp-build "/tmp/gdk-pixbuf-${PIXBUF_VER}" \
-            --prefix /tmp/gp \
-            -Dwebp=enabled \
-            -Dintrospection=disabled \
-            -Dman=false \
-            -Dtests=false \
-            -Dinstalled_tests=false
-          meson compile -C /tmp/gp-build
-          meson install -C /tmp/gp-build
-          /tmp/gp/bin/gdk-pixbuf-query-loaders | grep -i webp
-
       - name: Build macOS bundle
-        run: PIXBUF_PREFIX=/tmp/gp bash scripts/bundle-macos.sh
+        run: bash scripts/bundle-macos.sh
 
       - name: Get version
         id: version

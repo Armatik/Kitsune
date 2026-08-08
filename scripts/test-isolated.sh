@@ -291,17 +291,27 @@ print('kitsune.application: OK')
 import base64, os, tempfile
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import GdkPixbuf
-payload = base64.b64decode('UklGRj4AAABXRUJQVlA4IDIAAAAQAgCdASoBAAEAAgA0JaACdLoB+AH6AAPIAP784yX/0AZLaqL/0Aj/9AGS2qi/8+oAAA==')
-fd, path = tempfile.mkstemp(suffix='.webp')
-try:
-    os.write(fd, payload)
-    os.close(fd)
-    pixbuf = GdkPixbuf.Pixbuf.new_from_file(path)
-    assert pixbuf.get_width() == 1 and pixbuf.get_height() == 1
-finally:
-    if os.path.exists(path):
-        os.unlink(path)
-print('WebP decode: OK')
+
+def _probe(fmt, payload, fatal):
+    fd, path = tempfile.mkstemp(suffix='.' + fmt)
+    try:
+        os.write(fd, payload)
+        os.close(fd)
+        pixbuf = GdkPixbuf.Pixbuf.new_from_file(path)
+        assert pixbuf.get_width() == 1 and pixbuf.get_height() == 1
+        print(fmt.upper() + ' decode: OK')
+    except Exception as e:
+        if fatal:
+            raise
+        print(fmt.upper() + ' decode: unavailable (' + str(e) + ')')
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
+
+_probe('jpg', base64.b64decode('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD3+iiigD//2Q=='), fatal=True)
+# webp occurs in the wild (avatars, some artwork) — hard requirement.
+# The loader comes from the webp-pixbuf-loader Homebrew formula.
+_probe('webp', base64.b64decode('UklGRj4AAABXRUJQVlA4IDIAAAAQAgCdASoBAAEAAgA0JaACdLoB+AH6AAPIAP784yX/0AZLaqL/0Aj/9AGS2qi/8+oAAA=='), fatal=True)
 print('ALL_CHECKS_PASSED')
 " >"$IMPORT_LOG" 2>&1
 IMPORT_EXIT=$?
