@@ -10,6 +10,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk
 
 from kitsune.models import Franchise
+from kitsune.ui import apply_card_hover_glow
 from kitsune.ui.image_cache import load_image
 
 
@@ -26,6 +27,7 @@ class FranchiseCard(Gtk.FlowBoxChild):
     def __init__(self, franchise: Franchise, **kwargs):
         super().__init__(**kwargs)
         self.franchise = franchise
+        apply_card_hover_glow(self, self.picture)
 
         self.title_label.set_label(franchise.name)
 

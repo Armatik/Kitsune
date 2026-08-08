@@ -11,7 +11,9 @@ from gi.repository import Adw, Gio, Gtk
 
 from kitsune.models import Release
 from kitsune import tags_store
-from kitsune.ui import apply_adult_blur, register_css, resolved_tag_color
+from kitsune.ui import (
+    apply_adult_blur, apply_card_hover_glow, register_css, resolved_tag_color,
+)
 from kitsune.ui.image_cache import load_image
 
 _BADGE_CSS = (
@@ -22,6 +24,20 @@ _BADGE_CSS = (
     ' .tag-badge-fallback-fg image { color: white; }'
 )
 
+_AMBILIGHT_CSS = (
+    # Ambilight-style under-glow: a heavily blurred copy of the poster
+    # behind the card, so the halo picks up the cover's own colors.
+    # Biased downward (translateY) — the top bleed then stays within
+    # the grid's existing 12px top margin instead of being clipped by
+    # the header bar for first-row cards.
+    '.card-ambilight {'
+    ' filter: blur(14px) saturate(1.6) brightness(1.1);'
+    ' transform: translateY(6px) scale(1.04);'
+    ' opacity: 0;'
+    ' transition: opacity 200ms ease; }'
+    ' .card-hover-cell:hover .card-ambilight { opacity: 0.85; }'
+)
+
 
 @Gtk.Template(resource_path='/net/armatik/Kitsune/release_card.ui')
 class ReleaseCard(Gtk.FlowBoxChild):
@@ -29,6 +45,7 @@ class ReleaseCard(Gtk.FlowBoxChild):
 
     picture = Gtk.Template.Child()
     picture_clipper = Gtk.Template.Child()
+    ambilight = Gtk.Template.Child()
     placeholder = Gtk.Template.Child()
     spinner = Gtk.Template.Child()
     title_label = Gtk.Template.Child()
@@ -38,6 +55,7 @@ class ReleaseCard(Gtk.FlowBoxChild):
     def __init__(self, release: Release, **kwargs):
         super().__init__(**kwargs)
         register_css(_BADGE_CSS)
+        register_css(_AMBILIGHT_CSS)
         self.release = release
 
         # Clip Picture rendering to the wrapper's rounded card shape so
@@ -46,8 +64,12 @@ class ReleaseCard(Gtk.FlowBoxChild):
         # itself is unstyled, so its blur output gets cut by the
         # wrapper's GSK clip node.
         self.picture_clipper.set_overflow(Gtk.Overflow.HIDDEN)
+        apply_card_hover_glow(self, self.picture_clipper)
 
         apply_adult_blur(self.picture, release.is_adult)
+        # The ambilight copy only ever shows heavily blurred colors, but
+        # keep it consistent with the poster's adult gating anyway.
+        apply_adult_blur(self.ambilight, release.is_adult)
 
         self.title_label.set_label(release.name.main)
 
@@ -135,14 +157,19 @@ class ReleaseCard(Gtk.FlowBoxChild):
         # release's is_adult flag both still warrant blurring.
         self.picture.remove_css_class('adult-blur')
         apply_adult_blur(self.picture, self.release.is_adult)
+        self.ambilight.remove_css_class('adult-blur')
+        apply_adult_blur(self.ambilight, self.release.is_adult)
 
     def _on_preview_loaded(self, texture, error):
         if texture and not self.picture.get_paintable():
             self.picture.set_paintable(texture)
+            if not self.ambilight.get_paintable():
+                self.ambilight.set_paintable(texture)
 
     def _on_poster_loaded(self, texture, error):
         self.spinner.set_visible(False)
         if texture:
             self.picture.set_paintable(texture)
+            self.ambilight.set_paintable(texture)
         elif not self.picture.get_paintable():
             self.placeholder.set_visible(True)

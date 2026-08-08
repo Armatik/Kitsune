@@ -28,6 +28,33 @@ def register_css(css_string: str):
 _ADULT_BLUR_CSS = '.adult-blur { filter: blur(10px); }'
 
 
+_CARD_HOVER_CSS = (
+    # Same glow as episode cards on the release page: soft colored halo
+    # plus a lifting shadow, animated in and out.
+    '.card-hover-glow { transition: box-shadow 200ms ease; }'
+    ' .card-hover-glow:hover {'
+    ' box-shadow: 0 0 14px 2px alpha(currentColor, 0.35),'
+    ' 0 6px 18px alpha(black, 0.18); }'
+    ' .card-hover-glow:active { box-shadow: none; }'
+    # Strip the FlowBox cell-level hover/active highlight so only the
+    # rounded card itself reacts to pointer, not the rectangular slot.
+    ' flowbox > flowboxchild.card-hover-cell,'
+    ' flowbox > flowboxchild.card-hover-cell:hover,'
+    ' flowbox > flowboxchild.card-hover-cell:active { background: none; }'
+)
+
+
+def apply_card_hover_glow(cell, card_widget) -> None:
+    """Apply the episode-style glow hover to a grid card.
+
+    `cell` is the Gtk.FlowBoxChild (its slot highlight is suppressed),
+    `card_widget` is the inner widget carrying the `card` style.
+    """
+    register_css(_CARD_HOVER_CSS)
+    cell.add_css_class('card-hover-cell')
+    card_widget.add_css_class('card-hover-glow')
+
+
 def apply_adult_blur(picture_widget, is_adult: bool) -> None:
     """Apply the 18+ blur CSS class to a Gtk.Picture iff the release is
     marked adult and the global confirmation hasn't been dismissed.

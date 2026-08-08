@@ -9,7 +9,7 @@ gi.require_version('Adw', '1')
 
 from gi.repository import Gdk, Gtk
 
-from kitsune.ui import register_css
+from kitsune.ui import apply_card_hover_glow, register_css
 
 COLOR_MAP = {
     'blue': '#3584e4',
@@ -91,6 +91,10 @@ class TagCard(Gtk.FlowBoxChild):
         self.tag = tag
         self._on_delete = on_delete
         self.card_overlay.add_css_class('tag-card-rounded')
+        # Glow goes on the overlay, not card_bg: the overlay clips its
+        # children (overflow: hidden for the blurred emoji backdrop), so
+        # a shadow on card_bg would be cut off before it becomes visible.
+        apply_card_hover_glow(self, self.card_overlay)
 
         from kitsune import tags_store
         self.title_label.set_label(tags_store.display_name(tag))

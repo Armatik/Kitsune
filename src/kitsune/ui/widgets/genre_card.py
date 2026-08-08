@@ -10,6 +10,7 @@ gi.require_version('Adw', '1')
 from gi.repository import Adw, Gtk
 
 from kitsune.models import Genre
+from kitsune.ui import apply_card_hover_glow
 from kitsune.ui.image_cache import load_image
 
 
@@ -26,6 +27,7 @@ class GenreCard(Gtk.FlowBoxChild):
     def __init__(self, genre: Genre, **kwargs):
         super().__init__(**kwargs)
         self.genre = genre
+        apply_card_hover_glow(self, self.picture)
 
         self.title_label.set_label(genre.name)
 

@@ -21,6 +21,16 @@ template $KitsuneReleaseCard: Gtk.FlowBoxChild {
         width-request: 180;
         height-request: 250;
 
+        Gtk.Picture ambilight {
+          width-request: 180;
+          height-request: 250;
+          content-fit: cover;
+          can-target: false;
+
+          styles ["card-ambilight"]
+        }
+
+        [overlay]
         Gtk.Box picture_clipper {
           styles ["card"]
 
