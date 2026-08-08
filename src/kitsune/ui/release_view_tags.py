@@ -53,7 +53,7 @@ def create_full_tag_pill(tag: dict) -> Gtk.Button:
         box.append(_make_symbolic_image(tag, 16))
     else:
         box.append(_make_color_circle(tag['icon_value'], COLOR_MAP))
-    box.append(Gtk.Label(label=tag['name']))
+    box.append(Gtk.Label(label=tags_store.display_name(tag)))
     return Gtk.Button(child=box, css_classes=['pill', 'release-chip'])
 
 
@@ -67,7 +67,7 @@ def create_compact_tag_pill(tag: dict) -> Gtk.Button:
         child = _make_color_circle(tag['icon_value'], COLOR_MAP)
     return Gtk.Button(
         child=child, css_classes=['release-chip-compact'],
-        tooltip_text=tag['name'],
+        tooltip_text=tags_store.display_name(tag),
     )
 
 

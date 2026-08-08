@@ -1072,7 +1072,7 @@ class KitsuneWindow(Adw.ApplicationWindow):
         releases_view.set_on_release_activated(self._show_release_detail)
         releases_view.set_narrow(self._narrow)
         page = Adw.NavigationPage(
-            title=tag['name'],
+            title=tags_store.display_name(tag),
             child=Adw.ToolbarView(
                 top_bar_style=Adw.ToolbarStyle.FLAT,
                 content=releases_view,
