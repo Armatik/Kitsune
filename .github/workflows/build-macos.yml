@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    # Needed by softprops/action-gh-release to create the tag release
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4
