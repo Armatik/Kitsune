@@ -39,79 +39,79 @@
   <screenshots>
     <!-- Catalog -->
     <screenshot type="default">
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/catalog-dark.png</image>
       <caption>Browse the anime catalog</caption>
     </screenshot>
 
     <!-- Release page (accent color style) -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-accent-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/release-accent-dark.png</image>
       <caption>Release page with accent colors from the poster</caption>
     </screenshot>
 
     <!-- Profile view -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/profile-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/profile-dark.png</image>
       <caption>Profile page with collection stats and account sync</caption>
     </screenshot>
 
     <!-- Auth dialog -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/auth-dialog-dark.png</image>
+      <image type="source" width="1081" height="759">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/auth-dialog-dark.png</image>
       <caption>Sign in to your AniLiberty account</caption>
     </screenshot>
 
     <!-- Video player -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/player.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/player.png</image>
       <caption>Built-in video player with quality selection</caption>
     </screenshot>
 
     <!-- Search -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/search-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/search-dark.png</image>
       <caption>Search across anime, genres, franchises and tags</caption>
     </screenshot>
 
     <!-- Genres -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/genres-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/genres-dark.png</image>
       <caption>Browse releases by genre</caption>
     </screenshot>
 
     <!-- Favorites and tags -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/tags-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/tags-dark.png</image>
       <caption>Organize your library with custom tags and favorites</caption>
     </screenshot>
 
     <!-- Filters -->
     <screenshot>
-      <image type="source" width="2600" height="1800">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/filters-dark.png</image>
+      <image type="source" width="1299" height="884">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/filters-dark.png</image>
       <caption>Filter catalog by genre, year, type and rating</caption>
     </screenshot>
 
     <!-- Mobile layout -->
     <screenshot>
-      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/catalog-mobile-dark.png</image>
+      <image type="source" width="413" height="759">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/catalog-mobile-dark.png</image>
       <caption>Adaptive mobile layout</caption>
     </screenshot>
 
     <!-- Mobile release page -->
     <screenshot>
-      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/release-mobile-dark.png</image>
+      <image type="source" width="413" height="759">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/release-mobile-dark.png</image>
       <caption>Release page on mobile</caption>
     </screenshot>
 
     <!-- Mobile profile view -->
     <screenshot>
-      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/profile-mobile-dark.png</image>
+      <image type="source" width="413" height="759">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/profile-mobile-dark.png</image>
       <caption>Profile page on mobile</caption>
     </screenshot>
 
     <!-- Mobile bottom sheet -->
     <screenshot>
-      <image type="source" width="900" height="1600">https://altlinux.space/alt-gnome/Kitsune/raw/branch/main/data/screenshots/sheet-mobile-dark.png</image>
+      <image type="source" width="413" height="759">https://altlinux.space/alt-gnome/Kitsune/raw/commit/62a99c7770b40a0d1fc0d6c2997e0fdb95186c96/data/screenshots/sheet-mobile-dark.png</image>
       <caption>Navigation sheet on mobile</caption>
     </screenshot>
   </screenshots>
@@ -155,7 +155,7 @@
         <p>Catalog improvements. Pull-to-refresh on mobile with tinted spinner and elevated headerbar, dedicated refresh button on desktop, viewport-sized loading that prefetches more cards as the window grows, mobile-only touchpad scroll filter to avoid accidental refreshes.</p>
         <p>Adaptive layout. Edge-to-edge profile on mobile with a transparent header bar, bottom-sheet navigation accommodating the auth row.</p>
         <p>UI polish. All grid cards — releases, tags, genres and franchises — glow on hover with the same animated halo as episode cards, and release cards add an Ambilight-style under-glow tinted by the poster's own colors.</p>
-        <p>Stability. The sync engine was hardened through a full audit and live testing: pending changes can no longer get stuck, server watch positions pull down correctly (with a one-time library reindex on first login), and only locally changed positions are pushed. Destructive actions — logout, unmark-all, data reset, "Keep server" merge — now ask for confirmation. An experimental macOS build with media keys and Now Playing integration joins the Linux release.</p>
+        <p>Stability. The sync engine was hardened through a full audit and live testing: pending changes can no longer get stuck, server watch positions pull down correctly (with a one-time library reindex on first login), and only locally changed positions are pushed. Destructive actions — logout, unmark-all, data reset, "Keep server" merge — now ask for confirmation. An experimental macOS build with media keys and Now Playing integration joins the Linux release (contributed by Anton Palgunov).</p>
         <p>Translations. Russian translation refreshed and completed for all new sync and profile strings.</p>
       </description>
     </release>
