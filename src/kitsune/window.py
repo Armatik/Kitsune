@@ -1214,7 +1214,10 @@ class KitsuneWindow(Adw.ApplicationWindow):
             self._session.fetch_profile(
                 lambda user, err: self._on_profile_loaded(user))
         self._update_auth_sidebar()
-        self._switch_tab('profile')
+        # Only jump to Profile on a fresh login. On an expired-session
+        # re-login the user just wants to continue where they left off.
+        if not (self._session and self._session.is_expired()):
+            self._switch_tab('profile')
         # Every explicit login reindexes: while the local session was
         # dead, other devices may have produced timecodes for titles the
         # local episode index has never seen (and ongoing shows grew).
