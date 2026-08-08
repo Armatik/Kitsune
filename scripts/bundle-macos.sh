@@ -297,7 +297,15 @@ copy_dylib "cairo"       "libcairo-script-interpreter"
 copy_dylib "harfbuzz"    "libharfbuzz.0"
 copy_dylib "harfbuzz"    "libharfbuzz-subset"
 copy_dylib "fribidi"     "libfribidi"
-copy_dylib "gdk-pixbuf"  "libgdk_pixbuf-2.0"
+# gdk-pixbuf may come from a custom prefix: the Homebrew bottle omits
+# the webp loader, so CI builds gdk-pixbuf from source with
+# -Dwebp=enabled and exports PIXBUF_PREFIX pointing at it.
+PIXBUF_PREFIX="${PIXBUF_PREFIX:-$BREW}"
+if [ "$PIXBUF_PREFIX" != "$BREW" ]; then
+    cp -n "$PIXBUF_PREFIX"/lib/libgdk_pixbuf-2.0*.dylib "$FRAMEWORKS/" 2>/dev/null || true
+else
+    copy_dylib "gdk-pixbuf"  "libgdk_pixbuf-2.0"
+fi
 copy_dylib "libepoxy"    "libepoxy"
 copy_dylib "graphene"    "libgraphene-1.0"
 copy_dylib "fontconfig"  "libfontconfig"
@@ -445,16 +453,18 @@ done
 
 # ── 9. gdk-pixbuf loaders ────────────────────────────────────────────────────
 echo "==> Copying pixbuf loaders..."
-PIXBUF_SRC="$BREW/lib/gdk-pixbuf-2.0/2.10.0/loaders"
+PIXBUF_SRC="$PIXBUF_PREFIX/lib/gdk-pixbuf-2.0/2.10.0/loaders"
 PIXBUF_DEST="$RESOURCES/gdk-pixbuf/2.10.0/loaders"
 mkdir -p "$PIXBUF_DEST"
 find -L "$PIXBUF_SRC" \( -name "*.so" -o -name "*.dylib" \) \
     -exec cp -L {} "$PIXBUF_DEST/" \; 2>/dev/null || true
 
 LOADERS_CACHE="$RESOURCES/gdk-pixbuf/loaders.cache"
+QUERY_LOADERS="$PIXBUF_PREFIX/bin/gdk-pixbuf-query-loaders"
+[ -x "$QUERY_LOADERS" ] || QUERY_LOADERS="$BREW/bin/gdk-pixbuf-query-loaders"
 # Keep stderr visible: loaders that fail to load here are silently
 # omitted from the cache and the format breaks at runtime.
-"$BREW/bin/gdk-pixbuf-query-loaders" "$PIXBUF_DEST/"*.so > "$LOADERS_CACHE" || true
+"$QUERY_LOADERS" "$PIXBUF_DEST/"*.so > "$LOADERS_CACHE" || true
 if [ -f "$PIXBUF_SRC/libpixbufloader-webp.so" ] && \
    ! grep -q webp "$LOADERS_CACHE"; then
     echo "  WARNING: webp loader present but missing from loaders.cache"
