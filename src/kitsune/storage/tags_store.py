@@ -30,8 +30,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'favorites',
         'name': 'Favorites',
-        'icon_type': 'symbolic',
-        'icon_value': 'net.armatik.Kitsune.starred-symbolic',
+        'icon_type': 'emoji',
+        'icon_value': '⭐',
         'builtin': True,
         'order': 0,
         'releases': [],
@@ -40,8 +40,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'watching',
         'name': 'Watching',
-        'icon_type': 'symbolic',
-        'icon_value': 'net.armatik.Kitsune.media-playback-start-symbolic',
+        'icon_type': 'emoji',
+        'icon_value': '🎬',
         'builtin': True,
         'order': 1,
         'releases': [],
@@ -50,8 +50,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'watched',
         'name': 'Watched',
-        'icon_type': 'symbolic',
-        'icon_value': 'net.armatik.Kitsune.object-select-symbolic',
+        'icon_type': 'emoji',
+        'icon_value': '🏁',
         'builtin': True,
         'order': 2,
         'releases': [],
@@ -60,8 +60,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'planned',
         'name': 'Planned',
-        'icon_type': 'symbolic',
-        'icon_value': 'net.armatik.Kitsune.view-list-bullet-symbolic',
+        'icon_type': 'emoji',
+        'icon_value': '📋',
         'builtin': True,
         'order': 3,
         'releases': [],
@@ -70,8 +70,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'postponed',
         'name': 'Postponed',
-        'icon_type': 'symbolic',
-        'icon_value': 'net.armatik.Kitsune.media-playback-pause-symbolic',
+        'icon_type': 'emoji',
+        'icon_value': '⏳',
         'builtin': True,
         'order': 4,
         'releases': [],
@@ -80,8 +80,8 @@ _BUILTIN_TAGS = [
     {
         'id': 'abandoned',
         'name': 'Abandoned',
-        'icon_type': 'symbolic',
-        'icon_value': 'net.armatik.Kitsune.cross-large-symbolic',
+        'icon_type': 'emoji',
+        'icon_value': '🪦',
         'builtin': True,
         'order': 5,
         'releases': [],
@@ -145,9 +145,10 @@ def _read_and_migrate() -> dict:
             data['tags'].insert(bt['order'], copy.deepcopy(bt))
             migrated = True
 
-    # Migrate built-in tags from the legacy emoji icon set to Adwaita
-    # symbolic icons, and refresh stored icon_value when the bundled
-    # name changes. User-created tags keep their saved icon.
+    # Built-in tags are app-managed: keep presentation fields in sync
+    # with the defaults (name, icon set, color, order) in both
+    # directions. User-created tags keep their saved presentation;
+    # the releases list is never touched.
     builtin_by_id = {bt['id']: bt for bt in _BUILTIN_TAGS}
     for tag in data['tags']:
         if not tag.get('builtin'):
@@ -155,22 +156,10 @@ def _read_and_migrate() -> dict:
         latest = builtin_by_id.get(tag['id'])
         if not latest:
             continue
-        if tag.get('icon_type') == 'emoji':
-            tag['icon_type'] = latest['icon_type']
-            tag['icon_value'] = latest['icon_value']
-            migrated = True
-        elif (tag.get('icon_type') == latest['icon_type']
-                and tag.get('icon_value') != latest['icon_value']):
-            tag['icon_value'] = latest['icon_value']
-            migrated = True
-        if latest.get('color') and tag.get('color') != latest['color']:
-            tag['color'] = latest['color']
-            migrated = True
-        # Refresh builtin names too — 0.8.5 stored 'Избранное' as the
-        # favorites name, which display_name() can never translate.
-        if tag.get('name') != latest['name']:
-            tag['name'] = latest['name']
-            migrated = True
+        for key in ('name', 'icon_type', 'icon_value', 'color', 'order'):
+            if tag.get(key) != latest.get(key):
+                tag[key] = latest[key]
+                migrated = True
 
     # Persist the migrated shape so subsequent loads are no-ops. Without
     # this, every _load on an old store re-runs the migration in memory.

@@ -20,14 +20,11 @@ log = logging.getLogger('kitsune.profile_view')
 
 _HERO_MAX_BYTES = 30 * 1024 * 1024
 
-_COLLECTION_TAGS = [
-    ('favorites', 'Favorites', 'net.armatik.Kitsune.starred-symbolic'),
-    ('watching', 'Watching', 'net.armatik.Kitsune.media-playback-start-symbolic'),
-    ('watched', 'Watched', 'net.armatik.Kitsune.object-select-symbolic'),
-    ('planned', 'Planned', 'net.armatik.Kitsune.view-list-bullet-symbolic'),
-    ('postponed', 'Postponed', 'net.armatik.Kitsune.media-playback-pause-symbolic'),
-    ('abandoned', 'Abandoned', 'net.armatik.Kitsune.cross-large-symbolic'),
-]
+def _collection_tags():
+    """Built-in tags sorted by order, with localized names and icons."""
+    tags = [t for t in tags_store.get_all_tags() if t.get('builtin')]
+    tags.sort(key=lambda t: t.get('order', 0))
+    return tags
 
 _HERO_IMAGES = [
     'SD01.BK-zeZze.jpg', 'SD02.CFb2ug4g.jpg', 'SD03.Big5uXdC.jpg',
@@ -172,7 +169,8 @@ class ProfileView(Gtk.Box):
             self._refresh_indicator()
 
     def _setup_collection_cards(self):
-        for tag_id, label, icon_name in _COLLECTION_TAGS:
+        for tag in _collection_tags():
+            tag_id = tag['id']
             color = resolved_tag_color({'id': tag_id})
             count = len(tags_store.get_release_ids_for_tag(tag_id))
 
@@ -201,8 +199,13 @@ class ProfileView(Gtk.Box):
             card_box.get_style_context().add_provider(
                 css_provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
 
-            icon = Gtk.Image.new_from_icon_name(icon_name)
-            icon.set_pixel_size(28)
+            if tag['icon_type'] == 'emoji':
+                icon = Gtk.Label()
+                icon.set_markup(
+                    f'<span size="x-large">{tag["icon_value"]}</span>')
+            else:
+                icon = Gtk.Image.new_from_icon_name(tag['icon_value'])
+                icon.set_pixel_size(28)
             icon.add_css_class('collection-icon')
             card_box.append(icon)
 
@@ -213,7 +216,7 @@ class ProfileView(Gtk.Box):
             card_box.append(count_lbl)
 
             title_lbl = Gtk.Label(
-                label=_(label),
+                label=tags_store.display_name(tag),
                 css_classes=['caption', 'dim-label'],
                 # Allow narrow shrink: without this the label's natural
                 # width ("Просмотренные") drives FlowBox natural request
@@ -230,8 +233,8 @@ class ProfileView(Gtk.Box):
 
     def _setup_total_cards(self):
         total = sum(
-            len(tags_store.get_release_ids_for_tag(tid))
-            for tid, _, _ in _COLLECTION_TAGS
+            len(tags_store.get_release_ids_for_tag(t['id']))
+            for t in _collection_tags()
         )
 
         box1 = Gtk.Box(
@@ -411,7 +414,8 @@ class ProfileView(Gtk.Box):
         """Refresh all counters with count-up animation."""
         targets = {}
         total = 0
-        for tag_id, _label, _icon_name in _COLLECTION_TAGS:
+        for t in _collection_tags():
+            tag_id = t['id']
             count = len(tags_store.get_release_ids_for_tag(tag_id))
             total += count
             lbl = self._cards.get(tag_id)

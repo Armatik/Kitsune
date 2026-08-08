@@ -183,3 +183,17 @@ def test_builtin_migration_updates_name(mock_tags):
     assert tag['name'] == 'Favorites'
     assert tags_store.display_name(tag) == 'Favorites'
     assert 42 in tags_store.get_release_ids_for_tag('favorites')
+
+
+def test_builtin_migration_symbolic_to_emoji(mock_tags):
+    """Legacy symbolic icon set is migrated to the emoji defaults."""
+    mock_tags.write_text(
+        '{"tags": [{"id": "favorites", "name": "Favorites", '
+        '"icon_type": "symbolic", '
+        '"icon_value": "net.armatik.Kitsune.starred-symbolic", '
+        '"color": "#e5a50a", "builtin": true, "order": 0, '
+        '"releases": [42]}]}')
+    tag = tags_store.get_tag('favorites')
+    assert tag['icon_type'] == 'emoji'
+    assert tag['icon_value'] == '⭐'
+    assert 42 in tags_store.get_release_ids_for_tag('favorites')
